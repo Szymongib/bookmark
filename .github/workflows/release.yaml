@@ -17,9 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: echo ${{matrix.TARGET}}
-      - name: Build artifacts
+      - name: Build Artifacts
         run: cargo build --verbose --release --target ${{matrix.TARGET}}
-      - name: Rename artifact
+      - name: Rename Artifacts
         run: mv ./target/${{matrix.TARGET}}/release/bookmark bookmark-${{matrix.TARGET}}
       - name: Get Upload URL
         run: |
