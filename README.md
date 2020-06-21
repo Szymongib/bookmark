@@ -4,7 +4,25 @@ Bookmark CLI allows you to save your favourite URLs without leaving the terminal
 
 ## Installation 
 
-For now only supported method of installation is with git and Cargo.
+
+### Released version
+
+Download for Linux:
+```bash
+wget https://github.com/Szymongib/bookmark-cli/releases/download/v0.0.1/bookmark-linux-amd64
+
+chmod +x bookmark-linux-amd64
+sudo mv bookmark-linux-amd64 /usr/local/bin/bookmark
+```
+
+Download for Mac OS:
+```bash
+wget https://github.com/Szymongib/bookmark-cli/releases/download/v0.0.1/bookmark-darwin-amd64
+
+chmod +x bookmark-darwin-amd64
+sudo mv bookmark-darwin-amd64 /usr/local/bin/bookmark
+```
+
 
 ### Using git and Cargo
 

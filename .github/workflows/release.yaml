@@ -12,8 +12,10 @@ jobs:
         include:
           - os: macos-latest
             TARGET: x86_64-apple-darwin
+            ARTIFACT_NAME: bookmark-darwin-amd64
           - os: ubuntu-latest
             TARGET: x86_64-unknown-linux-gnu
+            ARTIFACT_NAME: bookmark-linux-amd64
     steps:
       - uses: actions/checkout@v1
       - run: echo ${{matrix.TARGET}}
@@ -33,5 +35,5 @@ jobs:
         with:
           upload_url: ${{ env.UPLOAD_URL }}
           asset_path: bookmark-${{matrix.TARGET}}
-          asset_name: bookmark-${{matrix.TARGET}}
+          asset_name: ${{matrix.ARTIFACT_NAME}}
           asset_content_type: application/octet-stream
