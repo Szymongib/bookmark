@@ -50,6 +50,11 @@ bookmark list
 ```
 Use `enter` to open URL in the browser and `q` to quite the interactive list.
 
+Delete URL:
+```bash
+bookmark delete GitHub
+```
+
 List groups:
 ```bash
 bookmark group list

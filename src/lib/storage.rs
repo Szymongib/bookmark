@@ -8,6 +8,7 @@ use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
+use std::convert::TryInto;
 
 pub struct FileStorage {
     file_path: String,
@@ -37,6 +38,23 @@ impl Repository for FileStorage {
         write_urls(&mut file, registry)?;
 
         return Ok(record);
+    }
+
+    fn delete(&self, name: &str, group: &str) -> Result<bool, Box<dyn std::error::Error>> {
+        let mut file = open_urls_file(self.file_path.as_str())?;
+        let mut registry = read_urls(&mut file)?;
+
+        let mut index: usize= 0;
+        for u in &registry.urls.items {
+            if u.group  == group && u.name == name {
+                registry.urls.items.remove(index);
+                write_urls(&mut file, registry)?;
+                return Ok(true)
+            }
+            index += 1;
+        }
+
+        return Ok(false)
     }
 
     fn list(
@@ -112,6 +130,7 @@ fn open_urls_file(path: &str) -> Result<File, Box<dyn std::error::Error>> {
     return match OpenOptions::new()
         .read(true)
         .create(true)
+        .append(false)
         .write(true)
         .open(path)
     {
@@ -149,6 +168,9 @@ fn write_urls(
 
     file.seek(SeekFrom::Start(0))?;
     file.write_all(urls_json.as_bytes())?;
+
+    let desired_length: u64 = urls_json.len().try_into()?;
+    file.set_len(desired_length)?;
 
     return Ok(urls);
 }

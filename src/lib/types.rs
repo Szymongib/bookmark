@@ -6,12 +6,12 @@ pub struct URLRegistry {
     pub urls: URLs,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct URLGroups {
     pub items: Vec<URLGroup>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct URLGroup {
     pub name: String,
 }
@@ -27,7 +27,7 @@ pub struct URLs {
     pub items: Vec<URLRecord>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct URLRecord {
     pub url: String,
     pub name: String,

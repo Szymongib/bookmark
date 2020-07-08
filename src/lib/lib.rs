@@ -8,6 +8,7 @@ pub mod types;
 
 pub trait Repository {
     fn add(&self, record: URLRecord) -> Result<URLRecord, Box<dyn std::error::Error>>;
+    fn delete(&self, name: &str, group: &str) -> Result<bool, Box<dyn std::error::Error>>;
     fn list(
         &self,
         group: Option<&str>,

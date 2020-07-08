@@ -13,6 +13,7 @@ const GROUP_LIST_CMD: &str = "list";
 
 const ADD_SUB_CMD: &str = "add";
 const LIST_SUB_CMD: &str = "list";
+const DELETE_SUB_CMD: &str = "delete";
 
 const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
 
@@ -38,7 +39,7 @@ fn main() {
         .subcommand(SubCommand::with_name(ADD_SUB_CMD)
             .about("Add bookmark URL")
             .arg(Arg::with_name("name")
-                .help("URL name in registry")
+                .help("Bookmark name")
                 .required(true)
                 .index(1)
                 )
@@ -80,8 +81,21 @@ fn main() {
                 .multiple(true)
                 .number_of_values(1))
         )
-        // TODO: add ability to remove URLs
-        // TODO: add ability to add tags
+        .subcommand(SubCommand::with_name(DELETE_SUB_CMD)
+            .about("List bookmark URLs")
+            .arg(Arg::with_name("group") // If not specified use default or global
+                .help("Group from which URL should be deleted")
+                .required(false)
+                .takes_value(true)
+                .short("g")
+                .long("group"))
+            .arg(Arg::with_name("name")
+                .help("Bookmark name")
+                .required(true)
+                .index(1)
+            )
+        )
+        // TODO: add ability to modify tags
         .get_matches();
 
     let file_path = match matches.value_of("file") {
@@ -103,8 +117,11 @@ fn main() {
         (ADD_SUB_CMD, Some(add_matches)) => {
             application.add_sub_cmd(add_matches);
         }
-        (LIST_SUB_CMD, Some(add_matches)) => {
-            application.list_sub_cmd(add_matches);
+        (LIST_SUB_CMD, Some(list_matches)) => {
+            application.list_sub_cmd(list_matches);
+        }
+        (DELETE_SUB_CMD, Some(delete_matches)) => {
+            application.delete_sub_cmd(delete_matches);
         }
         ("", None) => println!("No subcommand was used"), // If no subcommand was usd it'll match the tuple ("", None)
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachabe!()
@@ -175,6 +192,30 @@ impl<T: Repository> Application<T> {
                 println!("Error getting URLs: {}", why);
             }
         };
+    }
+
+    pub fn delete_sub_cmd(&self, matches: &ArgMatches) {
+        let url_name = matches.value_of("name").expect("Error getting URL name");
+        let group: Option<&str> = matches.value_of("group");
+
+        let group_name =group.unwrap_or("default");
+
+        match self.registry.delete(url_name, group) {
+            Ok(deleted) => {
+                if deleted {
+                    println!(
+                        "URL {} removed from {} group",
+                        url_name, group_name,
+                    )
+                } else {
+                    println!(
+                        "URL {} not found in {} group",
+                        url_name, group_name,
+                    )
+                }
+            },
+            Err(why) => println!("Error deleting {} url from {} group: {}", url_name, group_name, why),
+        }
     }
 }
 
