@@ -2,6 +2,9 @@
 
 Bookmark CLI allows you to save your favourite URLs without leaving the terminal and then quickly open them in the browser.
 
+![Bookmark CLI - Demo](./assets/bookmark-cli-demo.gif)
+
+
 ## Installation 
 
 
