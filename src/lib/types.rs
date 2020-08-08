@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Serialize, Deserialize)]
 pub struct URLRegistry {
@@ -27,6 +28,8 @@ pub struct URLs {
     pub items: Vec<URLRecord>,
 }
 
+// TODO: consider refactoring to add some id or make name and group non whitespaced and treat group/name as uuid
+// + add some description
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct URLRecord {
     pub url: String,
@@ -48,5 +51,15 @@ impl URLRecord {
             group: group.to_string(),
             tags,
         }
+    }
+}
+
+impl fmt::Display for URLRecord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Name: {}, URL: {}, Group: {}, Tags: {:?}",
+            self.name, self.url, self.group, self.tags
+        )
     }
 }

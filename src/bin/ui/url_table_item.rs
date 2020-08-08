@@ -1,0 +1,136 @@
+use crate::ui::table::TableItem;
+use bookmark_lib::record_filter::URLFilter;
+use bookmark_lib::types::URLRecord;
+
+#[derive(Clone, Debug)]
+pub struct URLItem {
+    visible: bool,
+    url: URLRecord,
+    row: Vec<String>,
+}
+
+impl URLItem {
+    pub fn new(record: URLRecord) -> URLItem {
+        URLItem {
+            url: record.clone(),
+            visible: true,
+            row: url_to_row(&record),
+        }
+    }
+
+    pub fn url(&self) -> String {
+        return self.url.url.clone();
+    }
+
+    pub fn filter<T: URLFilter>(&mut self, filter: &T) {
+        self.visible = filter.matches(&self.url)
+    }
+}
+
+impl TableItem for URLItem {
+    fn visible(&self) -> bool {
+        return self.visible;
+    }
+
+    fn row(&self) -> &Vec<String> {
+        &self.row
+    }
+}
+
+fn url_to_row(record: &URLRecord) -> Vec<String> {
+    let tags: Vec<&str> = record.tags.keys().map(|k| k.as_str()).collect();
+
+    vec![
+        record.name.clone(),
+        record.url.clone(),
+        record.group.clone(),
+        tags.join(", "),
+    ]
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ui::table::TableItem;
+    use crate::ui::url_table_item::URLItem;
+    use bookmark_lib::record_filter::URLFilter;
+    use bookmark_lib::types::URLRecord;
+
+    struct TestCase {
+        url_record: URLRecord,
+        expected_row: Vec<String>,
+    }
+
+    struct FixedFilter {
+        matches: bool,
+    }
+
+    impl FixedFilter {
+        fn new(matches: bool) -> FixedFilter {
+            FixedFilter { matches }
+        }
+    }
+
+    impl URLFilter for FixedFilter {
+        fn matches(&self, _: &URLRecord) -> bool {
+            return self.matches;
+        }
+    }
+
+    #[test]
+    fn test_url_item() {
+        let match_filter = FixedFilter::new(true);
+        let do_not_match_filter = FixedFilter::new(false);
+
+        let items = vec![
+            TestCase {
+                url_record: URLRecord::new("url1", "name1", "group1", vec!["tag1, tag1.2"]),
+                expected_row: vec![
+                    "name1".to_string(),
+                    "url1".to_string(),
+                    "group1".to_string(),
+                    "tag1, tag1.2".to_string(),
+                ],
+            },
+            TestCase {
+                url_record: URLRecord::new("url2", "name2", "group2", vec!["tag2, tag2.2"]),
+                expected_row: vec![
+                    "name2".to_string(),
+                    "url2".to_string(),
+                    "group2".to_string(),
+                    "tag2, tag2.2".to_string(),
+                ],
+            },
+            TestCase {
+                url_record: URLRecord::new("url3", "name3", "group3", vec!["tag3, tag3.2"]),
+                expected_row: vec![
+                    "name3".to_string(),
+                    "url3".to_string(),
+                    "group3".to_string(),
+                    "tag3, tag3.2".to_string(),
+                ],
+            },
+            TestCase {
+                url_record: URLRecord::new("url4", "name4", "group4", vec![]),
+                expected_row: vec![
+                    "name4".to_string(),
+                    "url4".to_string(),
+                    "group4".to_string(),
+                    "".to_string(),
+                ],
+            },
+        ];
+
+        for item in items {
+            let mut table_item = URLItem::new(item.url_record);
+            let row = table_item.row();
+            assert_eq!(&item.expected_row, row);
+            assert!(table_item.visible());
+
+            table_item.filter(&do_not_match_filter);
+            assert!(!table_item.visible());
+
+            table_item.filter(&match_filter);
+            assert!(table_item.visible());
+        }
+    }
+}

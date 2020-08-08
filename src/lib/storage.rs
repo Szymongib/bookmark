@@ -3,12 +3,12 @@ use crate::filters::Filter;
 use crate::types::URLs;
 use crate::Repository;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::error::Error;
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
-use std::convert::TryInto;
 
 pub struct FileStorage {
     file_path: String,
@@ -44,17 +44,17 @@ impl Repository for FileStorage {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let mut registry = read_urls(&mut file)?;
 
-        let mut index: usize= 0;
+        let mut index: usize = 0;
         for u in &registry.urls.items {
-            if u.group  == group && u.name == name {
+            if u.group == group && u.name == name {
                 registry.urls.items.remove(index);
                 write_urls(&mut file, registry)?;
-                return Ok(true)
+                return Ok(true);
             }
             index += 1;
         }
 
-        return Ok(false)
+        return Ok(false);
     }
 
     fn list(

@@ -2,6 +2,7 @@ use crate::filters::Filter;
 use crate::types::URLRecord;
 
 pub mod filters;
+pub mod record_filter;
 pub mod registry;
 pub mod storage;
 pub mod types;

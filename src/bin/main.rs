@@ -198,23 +198,20 @@ impl<T: Repository> Application<T> {
         let url_name = matches.value_of("name").expect("Error getting URL name");
         let group: Option<&str> = matches.value_of("group");
 
-        let group_name =group.unwrap_or("default");
+        let group_name = group.unwrap_or("default");
 
         match self.registry.delete(url_name, group) {
             Ok(deleted) => {
                 if deleted {
-                    println!(
-                        "URL {} removed from {} group",
-                        url_name, group_name,
-                    )
+                    println!("URL {} removed from {} group", url_name, group_name,)
                 } else {
-                    println!(
-                        "URL {} not found in {} group",
-                        url_name, group_name,
-                    )
+                    println!("URL {} not found in {} group", url_name, group_name,)
                 }
-            },
-            Err(why) => println!("Error deleting {} url from {} group: {}", url_name, group_name, why),
+            }
+            Err(why) => println!(
+                "Error deleting {} url from {} group: {}",
+                url_name, group_name, why
+            ),
         }
     }
 }

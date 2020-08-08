@@ -29,7 +29,11 @@ impl<T: Repository> Registry<T> {
         self.storage.add(record)
     }
 
-    pub fn delete(&self, name: &str, group: Option<&str>) -> Result<bool, Box<dyn std::error::Error>> {
+    pub fn delete(
+        &self,
+        name: &str,
+        group: Option<&str>,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         let group = group.unwrap_or("default");
 
         self.storage.delete(name, group)
@@ -60,11 +64,9 @@ mod test {
     use crate::storage::FileStorage;
     use crate::types::URLRecord;
     use std::collections::HashMap;
-    use std::{env, fs};
     use std::fs::File;
     use std::path::PathBuf;
-    use std::thread::sleep;
-    use std::time::Duration;
+    use std::{env, fs};
 
     struct TestUrl {
         name: &'static str,
@@ -162,20 +164,22 @@ mod test {
         assert_urls_match(&filtered_test_cases, urls);
 
         // Delete existing URL
-        let deleted = registry.delete("test1", None).expect("Failed to delete URL");
+        let deleted = registry
+            .delete("test1", None)
+            .expect("Failed to delete URL");
         assert!(deleted);
-        let urls = registry
-            .list_urls(None, None).expect("Failed to list urls");
+        let urls = registry.list_urls(None, None).expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
         // Not delete if URL does not exist
-        let deleted = registry.delete("test1", None).expect("Failed to delete URL");
+        let deleted = registry
+            .delete("test1", None)
+            .expect("Failed to delete URL");
         assert!(!deleted);
-        let urls = registry
-            .list_urls(None, None).expect("Failed to list urls");
+        let urls = registry.list_urls(None, None).expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
-        fs::remove_file(file_path);
+        fs::remove_file(file_path).expect("Failed to remove file");
     }
 
     fn assert_urls_match(test_urls: &Vec<&TestUrl>, actual: Vec<URLRecord>) {
