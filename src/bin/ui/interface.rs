@@ -1,24 +1,32 @@
 use crate::ui::event::Event;
 use crate::ui::table::{StatefulTable, TableItem};
 use crate::ui::url_table_item::URLItem;
+use crate::ui::widgets::rect::centered_rect;
 use bookmark_lib::record_filter::FilterSet;
 use bookmark_lib::types::URLRecord;
 use std::error::Error;
 use termion::event::Key;
-use tui::layout::{Constraint, Direction, Layout};
+use tui::layout::{Alignment, Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
+use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Paragraph, Row, Table};
 use tui::Frame;
 
 #[derive(PartialEq)]
 pub enum InputMode {
     Normal,
-    Edit(Action),
+    Edit(EditAction),
+    Suppressed(SuppressedAction),
 }
 
 #[derive(PartialEq)]
-pub enum Action {
+pub enum EditAction {
     Search,
+}
+
+#[derive(PartialEq)]
+pub enum SuppressedAction {
+    ShowHelp,
 }
 
 pub struct Interface {
@@ -37,6 +45,7 @@ pub struct Interface {
 struct Styles {
     normal: Style,
     selected: Style,
+    header: Style,
 }
 
 impl Interface {
@@ -54,6 +63,9 @@ impl Interface {
                     .fg(Color::Green)
                     .add_modifier(Modifier::BOLD),
                 normal: Style::default().fg(Color::White),
+                header: Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
             },
         }
     }
@@ -71,10 +83,13 @@ impl Interface {
 
     pub(crate) fn handle_input(&mut self, event: Event<Key>) -> Result<bool, Box<dyn Error>> {
         if let Event::Input(input) = event {
-            match self.input_mode {
+            match &self.input_mode {
                 InputMode::Normal => match input {
                     Key::Char('q') => {
                         return Ok(true);
+                    }
+                    Key::Char('h') => {
+                        self.input_mode = InputMode::Suppressed(SuppressedAction::ShowHelp)
                     }
                     Key::Left => {
                         self.table.unselect();
@@ -87,7 +102,7 @@ impl Interface {
                     }
                     Key::Char('/') | Key::Ctrl('f') => {
                         self.table.unselect();
-                        self.input_mode = InputMode::Edit(Action::Search)
+                        self.input_mode = InputMode::Edit(EditAction::Search)
                     }
                     Key::Char('\n') => {
                         let selected_id = self.table.state.selected();
@@ -123,6 +138,16 @@ impl Interface {
                     }
                     _ => {}
                 },
+                // TODO: think if stuff like help should be subcategory of InputMode - could be more generic like ShowInfo, or could be completly different mechanism
+                InputMode::Suppressed(_) => match input {
+                    Key::Esc | Key::Char('\n') | Key::Char('h') => {
+                        self.input_mode = InputMode::Normal;
+                    }
+                    Key::Char('q') => {
+                        return Ok(true);
+                    }
+                    _ => {}
+                },
             }
         }
 
@@ -138,7 +163,7 @@ impl Interface {
             .constraints(
                 [
                     Constraint::Length(size.height - 3), // URLs display table
-                    Constraint::Min(1),                  // Search input
+                    Constraint::Length(3),               // Search input
                 ]
                 .as_ref(),
             )
@@ -153,7 +178,12 @@ impl Interface {
             }
         });
         let t = Table::new(header.iter(), rows)
-            .block(Block::default().borders(Borders::ALL).title("URLs"))
+            .header_style(self.styles.header)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("URLs - Press 'h' to show help"),
+            )
             .highlight_style(self.styles.selected)
             .highlight_symbol("> ")
             .widths(&[
@@ -175,7 +205,11 @@ impl Interface {
 
         f.render_widget(input_widget, chunks[1]);
 
-        match self.input_mode {
+        self.handle_input_mode(f);
+    }
+
+    fn handle_input_mode<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
+        match &self.input_mode {
             InputMode::Normal =>
                 // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
@@ -183,19 +217,51 @@ impl Interface {
                 // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
                 f.set_cursor(
                     // Put cursor past the end of the input text
-                    chunks[1].x + self.search_phrase.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
-                    // Move one line down, from the border to the input line
-                    chunks[1].y + 1,
+                    self.search_phrase.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
+                    // Move two line up from the bottom - search input
+                    f.size().height - 2,
                 )
             }
+            InputMode::Suppressed(action) => match action {
+                // TODO: to display help I need to know exact suppressed action
+                SuppressedAction::ShowHelp => {
+                    self.show_help_popup(f);
+                }
+            },
         }
+    }
+
+    fn show_help_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
+        let text = vec![
+            Spans::from("'ENTER'            - open bookmarked URL"),
+            Spans::from("'/' or 'CTRL + F'  - search for URLs"),
+        ];
+
+        let area = centered_rect(60, 40, f.size());
+        let paragraph = Paragraph::new(text)
+            .style(Style::default().bg(Color::Black).fg(Color::White))
+            .block(self.create_block("Help - press ESC to close".to_string()))
+            .alignment(Alignment::Left);
+
+        f.render_widget(paragraph, area);
+    }
+
+    // TODO: move this function to widgets?
+    fn create_block(&self, title: String) -> Block {
+        Block::default()
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::Black).fg(Color::Blue))
+            .title(Span::styled(
+                title,
+                Style::default().add_modifier(Modifier::BOLD),
+            ))
     }
 }
 
 #[cfg(test)]
 mod test {
     use crate::ui::event::Event;
-    use crate::ui::interface::{Action, InputMode, Interface};
+    use crate::ui::interface::{EditAction, InputMode, Interface, SuppressedAction};
     use bookmark_lib::types::URLRecord;
     use termion::event::Key;
 
@@ -247,7 +313,7 @@ mod test {
             .handle_input(event)
             .expect("Failed to handle event");
         assert!(!quit);
-        assert!(InputMode::Edit(Action::Search) == interface.input_mode);
+        assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
 
         let event = Event::Input(Key::Esc);
         let quit = interface
@@ -261,7 +327,21 @@ mod test {
             .handle_input(event)
             .expect("Failed to handle event");
         assert!(!quit);
-        assert!(InputMode::Edit(Action::Search) == interface.input_mode);
+        assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
+
+        let event = Event::Input(Key::Esc);
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Normal == interface.input_mode);
+
+        let event = Event::Input(Key::Char('h'));
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Suppressed(SuppressedAction::ShowHelp) == interface.input_mode);
 
         let event = Event::Input(Key::Esc);
         let quit = interface
@@ -279,7 +359,7 @@ mod test {
         ];
 
         for event in go_to_normal_events {
-            interface.input_mode = InputMode::Edit(Action::Search);
+            interface.input_mode = InputMode::Edit(EditAction::Search);
             let quit = interface
                 .handle_input(event)
                 .expect("Failed to handle event");
@@ -296,7 +376,40 @@ mod test {
                 .handle_input(event)
                 .expect("Failed to handle event");
             assert!(!quit);
-            assert!(InputMode::Edit(Action::Search) == interface.input_mode);
+            assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
+        }
+    }
+
+    #[test]
+    fn test_handle_input_switch_input_modes() {
+        let mut interface = Interface::new(fix_url_records());
+        assert!(InputMode::Normal == interface.input_mode);
+
+        println!("Should switch InputModes...");
+        let events = vec![
+            Event::Input(Key::Char('h')),
+            Event::Input(Key::Esc),
+            Event::Input(Key::Char('h')),
+            Event::Input(Key::Char('\n')),
+            Event::Input(Key::Char('h')),
+            Event::Input(Key::Char('h')),
+        ];
+
+        let expected_modes = vec![
+            InputMode::Suppressed(SuppressedAction::ShowHelp),
+            InputMode::Normal,
+            InputMode::Suppressed(SuppressedAction::ShowHelp),
+            InputMode::Normal,
+            InputMode::Suppressed(SuppressedAction::ShowHelp),
+            InputMode::Normal,
+        ];
+
+        for i in 0..events.len() {
+            let quit = interface
+                .handle_input(events[i].clone())
+                .expect("Failed to handle event");
+            assert!(!quit);
+            assert!(expected_modes[i] == interface.input_mode);
         }
     }
 
