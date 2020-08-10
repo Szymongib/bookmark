@@ -9,7 +9,7 @@ use termion::event::Key;
 use tui::layout::{Alignment, Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Paragraph, Row, Table};
+use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
 
 #[derive(PartialEq)]
@@ -243,6 +243,7 @@ impl Interface {
             .block(self.create_block("Help - press ESC to close".to_string()))
             .alignment(Alignment::Left);
 
+        f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
     }
 
@@ -250,7 +251,7 @@ impl Interface {
     fn create_block(&self, title: String) -> Block {
         Block::default()
             .borders(Borders::ALL)
-            .style(Style::default().bg(Color::Black).fg(Color::Blue))
+            .style(Style::default().bg(Color::Black).fg(Color::LightBlue))
             .title(Span::styled(
                 title,
                 Style::default().add_modifier(Modifier::BOLD),
