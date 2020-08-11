@@ -1,5 +1,7 @@
 # Bookmark CLI
 
+![Build and test workflow](https://github.com/Szymongib/bookmark-cli/workflows/Build%20And%20Test/badge.svg?branch=master)
+
 Bookmark CLI allows you to save your favourite URLs without leaving the terminal and then quickly open them in the browser.
 
 ![Bookmark CLI - Demo](./assets/bookmark-cli-demo.gif)
