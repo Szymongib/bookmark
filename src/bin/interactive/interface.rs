@@ -1,7 +1,7 @@
-use crate::ui::event::Event;
-use crate::ui::table::{StatefulTable, TableItem};
-use crate::ui::url_table_item::URLItem;
-use crate::ui::widgets::rect::centered_rect;
+use crate::interactive::event::Event;
+use crate::interactive::table::{StatefulTable, TableItem};
+use crate::interactive::url_table_item::URLItem;
+use crate::interactive::widgets::rect::centered_rect;
 use bookmark_lib::record_filter::FilterSet;
 use bookmark_lib::types::URLRecord;
 use std::error::Error;
@@ -261,8 +261,8 @@ impl Interface {
 
 #[cfg(test)]
 mod test {
-    use crate::ui::event::Event;
-    use crate::ui::interface::{EditAction, InputMode, Interface, SuppressedAction};
+    use crate::interactive::event::Event;
+    use crate::interactive::interface::{EditAction, InputMode, Interface, SuppressedAction};
     use bookmark_lib::types::URLRecord;
     use termion::event::Key;
 

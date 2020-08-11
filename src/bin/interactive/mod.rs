@@ -1,4 +1,4 @@
-pub mod lister;
+pub mod interactive_mode;
 
 mod event;
 

@@ -1,6 +1,6 @@
-use crate::ui::table::TableItem;
 use bookmark_lib::record_filter::URLFilter;
 use bookmark_lib::types::URLRecord;
+use crate::interactive::table::TableItem;
 
 #[derive(Clone, Debug)]
 pub struct URLItem {
@@ -50,8 +50,8 @@ fn url_to_row(record: &URLRecord) -> Vec<String> {
 
 #[cfg(test)]
 mod test {
-    use crate::ui::table::TableItem;
-    use crate::ui::url_table_item::URLItem;
+    use crate::interactive::table::TableItem;
+    use crate::interactive::url_table_item::URLItem;
     use bookmark_lib::record_filter::URLFilter;
     use bookmark_lib::types::URLRecord;
 

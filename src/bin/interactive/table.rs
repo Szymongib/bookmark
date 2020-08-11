@@ -65,8 +65,8 @@ impl<T: TableItem + Clone> StatefulTable<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::ui::table::StatefulTable;
-    use crate::ui::url_table_item::URLItem;
+    use crate::interactive::table::StatefulTable;
+    use crate::interactive::url_table_item::URLItem;
     use bookmark_lib::record_filter::URLFilter;
     use bookmark_lib::types::URLRecord;
 

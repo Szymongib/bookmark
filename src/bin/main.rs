@@ -1,12 +1,12 @@
 extern crate clap;
-use crate::ui::lister;
+use crate::interactive::interactive_mode;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 use bookmark_lib::registry::Registry;
 use bookmark_lib::storage::FileStorage;
 use bookmark_lib::Repository;
 
-mod ui;
+mod interactive;
 
 const GROUP_SUB_CMD: &str = "group";
 const GROUP_LIST_CMD: &str = "list";
@@ -16,6 +16,9 @@ const LIST_SUB_CMD: &str = "list";
 const DELETE_SUB_CMD: &str = "delete";
 
 const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
+
+// TODO: change to that after modifying data model
+// const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls_v0.1.json";
 
 fn main() {
     let matches = App::new("Bookmark CLI")
@@ -95,6 +98,8 @@ fn main() {
                 .index(1)
             )
         )
+        // TODO: Add import subcommand to import from v1
+
         // TODO: add ability to modify tags
         .get_matches();
 
@@ -118,12 +123,16 @@ fn main() {
             application.add_sub_cmd(add_matches);
         }
         (LIST_SUB_CMD, Some(list_matches)) => {
-            application.list_sub_cmd(list_matches);
+            application.list_sub_cmd(list_matches); // TODO: this should no longer be interactive
         }
         (DELETE_SUB_CMD, Some(delete_matches)) => {
             application.delete_sub_cmd(delete_matches);
         }
-        ("", None) => println!("No subcommand was used"), // If no subcommand was usd it'll match the tuple ("", None)
+        ("", None) => {
+            // TODO: enter interactive mode
+
+
+        },
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachabe!()
     }
 }
@@ -184,7 +193,7 @@ impl<T: Repository> Application<T> {
 
         return match self.registry.list_urls(group, tags) {
             Ok(urls) => {
-                if let Err(err) = lister::display_urls(urls) {
+                if let Err(err) = interactive_mode::display_urls(urls) {
                     println!("Error displaying urls: {}", err.to_string())
                 }
             }

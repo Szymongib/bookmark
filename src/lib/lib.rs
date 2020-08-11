@@ -7,7 +7,34 @@ pub mod registry;
 pub mod storage;
 pub mod types;
 
-pub trait Repository {
+pub trait Registry {
+    fn add_url(
+        &self,
+        name: &str,
+        url: &str,
+        group: Option<&str>,
+        tags: Vec<&str>,
+    ) -> Result<URLRecord, Box<dyn std::error::Error>>;
+
+    fn delete(
+        &self,
+        name: &str,
+        group: Option<&str>,
+    ) -> Result<bool, Box<dyn std::error::Error>>;
+
+    fn list_groups(&self) -> Result<Vec<String>, Box<dyn std::error::Error>>;
+
+    fn list_urls(
+        &self,
+        group: Option<&str>,
+        tags: Option<Vec<&str>>,
+    ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>;
+}
+
+// TODO: repository trait should not go out of the lib
+
+
+trait Repository {
     fn add(&self, record: URLRecord) -> Result<URLRecord, Box<dyn std::error::Error>>;
     fn delete(&self, name: &str, group: &str) -> Result<bool, Box<dyn std::error::Error>>;
     fn list(
