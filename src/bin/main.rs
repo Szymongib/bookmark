@@ -2,9 +2,10 @@ extern crate clap;
 use crate::interactive::interactive_mode;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-use bookmark_lib::registry::Registry;
+use bookmark_lib::registry::URLRegistry;
 use bookmark_lib::storage::FileStorage;
-use bookmark_lib::Repository;
+use bookmark_lib::{Registry};
+use crate::interactive::interactive_mode::enter_interactive_mode;
 
 mod interactive;
 
@@ -111,9 +112,7 @@ fn main() {
         },
     };
 
-    let registry = Registry::<FileStorage>::new_file_based(file_path);
-
-    let application = Application::new(registry);
+    let application = Application::new_file_based_registry(file_path);
 
     match matches.subcommand() {
         (GROUP_SUB_CMD, Some(group_matches)) => {
@@ -130,7 +129,7 @@ fn main() {
         }
         ("", None) => {
             // TODO: enter interactive mode
-
+            enter_interactive_mode(application.registry);
 
         },
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachabe!()
@@ -147,15 +146,17 @@ fn get_default_registry_file_path() -> Option<String> {
     }
 }
 
-struct Application<T: Repository> {
-    registry: Registry<T>,
+struct Application<T: Registry> {
+    registry: T,
 }
 
-impl<T: Repository> Application<T> {
-    pub fn new(registry: Registry<T>) -> Application<T> {
-        Application { registry }
+impl Application<URLRegistry<FileStorage>> {
+    pub fn new_file_based_registry(file_path: String) -> Application<URLRegistry<FileStorage>> {
+        Application { registry: URLRegistry::new_file_based(file_path) }
     }
+}
 
+impl<T: Registry> Application<T> {
     pub fn group_sub_cmd(&self, matches: &ArgMatches) {
         self.list_groups_cmd(matches)
     }
@@ -193,9 +194,9 @@ impl<T: Repository> Application<T> {
 
         return match self.registry.list_urls(group, tags) {
             Ok(urls) => {
-                if let Err(err) = interactive_mode::display_urls(urls) {
-                    println!("Error displaying urls: {}", err.to_string())
-                }
+                // if let Err(err) = interactive_mode::display_urls(urls) {
+                //     println!("Error displaying urls: {}", err.to_string())
+                // }
             }
             Err(why) => {
                 println!("Error getting URLs: {}", why);

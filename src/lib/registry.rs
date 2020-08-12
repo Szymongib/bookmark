@@ -1,21 +1,23 @@
 use crate::filters::{Filter, ListFilter, NoopFilter};
 use crate::storage::FileStorage;
 use crate::types::URLRecord;
-use crate::Repository;
+use crate::{Repository, Registry};
 use std::ops::Deref;
 
-pub struct Registry<T: Repository> {
+pub struct URLRegistry<T: Repository> {
     storage: T,
 }
 
-impl<T: Repository> Registry<T> {
-    pub fn new_file_based(file_path: String) -> Registry<FileStorage> {
+impl URLRegistry<FileStorage> {
+    pub fn new_file_based(file_path: String) -> URLRegistry<FileStorage> {
         let storage = FileStorage::new_urls_repository(file_path);
 
-        Registry { storage }
+        URLRegistry { storage }
     }
+}
 
-    pub fn add_url(
+impl<T: Repository> Registry for URLRegistry<T> {
+    fn add_url(
         &self,
         name: &str,
         url: &str,
@@ -29,7 +31,7 @@ impl<T: Repository> Registry<T> {
         self.storage.add(record)
     }
 
-    pub fn delete(
+    fn delete(
         &self,
         name: &str,
         group: Option<&str>,
@@ -39,11 +41,11 @@ impl<T: Repository> Registry<T> {
         self.storage.delete(name, group)
     }
 
-    pub fn list_groups(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    fn list_groups(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         self.storage.list_groups()
     }
 
-    pub fn list_urls(
+    fn list_urls(
         &self,
         group: Option<&str>,
         tags: Option<Vec<&str>>,
@@ -60,7 +62,7 @@ impl<T: Repository> Registry<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::registry::Registry;
+    use crate::registry::URLRegistry;
     use crate::storage::FileStorage;
     use crate::types::URLRecord;
     use std::collections::HashMap;
@@ -80,7 +82,7 @@ mod test {
         let file_path = create_temp_file("test_1.txt");
 
         let registry =
-            Registry::<FileStorage>::new_file_based(file_path.to_str().unwrap().to_string());
+            URLRegistry::<FileStorage>::new_file_based(file_path.to_str().unwrap().to_string());
 
         let test_urls: Vec<TestUrl> = vec![
             TestUrl {

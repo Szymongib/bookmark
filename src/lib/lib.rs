@@ -31,10 +31,7 @@ pub trait Registry {
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>;
 }
 
-// TODO: repository trait should not go out of the lib
-
-
-trait Repository {
+pub trait Repository {
     fn add(&self, record: URLRecord) -> Result<URLRecord, Box<dyn std::error::Error>>;
     fn delete(&self, name: &str, group: &str) -> Result<bool, Box<dyn std::error::Error>>;
     fn list(

@@ -11,6 +11,7 @@ use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
+use bookmark_lib::Registry;
 
 #[derive(PartialEq)]
 pub enum InputMode {
@@ -22,6 +23,7 @@ pub enum InputMode {
 #[derive(PartialEq)]
 pub enum EditAction {
     Search,
+    Tag,
 }
 
 #[derive(PartialEq)]
@@ -29,7 +31,9 @@ pub enum SuppressedAction {
     ShowHelp,
 }
 
-pub struct Interface {
+pub struct Interface<T: Registry> {
+    registry: T,
+
     /// Current mode of input
     input_mode: InputMode,
     /// Current searched phrase
@@ -48,13 +52,16 @@ struct Styles {
     header: Style,
 }
 
-impl Interface {
-    pub(crate) fn new(urls: Vec<URLRecord>) -> Interface {
+// TODO: after modifying or adding URL how will it get refreshed?
+
+impl<T: Registry> Interface<T> {
+    pub(crate) fn new(urls: Vec<URLRecord>, registry: T) -> Interface<T> {
         let items: Vec<URLItem> = urls.iter().map(|u| URLItem::new(u.clone())).collect();
 
         let table = StatefulTable::with_items(items.as_slice());
 
         Interface {
+            registry,
             input_mode: InputMode::Normal,
             search_phrase: "".to_string(),
             table,
@@ -90,6 +97,10 @@ impl Interface {
                     }
                     Key::Char('h') => {
                         self.input_mode = InputMode::Suppressed(SuppressedAction::ShowHelp)
+                    }
+                    Key::Char('t') => {
+                        // TODO: tag logic
+                        self.input_mode = InputMode::Edit(EditAction::Tag)
                     }
                     Key::Left => {
                         self.table.unselect();
@@ -213,14 +224,19 @@ impl Interface {
             InputMode::Normal =>
                 // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
-            InputMode::Edit(_) => {
-                // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
-                f.set_cursor(
-                    // Put cursor past the end of the input text
-                    self.search_phrase.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
-                    // Move two line up from the bottom - search input
-                    f.size().height - 2,
-                )
+            InputMode::Edit(action) => match action {
+               EditAction::Search => {
+                   // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
+                   f.set_cursor(
+                       // Put cursor past the end of the input text
+                       self.search_phrase.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
+                       // Move two line up from the bottom - search input
+                       f.size().height - 2,
+                   )
+                }
+                EditAction::Tag => {
+
+                }
             }
             InputMode::Suppressed(action) => match action {
                 // TODO: to display help I need to know exact suppressed action
