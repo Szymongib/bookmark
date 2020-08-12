@@ -16,10 +16,10 @@ const ADD_SUB_CMD: &str = "add";
 const LIST_SUB_CMD: &str = "list";
 const DELETE_SUB_CMD: &str = "delete";
 
-const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
+// const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
 
 // TODO: change to that after modifying data model
-// const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls_v0.1.json";
+const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls_v0.1.json";
 
 fn main() {
     let matches = App::new("Bookmark CLI")
