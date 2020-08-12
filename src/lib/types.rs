@@ -52,7 +52,7 @@ impl URLRecord {
             tags.insert(t.to_string(), true);
         }
         // https://github.com/RustCrypto/hashes/blob/master/sha1/examples/sha1sum.rs
-        
+
 
         // use sha1::{Sha1, Digest};
         //
