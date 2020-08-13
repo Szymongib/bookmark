@@ -210,7 +210,7 @@ impl<T: Registry> Application<T> {
 
         let group_name = group.unwrap_or("default");
 
-        match self.registry.delete(url_name, group) {
+        match self.registry.delete_url(url_name, group) {
             Ok(deleted) => {
                 if deleted {
                     println!("URL {} removed from {} group", url_name, group_name,)

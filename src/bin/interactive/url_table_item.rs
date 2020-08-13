@@ -35,6 +35,10 @@ impl TableItem for URLItem {
     fn row(&self) -> &Vec<String> {
         &self.row
     }
+
+    fn id(&self) -> String {
+        self.url.id.clone()
+    }
 }
 
 fn url_to_row(record: &URLRecord) -> Vec<String> {

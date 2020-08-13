@@ -16,7 +16,7 @@ pub trait Registry {
         tags: Vec<&str>,
     ) -> Result<URLRecord, Box<dyn std::error::Error>>;
 
-    fn delete(
+    fn delete_url(
         &self,
         name: &str,
         group: Option<&str>,
@@ -29,6 +29,8 @@ pub trait Registry {
         group: Option<&str>,
         tags: Option<Vec<&str>>,
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>;
+
+    fn get_url(&self, id: String) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 }
 
 pub trait Repository {
@@ -39,5 +41,6 @@ pub trait Repository {
         group: Option<&str>,
         filter: &dyn Filter,
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>; // TODO: consider extracting group as filter
+    fn get(&self, id: String) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
     fn list_groups(&self) -> Result<Vec<String>, Box<dyn std::error::Error>>;
 }

@@ -3,6 +3,7 @@ use tui::widgets::TableState;
 pub trait TableItem {
     fn visible(&self) -> bool;
     fn row(&self) -> &Vec<String>;
+    fn id(&self) -> String;
 }
 
 pub struct StatefulTable<T: TableItem> {

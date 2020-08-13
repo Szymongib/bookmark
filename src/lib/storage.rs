@@ -82,6 +82,19 @@ impl Repository for FileStorage {
         return Ok(filter.apply(urls));
     }
 
+    fn get(&self, id: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        let mut file = open_urls_file(self.file_path.as_str())?;
+        let registry = read_urls(&mut file)?;
+
+        for url in &registry.urls.items {
+            if url.id == id {
+                return Ok(Some(url.clone()))
+            }
+        }
+
+        Ok(None)
+    }
+
     fn list_groups(&self) -> Result<Vec<String>, Box<dyn Error>> {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let registry = read_urls(&mut file)?;

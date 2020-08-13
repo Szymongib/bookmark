@@ -23,6 +23,5 @@ tui = "0.10"
 rand = "0.7.3"
 termion = "1.5.5"
 open = "1"
-uuid = { version = "0.8", features = ["v4"] }
-blake2 = "0.9"
 sha-1 = "0.9"
+hex = "0.4"

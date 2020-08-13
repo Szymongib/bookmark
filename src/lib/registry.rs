@@ -3,6 +3,7 @@ use crate::storage::FileStorage;
 use crate::types::URLRecord;
 use crate::{Repository, Registry};
 use std::ops::Deref;
+use std::error::Error;
 
 pub struct URLRegistry<T: Repository> {
     storage: T,
@@ -31,7 +32,7 @@ impl<T: Repository> Registry for URLRegistry<T> {
         self.storage.add(record)
     }
 
-    fn delete(
+    fn delete_url(
         &self,
         name: &str,
         group: Option<&str>,
@@ -58,17 +59,22 @@ impl<T: Repository> Registry for URLRegistry<T> {
 
         self.storage.list(group, filter.deref())
     }
+
+    fn get_url(&self, id: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        self.storage.get(id)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use crate::registry::URLRegistry;
     use crate::storage::FileStorage;
-    use crate::types::URLRecord;
+    use crate::types::{URLRecord, calculate_hash};
     use std::collections::HashMap;
     use std::fs::File;
     use std::path::PathBuf;
     use std::{env, fs};
+    use crate::Registry;
 
     struct TestUrl {
         name: &'static str,
@@ -167,7 +173,7 @@ mod test {
 
         // Delete existing URL
         let deleted = registry
-            .delete("test1", None)
+            .delete_url("test1", None)
             .expect("Failed to delete URL");
         assert!(deleted);
         let urls = registry.list_urls(None, None).expect("Failed to list urls");
@@ -175,12 +181,19 @@ mod test {
 
         // Not delete if URL does not exist
         let deleted = registry
-            .delete("test1", None)
+            .delete_url("test1", None)
             .expect("Failed to delete URL");
         assert!(!deleted);
         let urls = registry.list_urls(None, None).expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
+        // Get url by ID
+        let id = calculate_hash("test_tagged", "default");
+        let url_record = registry.get_url(id).expect("Failed to get URL");
+
+        assert_eq!(url_record.expect("URL is None").id, urls[0].id);
+
+        // Cleanup
         fs::remove_file(file_path).expect("Failed to remove file");
     }
 

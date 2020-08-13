@@ -1,7 +1,7 @@
 use crate::interactive::event::Event;
 use crate::interactive::table::{StatefulTable, TableItem};
 use crate::interactive::url_table_item::URLItem;
-use crate::interactive::widgets::rect::centered_rect;
+use crate::interactive::widgets::rect::{centered_rect, centered_fixed_rect};
 use bookmark_lib::record_filter::FilterSet;
 use bookmark_lib::types::URLRecord;
 use std::error::Error;
@@ -29,6 +29,7 @@ pub enum EditAction {
 #[derive(PartialEq)]
 pub enum SuppressedAction {
     ShowHelp,
+    Delete(String),
 }
 
 pub struct Interface<T: Registry> {
@@ -98,6 +99,15 @@ impl<T: Registry> Interface<T> {
                     Key::Char('h') => {
                         self.input_mode = InputMode::Suppressed(SuppressedAction::ShowHelp)
                     }
+                    Key::Char('d') => {
+                        let selected_id = self.table.state.selected();
+                        if selected_id.is_none() {
+                            return Ok(false);
+                        }
+
+                        let item_id = self.table.visible[selected_id.unwrap()].id();
+                        self.input_mode = InputMode::Suppressed(SuppressedAction::Delete(item_id))
+                    }
                     Key::Char('t') => {
                         // TODO: tag logic
                         self.input_mode = InputMode::Edit(EditAction::Tag)
@@ -150,15 +160,30 @@ impl<T: Registry> Interface<T> {
                     _ => {}
                 },
                 // TODO: think if stuff like help should be subcategory of InputMode - could be more generic like ShowInfo, or could be completly different mechanism
-                InputMode::Suppressed(_) => match input {
-                    Key::Esc | Key::Char('\n') | Key::Char('h') => {
-                        self.input_mode = InputMode::Normal;
-                    }
-                    Key::Char('q') => {
-                        return Ok(true);
-                    }
-                    _ => {}
-                },
+                InputMode::Suppressed(action) => match action {
+                    SuppressedAction::ShowHelp => match input {
+                        Key::Esc | Key::Char('\n') | Key::Char('h') => {
+                            self.input_mode = InputMode::Normal;
+                        }
+                        Key::Char('q') => {
+                            return Ok(true);
+                        }
+                        _ => {}
+                    },
+                    SuppressedAction::Delete(url_id) => match input {
+                        Key::Char('\n') => {
+                            // TODO: Delete URL
+                            // Refresh items?
+                            self.input_mode = InputMode::Normal;
+                        }
+                        Key::Esc => {
+                            self.input_mode = InputMode::Normal
+                        }
+                        _ => {}
+                    },
+                }
+
+
             }
         }
 
@@ -235,13 +260,16 @@ impl<T: Registry> Interface<T> {
                    )
                 }
                 EditAction::Tag => {
-
+                    // self.confirm_delete(f);
                 }
             }
             InputMode::Suppressed(action) => match action {
                 // TODO: to display help I need to know exact suppressed action
                 SuppressedAction::ShowHelp => {
                     self.show_help_popup(f);
+                },
+                SuppressedAction::Delete(url_id) => {
+                    self.confirm_delete(f, url_id.clone());
                 }
             },
         }
@@ -262,6 +290,58 @@ impl<T: Registry> Interface<T> {
         f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
     }
+
+    fn confirm_delete<B: tui::backend::Backend>(&self, f: &mut Frame<B>, url_id: String) {
+        let area = centered_fixed_rect(50, 10, f.size());
+
+        let item = self.registry.get_url(url_id);
+        let item = match item {
+            Err(err) => {
+                panic!("{:?}", err);
+                // TODO: log error - should not happen
+                // Cannot display popup - consider exiting Delete mode
+                return
+            }
+            Ok(opt_item) => match opt_item {
+                Some(item) => {item},
+                None => {
+                    // TODO: log error - should not happen
+                    // Cannot display popup - consider exiting Delete mode
+                    return
+                }
+            }
+        };
+
+        let text = vec![
+            Spans::from(format!("Delete '{}' from '{}' group?", item.name, item.group)),
+            Spans::from(""),
+            Spans::from("Yes (Enter)   ---   No (ESC)"), // TODO: consider y and n as confirmation
+        ];
+
+        let paragraph = Paragraph::new(text)
+            .style(Style::default().bg(Color::Black).fg(Color::White))
+            .block(self.create_block("Help - press ESC to close".to_string()))
+            .alignment(Alignment::Center);
+
+        f.render_widget(Clear, area);
+        f.render_widget(paragraph, area);
+    }
+
+    // fn add_tag_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
+    //     let text = vec![
+    //         Spans::from("'ENTER'            - open bookmarked URL"),
+    //         Spans::from("'/' or 'CTRL + F'  - search for URLs"),
+    //     ];
+    //
+    //     let area = centered_rect(60, 40, f.size());
+    //     let paragraph = Paragraph::new(text)
+    //         .style(Style::default().bg(Color::Black).fg(Color::White))
+    //         .block(self.create_block("Help - press ESC to close".to_string()))
+    //         .alignment(Alignment::Left);
+    //
+    //     f.render_widget(Clear, area);
+    //     f.render_widget(paragraph, area);
+    // }
 
     // TODO: move this function to widgets?
     fn create_block(&self, title: String) -> Block {
