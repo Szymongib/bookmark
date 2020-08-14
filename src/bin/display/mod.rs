@@ -1,7 +1,12 @@
 use std::collections::HashMap;
 use bookmark_lib::types::URLRecord;
 
+// // TODO: Add more test cases
 pub(crate) fn display_urls(urls: Vec<URLRecord>) {
+    println!("{}", display_str(urls))
+}
+
+fn display_str(urls: Vec<URLRecord>) -> String {
     let (name_len, url_len, group_len, tags_len) = get_max_lengths(&urls);
     let id_len = if urls.len() > 0 {
         urls[0].id.len()  // Ids have uniform length
@@ -9,19 +14,22 @@ pub(crate) fn display_urls(urls: Vec<URLRecord>) {
         0
     };
 
-    println!("{}", header(id_len, name_len, url_len, group_len, tags_len));
-    println!();
+    let mut out =header(id_len, name_len, url_len, group_len, tags_len);
+    out.push('\n');
 
     for u in urls {
-        println!("{}   {}   {}   {}   {}",
+        out.push_str( &format!("\n{}   {}   {}   {}   {}",
                  pad(u.id.clone(), id_len),
                  pad(u.name.clone(), name_len),
                  pad(u.url.clone(), url_len),
                  pad(u.group.clone(), group_len),
-                 pad(u.tags_as_string(), tags_len))
+                 pad(u.tags_as_string(), tags_len)))
     }
+
+    return out
 }
 
+// TODO: test
 fn header(id_len: usize, name_len: usize, url_len: usize, group_len: usize, tags_len: usize) -> String {
     let id = pad("Id".to_string(), id_len);
     let name = pad("Name".to_string(), name_len);
@@ -54,21 +62,47 @@ fn get_max_lengths(urls: &Vec<URLRecord>) -> (usize, usize, usize, usize) {
         if u.group.len() > max_len[2] {
             max_len[2] = u.group.len()
         }
-        if u.tags_as_string().len() > max_len[3] {
-            max_len[3] = u.name.len()
+        let tags_len = u.tags_as_string().len();
+        if tags_len > max_len[3] {
+            max_len[3] = tags_len
         }
     }
 
     return (max_len[0], max_len[1], max_len[2], max_len[3])
 }
-//
-// /// Return combined length of tags displayed in format: 'tag1, tag2, tag3'
-// fn tags_len(tags: &HashMap<String, bool>) -> usize {
-//     let mut sum = 0;
-//     for (t, _) in tags {
-//         sum += t.len();
-//     }
-//     sum+= (tags.len() - 1) * 2; // add length of ", " for every tag more than one
-//     return sum
-// }
 
+#[cfg(test)]
+mod test {
+    use bookmark_lib::types::URLRecord;
+    use crate::display::{display_urls, display_str};
+
+    fn fix_url_records() -> Vec<URLRecord> {
+        vec![
+            URLRecord::new("https://one_long_url.com", "one_name", "one", vec!["tag"]),
+            URLRecord::new("two", "two long name wow such name", "two_long_group", vec![]),
+            URLRecord::new("three", "three", "three", vec![]),
+            URLRecord::new("four.com", "four mid len", "4", vec!["tag"]),
+            URLRecord::new("five", "five", "five", vec!["just_one_but_long_tag_much_wow"]),
+        ]
+    }
+
+    #[test]
+    fn test_display_str() {
+        let display = display_str(fix_url_records());
+
+        let lines: Vec<&str> = display.split("\n").collect();
+        let expected_lines = vec![
+        "Id                                         Name                          URL                        Group            Tags                          ",
+        "",
+        "2672d7142749ea753a95357d4c0df2d8d8992c6e   one_name                      https://one_long_url.com   one              tag                           ",
+        "74a2b210033dbca577a5a747628ed734a01e897d   two long name wow such name   two                        two_long_group                                 ",
+        "24479e74236b80dc0a0cc67477e8e87d89bfb3cb   three                         three                      three                                          ",
+        "da0477157d1ae3297f9ad9c840815c4f9152d52c   four mid len                  four.com                   4                tag                           ",
+        "ecc5f6712a7a134618fbdf043c7c80f2e30cb870   five                          five                       five             just_one_but_long_tag_much_wow",
+        ];
+
+        for i in 0..lines.len() {
+            assert_eq!(lines[i], expected_lines[i])
+        }
+    }
+}
