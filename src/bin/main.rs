@@ -6,8 +6,11 @@ use bookmark_lib::registry::URLRegistry;
 use bookmark_lib::storage::FileStorage;
 use bookmark_lib::{Registry};
 use crate::interactive::interactive_mode::enter_interactive_mode;
+use bookmark_lib::types::URLRecord;
+use std::collections::HashMap;
 
 mod interactive;
+mod display;
 
 const GROUP_SUB_CMD: &str = "group";
 const GROUP_LIST_CMD: &str = "list";
@@ -192,11 +195,10 @@ impl<T: Registry> Application<T> {
         let group = matches.value_of("group");
         let tags = get_multiple_values(matches, "tag");
 
+        // TODO: support output as json?
         return match self.registry.list_urls(group, tags) {
             Ok(urls) => {
-                // if let Err(err) = interactive_mode::display_urls(urls) {
-                //     println!("Error displaying urls: {}", err.to_string())
-                // }
+                display::display_urls(urls);
             }
             Err(why) => {
                 println!("Error getting URLs: {}", why);

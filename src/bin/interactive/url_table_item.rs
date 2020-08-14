@@ -52,7 +52,7 @@ fn url_to_row(record: &URLRecord) -> Vec<String> {
         record.name.clone(),
         record.url.clone(),
         record.group.clone(),
-        tags.join(", "),
+        record.tags_as_string(),
     ]
 }
 

@@ -58,6 +58,11 @@ impl URLRecord {
             tags,
         }
     }
+
+    pub fn tags_as_string(&self) -> String {
+        let tags: Vec<&str> = self.tags.keys().map(|k| k.as_str()).collect();
+        tags.join(", ")
+    }
 }
 
 pub(crate) fn calculate_hash(name: &str, group: &str) -> String {
