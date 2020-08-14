@@ -57,7 +57,7 @@ struct Styles {
 
 impl<T: Registry> Interface<T> {
     pub(crate) fn new(urls: Vec<URLRecord>, registry: T) -> Interface<T> {
-        let items: Vec<URLItem> = urls.iter().map(|u| URLItem::new(u.clone())).collect();
+        let items: Vec<URLItem> = URLItem::from_vec(urls);
 
         let table = StatefulTable::with_items(items.as_slice());
 
@@ -172,8 +172,7 @@ impl<T: Registry> Interface<T> {
                     },
                     SuppressedAction::Delete(url_id) => match input {
                         Key::Char('\n') => {
-                            // TODO: Delete URL
-                            // Refresh items?
+                            self.delete_url(url_id.clone());
                             self.input_mode = InputMode::Normal;
                         }
                         Key::Esc => {
@@ -182,12 +181,21 @@ impl<T: Registry> Interface<T> {
                         _ => {}
                     },
                 }
-
-
             }
         }
 
         Ok(false)
+    }
+
+    fn delete_url(&mut self, url_id: String) -> Result<(), Box<dyn Error>> {
+        let deleted = self.registry.delete_by_id(&url_id)?;
+        if deleted {
+            let items = URLItem::from_vec(self.registry.list_urls(None, None)?);
+            self.table.override_items(items.as_slice()); // TODO: cache items?
+            self.apply_search()
+        }
+
+        Ok(())
     }
 
     pub(crate) fn draw<B: tui::backend::Backend>(&mut self, f: &mut Frame<B>) {

@@ -18,6 +18,10 @@ impl URLItem {
         }
     }
 
+    pub fn from_vec(records: Vec<URLRecord>) -> Vec<URLItem> {
+        records.iter().map(|u| URLItem::new(u.clone())).collect()
+    }
+
     pub fn url(&self) -> String {
         return self.url.url.clone();
     }

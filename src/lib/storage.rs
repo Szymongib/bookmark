@@ -18,6 +18,25 @@ impl FileStorage {
     pub fn new_urls_repository(file_path: String) -> FileStorage {
         FileStorage { file_path }
     }
+
+    fn delete_url<F>(&self, match_first: F) -> Result<bool, Box<dyn std::error::Error>>
+    where F: Fn(&URLRecord) -> bool
+    {
+        let mut file = open_urls_file(self.file_path.as_str())?;
+        let mut registry = read_urls(&mut file)?;
+
+        let mut index: usize = 0;
+        for u in &registry.urls.items {
+            if match_first(u) {
+                registry.urls.items.remove(index);
+                write_urls(&mut file, registry)?;
+                return Ok(true);
+            }
+            index += 1;
+        }
+
+        return Ok(false);
+    }
 }
 
 impl Repository for FileStorage {
@@ -41,20 +60,15 @@ impl Repository for FileStorage {
     }
 
     fn delete(&self, name: &str, group: &str) -> Result<bool, Box<dyn std::error::Error>> {
-        let mut file = open_urls_file(self.file_path.as_str())?;
-        let mut registry = read_urls(&mut file)?;
+        return self.delete_url(|u| {
+            u.group == group && u.name == name
+        })
+    }
 
-        let mut index: usize = 0;
-        for u in &registry.urls.items {
-            if u.group == group && u.name == name {
-                registry.urls.items.remove(index);
-                write_urls(&mut file, registry)?;
-                return Ok(true);
-            }
-            index += 1;
-        }
-
-        return Ok(false);
+    fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn Error>> {
+        return self.delete_url(|u| {
+            u.id == id.to_string()
+        })
     }
 
     fn list(

@@ -22,6 +22,11 @@ pub trait Registry {
         group: Option<&str>,
     ) -> Result<bool, Box<dyn std::error::Error>>;
 
+    fn delete_by_id(
+        &self,
+        id: &str
+    ) -> Result<bool, Box<dyn std::error::Error>>;
+
     fn list_groups(&self) -> Result<Vec<String>, Box<dyn std::error::Error>>;
 
     fn list_urls(
@@ -36,6 +41,7 @@ pub trait Registry {
 pub trait Repository {
     fn add(&self, record: URLRecord) -> Result<URLRecord, Box<dyn std::error::Error>>;
     fn delete(&self, name: &str, group: &str) -> Result<bool, Box<dyn std::error::Error>>;
+    fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn std::error::Error>>;
     fn list(
         &self,
         group: Option<&str>,

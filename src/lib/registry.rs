@@ -42,6 +42,10 @@ impl<T: Repository> Registry for URLRegistry<T> {
         self.storage.delete(name, group)
     }
 
+    fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn Error>> {
+        self.storage.delete_by_id(id)
+    }
+
     fn list_groups(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         self.storage.list_groups()
     }

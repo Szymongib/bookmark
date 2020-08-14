@@ -31,6 +31,11 @@ impl<T: TableItem + Clone> StatefulTable<T> {
         }
     }
 
+    pub fn override_items(&mut self, items: &[T]) {
+        self.items = items.to_vec();
+        self.visible = items.to_vec();
+    }
+
     pub fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
