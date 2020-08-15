@@ -7,13 +7,20 @@ pub mod registry;
 pub mod storage;
 pub mod types;
 
+mod util;
+
 pub trait Registry {
-    fn add_url(
+    fn new(
         &self,
         name: &str,
         url: &str,
         group: Option<&str>,
         tags: Vec<&str>,
+    ) -> Result<URLRecord, Box<dyn std::error::Error>>;
+
+    fn add_url(
+        &self,
+        record: URLRecord,
     ) -> Result<URLRecord, Box<dyn std::error::Error>>;
 
     fn delete_url(

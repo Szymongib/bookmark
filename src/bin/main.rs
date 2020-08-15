@@ -103,8 +103,6 @@ fn main() {
             )
         )
         // TODO: Add import subcommand to import from v1
-
-        // TODO: add ability to modify tags
         .get_matches();
 
     let file_path = match matches.value_of("file") {
@@ -125,13 +123,12 @@ fn main() {
             application.add_sub_cmd(add_matches);
         }
         (LIST_SUB_CMD, Some(list_matches)) => {
-            application.list_sub_cmd(list_matches); // TODO: this should no longer be interactive
+            application.list_sub_cmd(list_matches);
         }
         (DELETE_SUB_CMD, Some(delete_matches)) => {
             application.delete_sub_cmd(delete_matches);
         }
         ("", None) => {
-            // TODO: enter interactive mode
             enter_interactive_mode(application.registry);
 
         },
@@ -182,7 +179,7 @@ impl<T: Registry> Application<T> {
 
         let tags = get_multiple_values(matches, "tag").unwrap_or(vec![]);
 
-        match self.registry.add_url(url_name, url, group, tags) {
+        match self.registry.new(url_name, url, group, tags) {
             Ok(url_record) => println!(
                 "Added url {}: {} to {} group",
                 url_record.name, url_record.url, url_record.group

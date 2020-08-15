@@ -4,6 +4,8 @@ use crate::types::URLRecord;
 use crate::{Repository, Registry};
 use std::ops::Deref;
 use std::error::Error;
+use std::path::PathBuf;
+use crate::util::create_temp_file;
 
 pub struct URLRegistry<T: Repository> {
     storage: T,
@@ -15,10 +17,23 @@ impl URLRegistry<FileStorage> {
 
         URLRegistry { storage }
     }
+
+    pub fn with_temp_file() -> Result<(URLRegistry<FileStorage>, PathBuf), Box<dyn std::error::Error>> {
+        let file_path = create_temp_file("urls_temp.json")?;
+
+        return match file_path.to_str() {
+            Some(path) => {
+                Ok((URLRegistry::new_file_based(path.to_string()), file_path))
+            },
+            None => {
+                Err(From::from("failed to initialized registry with temp file, path is None"))
+            }
+        }
+    }
 }
 
 impl<T: Repository> Registry for URLRegistry<T> {
-    fn add_url(
+    fn new(
         &self,
         name: &str,
         url: &str,
@@ -29,6 +44,10 @@ impl<T: Repository> Registry for URLRegistry<T> {
 
         let record = URLRecord::new(url, name, group, tags);
 
+        self.storage.add(record)
+    }
+
+    fn add_url(&self, record: URLRecord) -> Result<URLRecord, Box<dyn Error>> {
         self.storage.add(record)
     }
 
@@ -79,6 +98,7 @@ mod test {
     use std::path::PathBuf;
     use std::{env, fs};
     use crate::Registry;
+    use crate::util::create_temp_file;
 
     struct TestUrl {
         name: &'static str,
@@ -89,10 +109,7 @@ mod test {
 
     #[test]
     fn registry_test() {
-        let file_path = create_temp_file("test_1.txt");
-
-        let registry =
-            URLRegistry::<FileStorage>::new_file_based(file_path.to_str().unwrap().to_string());
+        let (registry, file_path) = URLRegistry::<FileStorage>::with_temp_file().expect("Failed to initialize registry");
 
         let test_urls: Vec<TestUrl> = vec![
             TestUrl {
@@ -120,7 +137,7 @@ mod test {
         // Add URLs
         for tu in &all_urls {
             let result = registry
-                .add_url(
+                .new(
                     tu.name.clone(),
                     tu.url.clone(),
                     tu.group.clone(),
@@ -230,14 +247,5 @@ mod test {
         }
 
         true
-    }
-
-    fn create_temp_file(file: &str) -> PathBuf {
-        let mut temp_path = env::temp_dir();
-        temp_path.push(file);
-
-        File::create(temp_path.clone()).expect("Failed to create temp file");
-
-        return temp_path;
     }
 }

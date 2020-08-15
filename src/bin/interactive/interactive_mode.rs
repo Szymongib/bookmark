@@ -41,7 +41,7 @@ pub fn enter_interactive_mode<T: Registry>(registry: T) -> Result<(), Box<dyn Er
 
     let events = Events::new();
 
-    let mut user_interface = Interface::new(registry.list_urls(None, None)?, registry); // TODO: Do not pass URL
+    let mut user_interface = Interface::new(registry)?;
 
     loop {
         terminal.draw(|f| user_interface.draw(f))?;
