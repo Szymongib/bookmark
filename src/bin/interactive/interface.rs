@@ -13,6 +13,19 @@ use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
 use bookmark_lib::Registry;
 
+// TODO: some decisions
+// - drop Add functionality from interactive mode for now
+// - ':' to start action
+// - ':et' - edit tag of selected
+// - ':eg' - edit group of selected
+// - ':g [GROUP]' - filter by group
+// - ':t [TAG]' - filter by tag
+// - '????" - remove filters
+
+
+
+
+
 #[derive(PartialEq)]
 pub enum InputMode {
     Normal,
@@ -24,6 +37,7 @@ pub enum InputMode {
 pub enum EditAction {
     Search,
     Tag,
+    Add,
 }
 
 #[derive(PartialEq)]
@@ -52,8 +66,6 @@ struct Styles {
     selected: Style,
     header: Style,
 }
-
-// TODO: after modifying or adding URL how will it get refreshed?
 
 impl<T: Registry> Interface<T> {
     pub(crate) fn new(registry: T) -> Result<Interface<T>, Box<dyn std::error::Error>> {
@@ -112,6 +124,9 @@ impl<T: Registry> Interface<T> {
                         // TODO: tag logic
                         self.input_mode = InputMode::Edit(EditAction::Tag)
                     }
+                    Key::Char('n') => {
+                        self.input_mode = InputMode::Edit(EditAction::Add)
+                    }
                     Key::Left => {
                         self.table.unselect();
                     }
@@ -144,21 +159,47 @@ impl<T: Registry> Interface<T> {
                     }
                     _ => {}
                 },
-                InputMode::Edit(_) => match input {
-                    Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
-                        self.input_mode = InputMode::Normal;
-                        self.table.unselect();
-                    }
-                    Key::Char(c) => {
-                        self.search_phrase.push(c);
-                        self.apply_search();
-                    }
-                    Key::Backspace => {
-                        self.search_phrase.pop();
-                        self.apply_search();
-                    }
-                    _ => {}
-                },
+                InputMode::Edit(action) => match action {
+                    EditAction::Search => match input {
+                        Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
+                            self.input_mode = InputMode::Normal;
+                            self.table.unselect();
+                        }
+                        Key::Char(c) => {
+                            self.search_phrase.push(c);
+                            self.apply_search();
+                        }
+                        Key::Backspace => {
+                            self.search_phrase.pop();
+                            self.apply_search();
+                        }
+                        _ => {}
+                    },
+                    EditAction::Add => match input {
+                        Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
+                            // TODO
+                        }
+                        Key::Char(c) => {
+                            // TODO
+                        }
+                        Key::Backspace => {
+                            // TODO
+                        }
+                        _ => {}
+                    },
+                    EditAction::Tag => match input {
+                        Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
+                            // TODO
+                        }
+                        Key::Char(c) => {
+                            // TODO
+                        }
+                        Key::Backspace => {
+                            // TODO
+                        }
+                        _ => {}
+                    },
+                }
                 // TODO: think if stuff like help should be subcategory of InputMode - could be more generic like ShowInfo, or could be completly different mechanism
                 InputMode::Suppressed(action) => match action {
                     SuppressedAction::ShowHelp => match input {
@@ -270,6 +311,10 @@ impl<T: Registry> Interface<T> {
                 EditAction::Tag => {
                     // self.confirm_delete(f);
                 }
+                EditAction::Add => {
+                    // self.confirm_delete(f);
+                    self.add_record_popup(f)
+                }
             }
             InputMode::Suppressed(action) => match action {
                 // TODO: to display help I need to know exact suppressed action
@@ -287,6 +332,7 @@ impl<T: Registry> Interface<T> {
         let text = vec![
             Spans::from("'ENTER'            - open bookmarked URL"),
             Spans::from("'/' or 'CTRL + F'  - search for URLs"),
+            Spans::from("'d'                - delete URL"),
         ];
 
         let area = centered_rect(60, 40, f.size());
@@ -333,6 +379,30 @@ impl<T: Registry> Interface<T> {
 
         f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
+    }
+
+    fn add_record_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
+
+        let area = centered_rect(60, 40, f.size());
+        let name = Paragraph::new("")
+            .style(Style::default().bg(Color::Black).fg(Color::White))
+            // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
+            .alignment(Alignment::Left);
+        let url = Paragraph::new("")
+            .style(Style::default().bg(Color::Black).fg(Color::White))
+            // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
+            .alignment(Alignment::Left);
+        let group = Paragraph::new("")
+            .style(Style::default().bg(Color::Black).fg(Color::White))
+            // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
+            .alignment(Alignment::Left);
+        // let group = Paragraph::new("")
+        //     .style(Style::default().bg(Color::Black).fg(Color::White))
+        //     // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
+        //     .alignment(Alignment::Left);
+
+        f.render_widget(Clear, area);
+        f.render_widget(name, area);
     }
 
     // fn add_tag_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
