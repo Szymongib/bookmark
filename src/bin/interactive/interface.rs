@@ -13,6 +13,7 @@ use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
 use bookmark_lib::Registry;
 use crate::interactive::search::{Module, Search};
+use std::borrow::BorrowMut;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -180,9 +181,7 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     _ => {}
                 },
                 InputMode::Search => {
-                    let mut update = self.search_module.handle_input(input)?;
-
-                    self.input_mode = update.run(&self.registry, &mut self.table)
+                    self.input_mode = self.search_module.handle_input(input, &self.registry, &mut self.table)?;
                 }
                 // InputMode::Search => match input {
                 //     Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
@@ -311,7 +310,7 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
         self.handle_input_mode(f);
     }
 
-    fn handle_input_mode(&self, f: &mut Frame<B>) {
+    fn handle_input_mode(&mut self, f: &mut Frame<B>) {
         match &self.input_mode {
             InputMode::Normal =>
                 // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
@@ -330,6 +329,9 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
             //         // self.confirm_delete(f);
             //     }
             // }
+            InputMode::Search => {
+                self.search_module.draw(f)
+            }
             InputMode::Suppressed(action) => match action {
                 // TODO: to display help I need to know exact suppressed action
                 SuppressedAction::ShowHelp => {
