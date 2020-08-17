@@ -22,6 +22,12 @@ use bookmark_lib::Registry;
 // - ':t [TAG]' - filter by tag
 // - '????" - remove filters
 
+// InputMode:
+// - Normal
+// - Search - show search bar
+// - Command - show command bar
+//   - Action
+// - Suppressed
 
 
 
@@ -29,15 +35,16 @@ use bookmark_lib::Registry;
 #[derive(PartialEq)]
 pub enum InputMode {
     Normal,
-    Edit(EditAction),
+    Search,
+    Command,
+    // Edit(EditAction),
     Suppressed(SuppressedAction),
 }
 
 #[derive(PartialEq)]
 pub enum EditAction {
+    Input,
     Search,
-    Tag,
-    Add,
 }
 
 #[derive(PartialEq)]
@@ -53,6 +60,9 @@ pub struct Interface<T: Registry> {
     input_mode: InputMode,
     /// Current searched phrase
     search_phrase: String,
+
+    /// Current command input
+    command_input: String,
 
     /// Table with URLs
     table: StatefulTable<URLItem>,
@@ -76,7 +86,7 @@ impl<T: Registry> Interface<T> {
         Ok(Interface {
             registry,
             input_mode: InputMode::Normal,
-            search_phrase: "".to_string(),
+            command_input: "".to_string(),
             table,
             styles: Styles {
                 selected: Style::default()
@@ -92,7 +102,7 @@ impl<T: Registry> Interface<T> {
 
     /// updates URLs visibility inside the `table` according to the `search_phrase`
     fn apply_search(&mut self) {
-        let filter = FilterSet::new_combined_filter(self.search_phrase.as_str());
+        let filter = FilterSet::new_combined_filter(self.command_input.as_str());
 
         for item in &mut self.table.items {
             item.filter(&filter)
@@ -138,7 +148,11 @@ impl<T: Registry> Interface<T> {
                     }
                     Key::Char('/') | Key::Ctrl('f') => {
                         self.table.unselect();
-                        self.input_mode = InputMode::Edit(EditAction::Search)
+                        self.input_mode = InputMode::Search
+                    }
+                    Key::Char(':') => {
+                        self.input_mode = InputMode::Command;
+                        self.command_input = ":".to_string();
                     }
                     Key::Char('\n') => {
                         let selected_id = self.table.state.selected();
@@ -159,47 +173,40 @@ impl<T: Registry> Interface<T> {
                     }
                     _ => {}
                 },
-                InputMode::Edit(action) => match action {
-                    EditAction::Search => match input {
-                        Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
-                            self.input_mode = InputMode::Normal;
-                            self.table.unselect();
-                        }
-                        Key::Char(c) => {
-                            self.search_phrase.push(c);
-                            self.apply_search();
-                        }
-                        Key::Backspace => {
-                            self.search_phrase.pop();
-                            self.apply_search();
-                        }
-                        _ => {}
-                    },
-                    EditAction::Add => match input {
-                        Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
-                            // TODO
-                        }
-                        Key::Char(c) => {
-                            // TODO
-                        }
-                        Key::Backspace => {
-                            // TODO
-                        }
-                        _ => {}
-                    },
-                    EditAction::Tag => match input {
-                        Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
-                            // TODO
-                        }
-                        Key::Char(c) => {
-                            // TODO
-                        }
-                        Key::Backspace => {
-                            // TODO
-                        }
-                        _ => {}
-                    },
+                InputMode::Search => match input {
+                    Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
+                        self.input_mode = InputMode::Normal;
+                        self.table.unselect();
+                    }
+                    Key::Char(c) => {
+                        self.search_phrase.push(c);
+                        self.apply_search();
+                    }
+                    Key::Backspace => {
+                        self.search_phrase.pop();
+                        self.apply_search();
+                    }
+                    _ => {}
+                },
+                InputMode::Command => match input {
+                    Key::Char('\n') => {
+                        // TODO: run the command
+                    }
+                    Key::Char(c) => {
+                        self.command_input.push(c);
+                    }
+                    Key::Backspace => {
+                        self.command_input.pop();
+                    }
+                    Key::Esc => {
+                        // TODO: discard command
+                        self.input_mode = InputMode::Normal;
+                    }
+                    _ => {}
                 }
+                // InputMode::Edit(action) => {
+                //
+                // }
                 // TODO: think if stuff like help should be subcategory of InputMode - could be more generic like ShowInfo, or could be completly different mechanism
                 InputMode::Suppressed(action) => match action {
                     SuppressedAction::ShowHelp => match input {
@@ -280,7 +287,7 @@ impl<T: Registry> Interface<T> {
 
         f.render_stateful_widget(t, chunks[0], &mut self.table.state);
 
-        let input_widget = Paragraph::new(self.search_phrase.as_ref())
+        let input_widget = Paragraph::new(self.command_input.as_ref())
             .style(Style::default())
             .block(
                 Block::default()
@@ -303,17 +310,13 @@ impl<T: Registry> Interface<T> {
                    // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
                    f.set_cursor(
                        // Put cursor past the end of the input text
-                       self.search_phrase.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
+                       self.command_input.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
                        // Move two line up from the bottom - search input
                        f.size().height - 2,
                    )
                 }
                 EditAction::Tag => {
                     // self.confirm_delete(f);
-                }
-                EditAction::Add => {
-                    // self.confirm_delete(f);
-                    self.add_record_popup(f)
                 }
             }
             InputMode::Suppressed(action) => match action {
@@ -381,29 +384,29 @@ impl<T: Registry> Interface<T> {
         f.render_widget(paragraph, area);
     }
 
-    fn add_record_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
-
-        let area = centered_rect(60, 40, f.size());
-        let name = Paragraph::new("")
-            .style(Style::default().bg(Color::Black).fg(Color::White))
-            // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
-            .alignment(Alignment::Left);
-        let url = Paragraph::new("")
-            .style(Style::default().bg(Color::Black).fg(Color::White))
-            // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
-            .alignment(Alignment::Left);
-        let group = Paragraph::new("")
-            .style(Style::default().bg(Color::Black).fg(Color::White))
-            // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
-            .alignment(Alignment::Left);
-        // let group = Paragraph::new("")
-        //     .style(Style::default().bg(Color::Black).fg(Color::White))
-        //     // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
-        //     .alignment(Alignment::Left);
-
-        f.render_widget(Clear, area);
-        f.render_widget(name, area);
-    }
+    // fn add_record_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
+    //
+    //     let area = centered_rect(60, 40, f.size());
+    //     let name = Paragraph::new("")
+    //         .style(Style::default().bg(Color::Black).fg(Color::White))
+    //         // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
+    //         .alignment(Alignment::Left);
+    //     let url = Paragraph::new("")
+    //         .style(Style::default().bg(Color::Black).fg(Color::White))
+    //         // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
+    //         .alignment(Alignment::Left);
+    //     let group = Paragraph::new("")
+    //         .style(Style::default().bg(Color::Black).fg(Color::White))
+    //         // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
+    //         .alignment(Alignment::Left);
+    //     // let group = Paragraph::new("")
+    //     //     .style(Style::default().bg(Color::Black).fg(Color::White))
+    //     //     // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
+    //     //     .alignment(Alignment::Left);
+    //
+    //     f.render_widget(Clear, area);
+    //     f.render_widget(name, area);
+    // }
 
     // fn add_tag_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
     //     let text = vec![
@@ -663,7 +666,7 @@ mod test {
                 .expect("Failed to handle event");
             assert!(!quit);
         }
-        assert_eq!("test 1".to_string(), interface.search_phrase);
+        assert_eq!("test 1".to_string(), interface.command_input);
 
         let events = vec![
             Event::Input(Key::Backspace),
@@ -678,7 +681,7 @@ mod test {
                 .expect("Failed to handle event");
             assert!(!quit);
         }
-        assert_eq!("test-2".to_string(), interface.search_phrase);
+        assert_eq!("test-2".to_string(), interface.command_input);
 
         println!("Should preserve search phrase when going to normal mode...");
         let event = Event::Input(Key::Esc);
@@ -688,7 +691,7 @@ mod test {
         assert!(!quit);
         assert!(InputMode::Normal == interface.input_mode);
 
-        assert_eq!("test-2".to_string(), interface.search_phrase);
+        assert_eq!("test-2".to_string(), interface.command_input);
 
         let event = Event::Input(Key::Char('/'));
         let quit = interface
@@ -696,7 +699,7 @@ mod test {
             .expect("Failed to handle event");
         assert!(!quit);
 
-        assert_eq!("test-2".to_string(), interface.search_phrase);
+        assert_eq!("test-2".to_string(), interface.command_input);
     }
 
     #[test]
