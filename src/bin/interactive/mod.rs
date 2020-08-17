@@ -11,3 +11,4 @@ mod interface;
 mod widgets;
 
 mod action;
+mod search;

@@ -12,6 +12,7 @@ use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
 use bookmark_lib::Registry;
+use crate::interactive::search::{Module, Search};
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -32,7 +33,7 @@ use bookmark_lib::Registry;
 
 
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum InputMode {
     Normal,
     Search,
@@ -41,25 +42,27 @@ pub enum InputMode {
     Suppressed(SuppressedAction),
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum EditAction {
     Input,
     Search,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum SuppressedAction {
     ShowHelp,
     Delete(String),
 }
 
-pub struct Interface<T: Registry> {
-    registry: T,
+pub struct Interface<R: Registry, B: tui::backend::Backend> {
+    registry: R,
 
     /// Current mode of input
     input_mode: InputMode,
     /// Current searched phrase
-    search_phrase: String,
+    // search_phrase: String,
+
+    search_module: Box<dyn Module<R, B>>,
 
     /// Current command input
     command_input: String,
@@ -77,8 +80,8 @@ struct Styles {
     header: Style,
 }
 
-impl<T: Registry> Interface<T> {
-    pub(crate) fn new(registry: T) -> Result<Interface<T>, Box<dyn std::error::Error>> {
+impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
+    pub(crate) fn new(registry: R) -> Result<Interface<R, B>, Box<dyn std::error::Error>> {
         let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None, None)?);
 
         let table = StatefulTable::with_items(items.as_slice());
@@ -87,6 +90,9 @@ impl<T: Registry> Interface<T> {
             registry,
             input_mode: InputMode::Normal,
             command_input: "".to_string(),
+
+            search_module:  Box::new(Search::new()),
+
             table,
             styles: Styles {
                 selected: Style::default()
@@ -132,10 +138,10 @@ impl<T: Registry> Interface<T> {
                     }
                     Key::Char('t') => {
                         // TODO: tag logic
-                        self.input_mode = InputMode::Edit(EditAction::Tag)
+                        // self.input_mode = InputMode::Edit(EditAction::Tag)
                     }
                     Key::Char('n') => {
-                        self.input_mode = InputMode::Edit(EditAction::Add)
+                        // self.input_mode = InputMode::Edit(EditAction::Add)
                     }
                     Key::Left => {
                         self.table.unselect();
@@ -173,21 +179,26 @@ impl<T: Registry> Interface<T> {
                     }
                     _ => {}
                 },
-                InputMode::Search => match input {
-                    Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
-                        self.input_mode = InputMode::Normal;
-                        self.table.unselect();
-                    }
-                    Key::Char(c) => {
-                        self.search_phrase.push(c);
-                        self.apply_search();
-                    }
-                    Key::Backspace => {
-                        self.search_phrase.pop();
-                        self.apply_search();
-                    }
-                    _ => {}
-                },
+                InputMode::Search => {
+                    let mut update = self.search_module.handle_input(input)?;
+
+                    self.input_mode = update.run(&self.registry, &mut self.table)
+                }
+                // InputMode::Search => match input {
+                //     Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
+                //         self.input_mode = InputMode::Normal;
+                //         self.table.unselect();
+                //     }
+                //     Key::Char(c) => {
+                //         self.search_phrase.push(c);
+                //         self.apply_search();
+                //     }
+                //     Key::Backspace => {
+                //         self.search_phrase.pop();
+                //         self.apply_search();
+                //     }
+                //     _ => {}
+                // },
                 InputMode::Command => match input {
                     Key::Char('\n') => {
                         // TODO: run the command
@@ -246,7 +257,7 @@ impl<T: Registry> Interface<T> {
         Ok(())
     }
 
-    pub(crate) fn draw<B: tui::backend::Backend>(&mut self, f: &mut Frame<B>) {
+    pub(crate) fn draw(&mut self, f: &mut Frame<B>) {
         let size = f.size();
         let normal_style = self.styles.normal.clone();
 
@@ -300,25 +311,25 @@ impl<T: Registry> Interface<T> {
         self.handle_input_mode(f);
     }
 
-    fn handle_input_mode<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
+    fn handle_input_mode(&self, f: &mut Frame<B>) {
         match &self.input_mode {
             InputMode::Normal =>
                 // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
-            InputMode::Edit(action) => match action {
-               EditAction::Search => {
-                   // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
-                   f.set_cursor(
-                       // Put cursor past the end of the input text
-                       self.command_input.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
-                       // Move two line up from the bottom - search input
-                       f.size().height - 2,
-                   )
-                }
-                EditAction::Tag => {
-                    // self.confirm_delete(f);
-                }
-            }
+            // InputMode::Edit(action) => match action {
+            //    // EditAction::Search => {
+            //    //     // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
+            //    //     f.set_cursor(
+            //    //         // Put cursor past the end of the input text
+            //    //         self.command_input.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
+            //    //         // Move two line up from the bottom - search input
+            //    //         f.size().height - 2,
+            //    //     )
+            //    //  }
+            //     EditAction::Tag => {
+            //         // self.confirm_delete(f);
+            //     }
+            // }
             InputMode::Suppressed(action) => match action {
                 // TODO: to display help I need to know exact suppressed action
                 SuppressedAction::ShowHelp => {
@@ -328,10 +339,11 @@ impl<T: Registry> Interface<T> {
                     self.confirm_delete(f, url_id.clone());
                 }
             },
+            _ => {}
         }
     }
 
-    fn show_help_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
+    fn show_help_popup(&self, f: &mut Frame<B>) {
         let text = vec![
             Spans::from("'ENTER'            - open bookmarked URL"),
             Spans::from("'/' or 'CTRL + F'  - search for URLs"),
@@ -348,7 +360,7 @@ impl<T: Registry> Interface<T> {
         f.render_widget(paragraph, area);
     }
 
-    fn confirm_delete<B: tui::backend::Backend>(&self, f: &mut Frame<B>, url_id: String) {
+    fn confirm_delete(&self, f: &mut Frame<B>, url_id: String) {
         let area = centered_fixed_rect(50, 10, f.size());
 
         let item = self.registry.get_url(url_id);
