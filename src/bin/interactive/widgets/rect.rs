@@ -28,8 +28,7 @@ pub(crate) fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1]
 }
 
-/// helper function to create a centered rect using up
-/// certain percentage of the available rect `r`
+/// helper function to create a centered rect with a specified size
 pub(crate) fn centered_fixed_rect(size_x: u16, size_y: u16, r: Rect) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)

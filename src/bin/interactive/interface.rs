@@ -13,7 +13,9 @@ use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
 use bookmark_lib::Registry;
 use crate::interactive::search::{Module, Search};
-use std::borrow::BorrowMut;
+use std::borrow::{BorrowMut, Borrow};
+use std::collections::HashMap;
+use crate::interactive::modules::Module;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -32,9 +34,16 @@ use std::borrow::BorrowMut;
 // - Suppressed
 
 
+// TODO: consider moving to some lib
+macro_rules! hashmap {
+    ($( $key: expr => $val: expr ),*) => {{
+         let mut map = ::std::collections::HashMap::new();
+         $( map.insert($key, $val); )*
+         map
+    }}
+}
 
-
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum InputMode {
     Normal,
     Search,
@@ -43,13 +52,17 @@ pub enum InputMode {
     Suppressed(SuppressedAction),
 }
 
+// impl Eq for InputMode {
+//
+// }
+
 #[derive(PartialEq, Clone)]
 pub enum EditAction {
     Input,
     Search,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum SuppressedAction {
     ShowHelp,
     Delete(String),
@@ -57,13 +70,10 @@ pub enum SuppressedAction {
 
 pub struct Interface<R: Registry, B: tui::backend::Backend> {
     registry: R,
+    modules: HashMap<InputMode, Box<dyn Module<R, B>>>,
 
     /// Current mode of input
     input_mode: InputMode,
-    /// Current searched phrase
-    // search_phrase: String,
-
-    search_module: Box<dyn Module<R, B>>,
 
     /// Current command input
     command_input: String,
@@ -87,12 +97,17 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
 
         let table = StatefulTable::with_items(items.as_slice());
 
+
+        let search_mod: Box<dyn Module<R,B>> = Box::new(Search::new());
+
         Ok(Interface {
             registry,
             input_mode: InputMode::Normal,
             command_input: "".to_string(),
 
-            search_module:  Box::new(Search::new()),
+            modules: hashmap![
+                InputMode::Search => search_mod
+            ],
 
             table,
             styles: Styles {
@@ -180,24 +195,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     }
                     _ => {}
                 },
-                InputMode::Search => {
-                    self.input_mode = self.search_module.handle_input(input, &self.registry, &mut self.table)?;
-                }
-                // InputMode::Search => match input {
-                //     Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
-                //         self.input_mode = InputMode::Normal;
-                //         self.table.unselect();
-                //     }
-                //     Key::Char(c) => {
-                //         self.search_phrase.push(c);
-                //         self.apply_search();
-                //     }
-                //     Key::Backspace => {
-                //         self.search_phrase.pop();
-                //         self.apply_search();
-                //     }
-                //     _ => {}
-                // },
                 InputMode::Command => match input {
                     Key::Char('\n') => {
                         // TODO: run the command
@@ -214,9 +211,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     }
                     _ => {}
                 }
-                // InputMode::Edit(action) => {
-                //
-                // }
                 // TODO: think if stuff like help should be subcategory of InputMode - could be more generic like ShowInfo, or could be completly different mechanism
                 InputMode::Suppressed(action) => match action {
                     SuppressedAction::ShowHelp => match input {
@@ -238,6 +232,11 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                         }
                         _ => {}
                     },
+                }
+                _ => {
+                    if let Some(module) = self.modules.get_mut(&self.input_mode) {
+                        self.input_mode = module.handle_input(input, &self.registry, &mut self.table)?;
+                    }
                 }
             }
         }
@@ -264,6 +263,7 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
             .direction(Direction::Vertical)
             .constraints(
                 [
+                    // TODO: consider modules influencing dynamicly the main layout - maybe pass layout to draw?
                     Constraint::Length(size.height - 3), // URLs display table
                     Constraint::Length(3),               // Search input
                 ]
@@ -297,15 +297,10 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
 
         f.render_stateful_widget(t, chunks[0], &mut self.table.state);
 
-        let input_widget = Paragraph::new(self.command_input.as_ref())
-            .style(Style::default())
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Press '/' or 'CTRL + f' to search for URLs"),
-            );
-
-        f.render_widget(input_widget, chunks[1]);
+        // draw modules
+        for module in self.modules.values() {
+            module.draw(self.input_mode.clone(), f)
+        }
 
         self.handle_input_mode(f);
     }
@@ -315,23 +310,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
             InputMode::Normal =>
                 // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
-            // InputMode::Edit(action) => match action {
-            //    // EditAction::Search => {
-            //    //     // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
-            //    //     f.set_cursor(
-            //    //         // Put cursor past the end of the input text
-            //    //         self.command_input.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
-            //    //         // Move two line up from the bottom - search input
-            //    //         f.size().height - 2,
-            //    //     )
-            //    //  }
-            //     EditAction::Tag => {
-            //         // self.confirm_delete(f);
-            //     }
-            // }
-            InputMode::Search => {
-                self.search_module.draw(f)
-            }
             InputMode::Suppressed(action) => match action {
                 // TODO: to display help I need to know exact suppressed action
                 SuppressedAction::ShowHelp => {
