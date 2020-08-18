@@ -46,8 +46,6 @@ impl TableItem for URLItem {
 }
 
 fn url_to_row(record: &URLRecord) -> Vec<String> {
-    let tags: Vec<&str> = record.tags.keys().map(|k| k.as_str()).collect();
-
     vec![
         record.name.clone(),
         record.url.clone(),

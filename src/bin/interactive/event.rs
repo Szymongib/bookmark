@@ -29,7 +29,7 @@ impl Events {
         Events::with_config(Config::default())
     }
 
-    pub fn with_config(config: Config) -> Events {
+    pub fn with_config(_config: Config) -> Events {
         let (tx, rx) = mpsc::channel();
         let input_handle = {
             let tx = tx.clone();

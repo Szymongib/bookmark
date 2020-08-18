@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use bookmark_lib::types::URLRecord;
 
 pub(crate) fn display_urls(urls: Vec<URLRecord>) {
@@ -79,7 +78,7 @@ fn get_max_lengths(urls: &Vec<URLRecord>) -> (usize, usize, usize, usize) {
 #[cfg(test)]
 mod test {
     use bookmark_lib::types::URLRecord;
-    use crate::display::{display_urls, display_str};
+    use crate::display::{display_str};
 
     struct TestCase {
         description: String,

@@ -1,13 +1,10 @@
 extern crate clap;
-use crate::interactive::interactive_mode;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 use bookmark_lib::registry::URLRegistry;
 use bookmark_lib::storage::FileStorage;
 use bookmark_lib::{Registry};
 use crate::interactive::interactive_mode::enter_interactive_mode;
-use bookmark_lib::types::URLRecord;
-use std::collections::HashMap;
 
 mod interactive;
 mod display;
@@ -129,8 +126,12 @@ fn main() {
             application.delete_sub_cmd(delete_matches);
         }
         ("", None) => {
-            enter_interactive_mode(application.registry);
-
+            match enter_interactive_mode(application.registry) {
+                Err(err) => {
+                    panic!("Failed to enter interactive mode: {}", err.to_string())
+                },
+                _ => {}
+            };
         },
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachabe!()
     }

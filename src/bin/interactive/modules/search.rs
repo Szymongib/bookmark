@@ -1,13 +1,11 @@
 use termion::event::Key;
 use tui::backend::Backend;
 use tui::Frame;
-use std::error::Error;
 use crate::interactive::table::StatefulTable;
 use crate::interactive::url_table_item::URLItem;
 use crate::interactive::interface::InputMode;
 use bookmark_lib::Registry;
 use bookmark_lib::record_filter::FilterSet;
-use std::marker::PhantomData;
 use tui::widgets::{Paragraph, Block, Borders, Clear};
 use tui::style::Style;
 use tui::layout::{Rect, Layout, Direction, Constraint};
@@ -21,7 +19,7 @@ pub(crate) struct Search {
 impl<R: Registry, B: Backend> Module<R, B> for Search {}
 
 impl<R: Registry> HandleInput<R> for Search {
-    fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<InputMode, Box<dyn std::error::Error>> {
+    fn handle_input(&mut self, input: Key, _registry: &R, table: &mut StatefulTable<URLItem>) -> Result<InputMode, Box<dyn std::error::Error>> {
         match input {
             Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
                 table.unselect();
@@ -128,7 +126,6 @@ impl Search {
 
 #[cfg(test)]
 mod test {
-    use crate::interactive::event::Event;
     use termion::event::Key;
     use crate::interactive::modules::search::Search;
     use crate::interactive::modules::HandleInput;

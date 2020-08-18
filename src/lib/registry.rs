@@ -94,11 +94,8 @@ mod test {
     use crate::storage::FileStorage;
     use crate::types::{URLRecord, calculate_hash};
     use std::collections::HashMap;
-    use std::fs::File;
-    use std::path::PathBuf;
-    use std::{env, fs};
+    use std::{fs};
     use crate::Registry;
-    use crate::util::create_temp_file;
 
     struct TestUrl {
         name: &'static str,

@@ -7,6 +7,7 @@ use crate::interactive::table::StatefulTable;
 use crate::interactive::url_table_item::URLItem;
 
 pub mod search;
+pub mod help;
 
 pub trait Module<R: Registry, B: Backend>: HandleInput<R> + Draw<B> {}
 

@@ -1,9 +1,8 @@
 use crate::interactive::event::Event;
 use crate::interactive::table::{StatefulTable, TableItem};
 use crate::interactive::url_table_item::URLItem;
-use crate::interactive::widgets::rect::{centered_rect, centered_fixed_rect};
+use crate::interactive::widgets::rect::{centered_fixed_rect};
 use bookmark_lib::record_filter::FilterSet;
-use bookmark_lib::types::URLRecord;
 use std::error::Error;
 use termion::event::Key;
 use tui::layout::{Alignment, Constraint, Direction, Layout};
@@ -12,10 +11,10 @@ use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
 use bookmark_lib::Registry;
-use std::borrow::{BorrowMut, Borrow};
 use std::collections::HashMap;
-use crate::interactive::modules::{HandleInput, Draw, Module};
+use crate::interactive::modules::{Module};
 use crate::interactive::modules::search::Search;
+use crate::interactive::modules::help::HelpPanel;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -48,18 +47,7 @@ pub enum InputMode {
     Normal,
     Search,
     Command,
-    // Edit(EditAction),
     Suppressed(SuppressedAction),
-}
-
-// impl Eq for InputMode {
-//
-// }
-
-#[derive(PartialEq, Clone)]
-pub enum EditAction {
-    Input,
-    Search,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -98,6 +86,7 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
         let table = StatefulTable::with_items(items.as_slice());
 
         let search_mod: Box<dyn Module<R,B>> = Box::new(Search::new());
+        let help_mod: Box<dyn Module<R,B>> = Box::new(HelpPanel::new());
 
         Ok(Interface {
             registry,
@@ -105,7 +94,8 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
             command_input: "".to_string(),
 
             modules: hashmap![
-                InputMode::Search => search_mod
+                InputMode::Search => search_mod,
+                InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod
             ],
 
             table,
@@ -211,27 +201,16 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     _ => {}
                 }
                 // TODO: think if stuff like help should be subcategory of InputMode - could be more generic like ShowInfo, or could be completly different mechanism
-                InputMode::Suppressed(action) => match action {
-                    SuppressedAction::ShowHelp => match input {
-                        Key::Esc | Key::Char('\n') | Key::Char('h') => {
-                            self.input_mode = InputMode::Normal;
-                        }
-                        Key::Char('q') => {
-                            return Ok(true);
-                        }
-                        _ => {}
-                    },
-                    SuppressedAction::Delete(url_id) => match input {
-                        Key::Char('\n') => {
-                            self.delete_url(url_id.clone());
-                            self.input_mode = InputMode::Normal;
-                        }
-                        Key::Esc => {
-                            self.input_mode = InputMode::Normal
-                        }
-                        _ => {}
-                    },
-                }
+                InputMode::Suppressed(SuppressedAction::Delete(url_id)) => match input {
+                    Key::Char('\n') => {
+                        self.delete_url(url_id.clone())?;
+                        self.input_mode = InputMode::Normal;
+                    }
+                    Key::Esc => {
+                        self.input_mode = InputMode::Normal
+                    }
+                    _ => {}
+                },
                 _ => {
                     if let Some(module) = self.modules.get_mut(&self.input_mode) {
                         self.input_mode = module.handle_input(input, &self.registry, &mut self.table)?;
@@ -310,33 +289,13 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                 // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
             InputMode::Suppressed(action) => match action {
-                // TODO: to display help I need to know exact suppressed action
-                SuppressedAction::ShowHelp => {
-                    self.show_help_popup(f);
-                },
                 SuppressedAction::Delete(url_id) => {
                     self.confirm_delete(f, url_id.clone());
                 }
+                _ => {}
             },
             _ => {}
         }
-    }
-
-    fn show_help_popup(&self, f: &mut Frame<B>) {
-        let text = vec![
-            Spans::from("'ENTER'            - open bookmarked URL"),
-            Spans::from("'/' or 'CTRL + F'  - search for URLs"),
-            Spans::from("'d'                - delete URL"),
-        ];
-
-        let area = centered_rect(60, 40, f.size());
-        let paragraph = Paragraph::new(text)
-            .style(Style::default().bg(Color::Black).fg(Color::White))
-            .block(self.create_block("Help - press ESC to close".to_string()))
-            .alignment(Alignment::Left);
-
-        f.render_widget(Clear, area);
-        f.render_widget(paragraph, area);
     }
 
     fn confirm_delete(&self, f: &mut Frame<B>, url_id: String) {
@@ -348,7 +307,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                 panic!("{:?}", err);
                 // TODO: log error - should not happen
                 // Cannot display popup - consider exiting Delete mode
-                return
             }
             Ok(opt_item) => match opt_item {
                 Some(item) => {item},
@@ -430,21 +388,15 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
 #[cfg(test)]
 mod test {
     use crate::interactive::event::Event;
-    use crate::interactive::interface::{EditAction, InputMode, Interface, SuppressedAction};
+    use crate::interactive::interface::{InputMode, Interface, SuppressedAction};
     use crate::interactive::fake::{MockBackend};
     use bookmark_lib::types::URLRecord;
     use termion::event::Key;
     use bookmark_lib::registry::URLRegistry;
     use std::path::PathBuf;
     use bookmark_lib::Registry;
-    use std::{fs, io};
-    use std::ops::Deref;
+    use std::{fs};
     use bookmark_lib::storage::FileStorage;
-    use std::thread::sleep;
-    use std::time::Duration;
-    use std::io::{Write, IoSlice, Error};
-    use tui::layout::Rect;
-    use tui::buffer::Cell;
     use rand::{thread_rng, Rng};
     use rand::distributions::Alphanumeric;
 
@@ -492,12 +444,12 @@ mod test {
     ($($urls:expr), *) => (
         {
             let (registry, file_path) = URLRegistry::with_temp_file(&rand_str()).expect("Failed to initialize registry");
-            let cleaner = Cleaner::new(file_path); // makes sure that temp file is deleted even in case of panic
+            let _cleaner = Cleaner::new(file_path); // makes sure that temp file is deleted even in case of panic
             $(
                 for u in $urls {
                     registry.add_url(u).expect("Failed to add url");
                 }
-            )*;
+            )*
             let interface = Interface::<URLRegistry<FileStorage>, MockBackend>::new(registry).expect("Failed to initialize interface");
 
             (interface)

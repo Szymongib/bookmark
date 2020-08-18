@@ -4,7 +4,7 @@ use tui::layout::Rect;
 
 pub struct MockBackend {}
 impl tui::backend::Backend for MockBackend {
-    fn draw<'a, I>(&mut self, content: I) -> Result<(), Error> where
+    fn draw<'a, I>(&mut self, _content: I) -> Result<(), Error> where
         I: Iterator<Item=(u16, u16, &'a Cell)> {
         unimplemented!()
     }
@@ -21,7 +21,7 @@ impl tui::backend::Backend for MockBackend {
         unimplemented!()
     }
 
-    fn set_cursor(&mut self, x: u16, y: u16) -> Result<(), Error> {
+    fn set_cursor(&mut self, _x: u16, _y: u16) -> Result<(), Error> {
         unimplemented!()
     }
 
