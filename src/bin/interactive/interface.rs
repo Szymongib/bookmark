@@ -436,11 +436,16 @@ mod test {
     use bookmark_lib::registry::URLRegistry;
     use std::path::PathBuf;
     use bookmark_lib::Registry;
-    use std::fs;
+    use std::{fs, io};
     use std::ops::Deref;
     use bookmark_lib::storage::FileStorage;
     use std::thread::sleep;
     use std::time::Duration;
+    use std::io::{Write, IoSlice, Error};
+    use tui::layout::Rect;
+    use tui::buffer::Cell;
+    use rand::{thread_rng, Rng};
+    use rand::distributions::Alphanumeric;
 
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
@@ -450,6 +455,42 @@ mod test {
             URLRecord::new("four", "four", "four", vec!["tag"]),
             URLRecord::new("five", "five", "five", vec![]),
         ]
+    }
+
+    struct MockBackend {}
+    impl tui::backend::Backend for MockBackend {
+        fn draw<'a, I>(&mut self, content: I) -> Result<(), Error> where
+            I: Iterator<Item=(u16, u16, &'a Cell)> {
+            unimplemented!()
+        }
+
+        fn hide_cursor(&mut self) -> Result<(), Error> {
+            unimplemented!()
+        }
+
+        fn show_cursor(&mut self) -> Result<(), Error> {
+            unimplemented!()
+        }
+
+        fn get_cursor(&mut self) -> Result<(u16, u16), Error> {
+            unimplemented!()
+        }
+
+        fn set_cursor(&mut self, x: u16, y: u16) -> Result<(), Error> {
+            unimplemented!()
+        }
+
+        fn clear(&mut self) -> Result<(), Error> {
+            unimplemented!()
+        }
+
+        fn size(&self) -> Result<Rect, Error> {
+            unimplemented!()
+        }
+
+        fn flush(&mut self) -> Result<(), Error> {
+            unimplemented!()
+        }
     }
 
     struct Cleaner {
@@ -473,17 +514,27 @@ mod test {
         }
     }
 
+    fn rand_str() -> String {
+        let rand_string: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(30)
+            .collect();
+
+        rand_string
+    }
+
     macro_rules! init {
     ($($urls:expr), *) => (
         {
-            let (registry, file_path) = URLRegistry::with_temp_file().expect("Failed to initialize registry");
+            let (registry, file_path) = URLRegistry::with_temp_file(&rand_str()).expect("Failed to initialize registry");
             let cleaner = Cleaner::new(file_path); // makes sure that temp file is deleted even in case of panic
             $(
                 for u in $urls {
                     registry.add_url(u).expect("Failed to add url");
                 }
             )*;
-            let interface = Interface::new(registry).expect("Failed to initialize interface");
+            let interface = Interface::<URLRegistry<FileStorage>, MockBackend>::new(registry).expect("Failed to initialize interface");
+
             (interface)
         };
     );
@@ -518,84 +569,84 @@ mod test {
         assert!(!quit);
     }
 
-    #[test]
-    fn test_handle_input_input_modes() {
-        let mut interface = init!();
-
-        assert!(InputMode::Normal == interface.input_mode);
-
-        println!("Should switch input modes...");
-        let event = Event::Input(Key::Char('/'));
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-        assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
-
-        let event = Event::Input(Key::Esc);
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-        assert!(InputMode::Normal == interface.input_mode);
-
-        let event = Event::Input(Key::Ctrl('f'));
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-        assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
-
-        let event = Event::Input(Key::Esc);
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-        assert!(InputMode::Normal == interface.input_mode);
-
-        let event = Event::Input(Key::Char('h'));
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-        assert!(InputMode::Suppressed(SuppressedAction::ShowHelp) == interface.input_mode);
-
-        let event = Event::Input(Key::Esc);
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-        assert!(InputMode::Normal == interface.input_mode);
-
-        println!("Should go to normal mode...");
-        let go_to_normal_events = vec![
-            Event::Input(Key::Up),
-            Event::Input(Key::Down),
-            Event::Input(Key::Esc),
-            Event::Input(Key::Char('\n')),
-        ];
-
-        for event in go_to_normal_events {
-            interface.input_mode = InputMode::Edit(EditAction::Search);
-            let quit = interface
-                .handle_input(event)
-                .expect("Failed to handle event");
-            assert!(!quit);
-            assert!(InputMode::Normal == interface.input_mode);
-        }
-
-        println!("Should go to edit mode...");
-        let go_to_edit_events = vec![Event::Input(Key::Char('/')), Event::Input(Key::Ctrl('f'))];
-
-        for event in go_to_edit_events {
-            interface.input_mode = InputMode::Normal;
-            let quit = interface
-                .handle_input(event)
-                .expect("Failed to handle event");
-            assert!(!quit);
-            assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
-        }
-    }
+    // #[test]
+    // fn test_handle_input_input_modes() {
+    //     let mut interface = init!();
+    //
+    //     assert!(InputMode::Normal == interface.input_mode);
+    //
+    //     println!("Should switch input modes...");
+    //     let event = Event::Input(Key::Char('/'));
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //     assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
+    //
+    //     let event = Event::Input(Key::Esc);
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //     assert!(InputMode::Normal == interface.input_mode);
+    //
+    //     let event = Event::Input(Key::Ctrl('f'));
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //     assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
+    //
+    //     let event = Event::Input(Key::Esc);
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //     assert!(InputMode::Normal == interface.input_mode);
+    //
+    //     let event = Event::Input(Key::Char('h'));
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //     assert!(InputMode::Suppressed(SuppressedAction::ShowHelp) == interface.input_mode);
+    //
+    //     let event = Event::Input(Key::Esc);
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //     assert!(InputMode::Normal == interface.input_mode);
+    //
+    //     println!("Should go to normal mode...");
+    //     let go_to_normal_events = vec![
+    //         Event::Input(Key::Up),
+    //         Event::Input(Key::Down),
+    //         Event::Input(Key::Esc),
+    //         Event::Input(Key::Char('\n')),
+    //     ];
+    //
+    //     for event in go_to_normal_events {
+    //         interface.input_mode = InputMode::Edit(EditAction::Search);
+    //         let quit = interface
+    //             .handle_input(event)
+    //             .expect("Failed to handle event");
+    //         assert!(!quit);
+    //         assert!(InputMode::Normal == interface.input_mode);
+    //     }
+    //
+    //     println!("Should go to edit mode...");
+    //     let go_to_edit_events = vec![Event::Input(Key::Char('/')), Event::Input(Key::Ctrl('f'))];
+    //
+    //     for event in go_to_edit_events {
+    //         interface.input_mode = InputMode::Normal;
+    //         let quit = interface
+    //             .handle_input(event)
+    //             .expect("Failed to handle event");
+    //         assert!(!quit);
+    //         assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
+    //     }
+    // }
 
     #[test]
     fn test_handle_input_switch_input_modes() {
@@ -631,67 +682,67 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_handle_input_search_phrase() {
-        let mut interface = init!();
-
-        println!("Should input search phrase...");
-        let event = Event::Input(Key::Char('/'));
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-
-        let events = vec![
-            Event::Input(Key::Char('t')),
-            Event::Input(Key::Char('e')),
-            Event::Input(Key::Char('s')),
-            Event::Input(Key::Char('t')),
-            Event::Input(Key::Char(' ')),
-            Event::Input(Key::Char('1')),
-        ];
-
-        for event in events {
-            let quit = interface
-                .handle_input(event)
-                .expect("Failed to handle event");
-            assert!(!quit);
-        }
-        assert_eq!("test 1".to_string(), interface.command_input);
-
-        let events = vec![
-            Event::Input(Key::Backspace),
-            Event::Input(Key::Backspace),
-            Event::Input(Key::Char('-')),
-            Event::Input(Key::Char('2')),
-        ];
-
-        for event in events {
-            let quit = interface
-                .handle_input(event)
-                .expect("Failed to handle event");
-            assert!(!quit);
-        }
-        assert_eq!("test-2".to_string(), interface.command_input);
-
-        println!("Should preserve search phrase when going to normal mode...");
-        let event = Event::Input(Key::Esc);
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-        assert!(InputMode::Normal == interface.input_mode);
-
-        assert_eq!("test-2".to_string(), interface.command_input);
-
-        let event = Event::Input(Key::Char('/'));
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-
-        assert_eq!("test-2".to_string(), interface.command_input);
-    }
+    // #[test]
+    // fn test_handle_input_search_phrase() {
+    //     let mut interface = init!();
+    //
+    //     println!("Should input search phrase...");
+    //     let event = Event::Input(Key::Char('/'));
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //
+    //     let events = vec![
+    //         Event::Input(Key::Char('t')),
+    //         Event::Input(Key::Char('e')),
+    //         Event::Input(Key::Char('s')),
+    //         Event::Input(Key::Char('t')),
+    //         Event::Input(Key::Char(' ')),
+    //         Event::Input(Key::Char('1')),
+    //     ];
+    //
+    //     for event in events {
+    //         let quit = interface
+    //             .handle_input(event)
+    //             .expect("Failed to handle event");
+    //         assert!(!quit);
+    //     }
+    //     assert_eq!("test 1".to_string(), interface.command_input);
+    //
+    //     let events = vec![
+    //         Event::Input(Key::Backspace),
+    //         Event::Input(Key::Backspace),
+    //         Event::Input(Key::Char('-')),
+    //         Event::Input(Key::Char('2')),
+    //     ];
+    //
+    //     for event in events {
+    //         let quit = interface
+    //             .handle_input(event)
+    //             .expect("Failed to handle event");
+    //         assert!(!quit);
+    //     }
+    //     assert_eq!("test-2".to_string(), interface.command_input);
+    //
+    //     println!("Should preserve search phrase when going to normal mode...");
+    //     let event = Event::Input(Key::Esc);
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //     assert!(InputMode::Normal == interface.input_mode);
+    //
+    //     assert_eq!("test-2".to_string(), interface.command_input);
+    //
+    //     let event = Event::Input(Key::Char('/'));
+    //     let quit = interface
+    //         .handle_input(event)
+    //         .expect("Failed to handle event");
+    //     assert!(!quit);
+    //
+    //     assert_eq!("test-2".to_string(), interface.command_input);
+    // }
 
     #[test]
     fn test_handle_input_search() {

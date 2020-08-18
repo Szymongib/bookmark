@@ -18,8 +18,8 @@ impl URLRegistry<FileStorage> {
         URLRegistry { storage }
     }
 
-    pub fn with_temp_file() -> Result<(URLRegistry<FileStorage>, PathBuf), Box<dyn std::error::Error>> {
-        let file_path = create_temp_file("urls_temp.json")?;
+    pub fn with_temp_file(suffix: &str) -> Result<(URLRegistry<FileStorage>, PathBuf), Box<dyn std::error::Error>> {
+        let file_path = create_temp_file(suffix)?;
 
         return match file_path.to_str() {
             Some(path) => {
@@ -109,7 +109,7 @@ mod test {
 
     #[test]
     fn registry_test() {
-        let (registry, file_path) = URLRegistry::<FileStorage>::with_temp_file().expect("Failed to initialize registry");
+        let (registry, file_path) = URLRegistry::<FileStorage>::with_temp_file("registry_tests.json").expect("Failed to initialize registry");
 
         let test_urls: Vec<TestUrl> = vec![
             TestUrl {
