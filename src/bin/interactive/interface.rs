@@ -12,10 +12,10 @@ use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
 use bookmark_lib::Registry;
-use crate::interactive::search::{Module, Search};
 use std::borrow::{BorrowMut, Borrow};
 use std::collections::HashMap;
 use crate::interactive::modules::Module;
+use crate::interactive::modules::search::Search;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -96,7 +96,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
         let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None, None)?);
 
         let table = StatefulTable::with_items(items.as_slice());
-
 
         let search_mod: Box<dyn Module<R,B>> = Box::new(Search::new());
 
