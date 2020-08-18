@@ -11,16 +11,16 @@ use std::marker::PhantomData;
 use tui::widgets::{Paragraph, Block, Borders, Clear};
 use tui::style::Style;
 use tui::layout::{Rect, Layout, Direction, Constraint};
-use crate::interactive::modules::Module;
+use crate::interactive::modules::{HandleInput, Draw, Module};
 
 
 pub(crate) struct Search {
     search_phrase: String,
 }
 
-impl<R, B> Module<R, B> for Search
-    where R: Registry, B: Backend
-{
+impl<R: Registry, B: Backend> Module<R, B> for Search {}
+
+impl<R: Registry> HandleInput<R> for Search {
     fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<InputMode, Box<dyn std::error::Error>> {
         match input {
             Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
@@ -39,6 +39,9 @@ impl<R, B> Module<R, B> for Search
         Ok(self.apply_search(table))
     }
 
+}
+
+impl<B: Backend> Draw<B> for Search {
     fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
         return match mode {
             InputMode::Search => {
@@ -123,4 +126,77 @@ impl Search {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use crate::interactive::event::Event;
+    use termion::event::Key;
+    use crate::interactive::modules::search::Search;
+    use crate::interactive::modules::HandleInput;
+    use bookmark_lib::registry::URLRegistry;
+    use crate::interactive::table::StatefulTable;
+    use crate::interactive::url_table_item::URLItem;
+    use crate::interactive::interface::InputMode;
+
+    #[test]
+    fn test_handle_input_search_phrase() {
+        let mut search_module = Search::new();
+        let (dummy_registry, _) = URLRegistry::with_temp_file("search_test1.json")
+            .expect("Failed to initialize Registry");
+        let mut dummy_table = StatefulTable::<URLItem>::with_items(&vec![]);
+
+
+        println!("Should input search phrase...");
+        let key_events = vec![
+            Key::Char('t'),
+            Key::Char('e'),
+            Key::Char('s'),
+            Key::Char('t'),
+            Key::Char(' '),
+            Key::Char('1'),
+        ];
+
+        for key in key_events {
+            let mode = search_module
+                .handle_input(key, &dummy_registry, &mut dummy_table)
+                .expect("Failed to handle event");
+            assert!(mode == InputMode::Search);
+        }
+        assert_eq!("test 1".to_string(), search_module.search_phrase);
+
+        let key_events = vec![
+            Key::Backspace,
+            Key::Backspace,
+            Key::Char('-'),
+            Key::Char('2'),
+        ];
+
+        for key in key_events {
+            let mode = search_module
+                .handle_input(key, &dummy_registry, &mut dummy_table)
+                .expect("Failed to handle event");
+            assert!(mode == InputMode::Search);
+        }
+        assert_eq!("test-2".to_string(), search_module.search_phrase);
+
+        // TODO: test it in interface.rs
+        // println!("Should preserve search phrase when going to normal mode...");
+        // let event = Event::Input(Key::Esc);
+        // let quit = interface
+        //     .handle_input(event)
+        //     .expect("Failed to handle event");
+        // assert!(!quit);
+        // assert!(InputMode::Normal == interface.input_mode);
+        //
+        // assert_eq!("test-2".to_string(), interface.command_input);
+        //
+        // let event = Event::Input(Key::Char('/'));
+        // let quit = interface
+        //     .handle_input(event)
+        //     .expect("Failed to handle event");
+        // assert!(!quit);
+        //
+        // assert_eq!("test-2".to_string(), interface.command_input);
+    }
+
+}
 

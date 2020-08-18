@@ -8,9 +8,12 @@ use crate::interactive::url_table_item::URLItem;
 
 pub mod search;
 
-pub trait Module<R, B>
-    where R: Registry, B: Backend
-{
+pub trait Module<R: Registry, B: Backend>: HandleInput<R> + Draw<B> {}
+
+pub trait HandleInput<R: Registry> {
     fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<InputMode, Box<dyn std::error::Error>>;
+}
+
+pub trait Draw<B: Backend> {
     fn draw(&self, mode: InputMode, f: &mut Frame<B>);
 }

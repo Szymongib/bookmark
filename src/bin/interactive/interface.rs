@@ -14,7 +14,7 @@ use tui::Frame;
 use bookmark_lib::Registry;
 use std::borrow::{BorrowMut, Borrow};
 use std::collections::HashMap;
-use crate::interactive::modules::Module;
+use crate::interactive::modules::{HandleInput, Draw, Module};
 use crate::interactive::modules::search::Search;
 
 // TODO: some decisions
@@ -431,6 +431,7 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
 mod test {
     use crate::interactive::event::Event;
     use crate::interactive::interface::{EditAction, InputMode, Interface, SuppressedAction};
+    use crate::interactive::fake::{MockBackend};
     use bookmark_lib::types::URLRecord;
     use termion::event::Key;
     use bookmark_lib::registry::URLRegistry;
@@ -455,42 +456,6 @@ mod test {
             URLRecord::new("four", "four", "four", vec!["tag"]),
             URLRecord::new("five", "five", "five", vec![]),
         ]
-    }
-
-    struct MockBackend {}
-    impl tui::backend::Backend for MockBackend {
-        fn draw<'a, I>(&mut self, content: I) -> Result<(), Error> where
-            I: Iterator<Item=(u16, u16, &'a Cell)> {
-            unimplemented!()
-        }
-
-        fn hide_cursor(&mut self) -> Result<(), Error> {
-            unimplemented!()
-        }
-
-        fn show_cursor(&mut self) -> Result<(), Error> {
-            unimplemented!()
-        }
-
-        fn get_cursor(&mut self) -> Result<(u16, u16), Error> {
-            unimplemented!()
-        }
-
-        fn set_cursor(&mut self, x: u16, y: u16) -> Result<(), Error> {
-            unimplemented!()
-        }
-
-        fn clear(&mut self) -> Result<(), Error> {
-            unimplemented!()
-        }
-
-        fn size(&self) -> Result<Rect, Error> {
-            unimplemented!()
-        }
-
-        fn flush(&mut self) -> Result<(), Error> {
-            unimplemented!()
-        }
     }
 
     struct Cleaner {
@@ -681,68 +646,6 @@ mod test {
             assert!(expected_modes[i] == interface.input_mode);
         }
     }
-
-    // #[test]
-    // fn test_handle_input_search_phrase() {
-    //     let mut interface = init!();
-    //
-    //     println!("Should input search phrase...");
-    //     let event = Event::Input(Key::Char('/'));
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //
-    //     let events = vec![
-    //         Event::Input(Key::Char('t')),
-    //         Event::Input(Key::Char('e')),
-    //         Event::Input(Key::Char('s')),
-    //         Event::Input(Key::Char('t')),
-    //         Event::Input(Key::Char(' ')),
-    //         Event::Input(Key::Char('1')),
-    //     ];
-    //
-    //     for event in events {
-    //         let quit = interface
-    //             .handle_input(event)
-    //             .expect("Failed to handle event");
-    //         assert!(!quit);
-    //     }
-    //     assert_eq!("test 1".to_string(), interface.command_input);
-    //
-    //     let events = vec![
-    //         Event::Input(Key::Backspace),
-    //         Event::Input(Key::Backspace),
-    //         Event::Input(Key::Char('-')),
-    //         Event::Input(Key::Char('2')),
-    //     ];
-    //
-    //     for event in events {
-    //         let quit = interface
-    //             .handle_input(event)
-    //             .expect("Failed to handle event");
-    //         assert!(!quit);
-    //     }
-    //     assert_eq!("test-2".to_string(), interface.command_input);
-    //
-    //     println!("Should preserve search phrase when going to normal mode...");
-    //     let event = Event::Input(Key::Esc);
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //     assert!(InputMode::Normal == interface.input_mode);
-    //
-    //     assert_eq!("test-2".to_string(), interface.command_input);
-    //
-    //     let event = Event::Input(Key::Char('/'));
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //
-    //     assert_eq!("test-2".to_string(), interface.command_input);
-    // }
 
     #[test]
     fn test_handle_input_search() {
