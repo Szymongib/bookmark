@@ -9,5 +9,5 @@ pub mod tag;
 pub trait Command<R: Registry, B: Backend>: HandleInput<R> + Draw<B> + Execute<R> {}
 
 pub trait Execute<R: Registry> {
-    fn execute(&self, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<(), Box<dyn std::error::Error>>;
+    fn execute(&self, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<bool, Box<dyn std::error::Error>>; // TODO: consider what should be returned here
 }

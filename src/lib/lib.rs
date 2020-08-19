@@ -43,6 +43,8 @@ pub trait Registry {
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>;
 
     fn get_url(&self, id: String) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
+
+    fn tag_url(&self, id: String, tag: String) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 }
 
 pub trait Repository {
@@ -56,4 +58,5 @@ pub trait Repository {
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>; // TODO: consider extracting group as filter
     fn get(&self, id: String) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
     fn list_groups(&self) -> Result<Vec<String>, Box<dyn std::error::Error>>;
+    fn update(&self, id: String, record: URLRecord) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 }

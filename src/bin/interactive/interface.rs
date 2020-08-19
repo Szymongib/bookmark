@@ -25,6 +25,8 @@ use crate::interactive::modules::command::Command;
 // - ':g [GROUP]' - filter by group
 // - ':t [TAG]' - filter by tag
 // - '????" - remove filters
+// TODO: Help not as a popup but toggle?
+// TODO: Toggle show ids
 
 // InputMode:
 // - Normal

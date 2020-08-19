@@ -128,6 +128,11 @@ impl Repository for FileStorage {
 
         Ok(distinct.keys().map(|k| k.to_string()).collect())
     }
+
+    // TODO: implment
+    fn update(&self, id: String, record: URLRecord) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        unimplemented!()
+    }
 }
 
 fn is_unique(urls: &Vec<URLRecord>, record: &URLRecord) -> bool {

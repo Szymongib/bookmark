@@ -7,6 +7,8 @@ use std::error::Error;
 use std::path::PathBuf;
 use crate::util::create_temp_file;
 
+// TODO: introduce custom errors
+
 pub struct URLRegistry<T: Repository> {
     storage: T,
 }
@@ -85,6 +87,15 @@ impl<T: Repository> Registry for URLRegistry<T> {
 
     fn get_url(&self, id: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
         self.storage.get(id)
+    }
+
+    fn tag_url(&self, id: String, tag: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        let record = self.storage.get(id)?; // TODO: what should be returned here
+
+        // record.map_or(None, |record| {
+        //
+        // })
+
     }
 }
 

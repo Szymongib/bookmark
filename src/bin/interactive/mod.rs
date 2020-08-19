@@ -8,6 +8,8 @@ mod url_table_item;
 
 mod interface;
 
+mod helpers;
+
 mod widgets;
 
 mod modules;
