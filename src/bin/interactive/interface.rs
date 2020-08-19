@@ -486,84 +486,84 @@ mod test {
         assert!(!quit);
     }
 
-    // #[test]
-    // fn test_handle_input_input_modes() {
-    //     let mut interface = init!();
-    //
-    //     assert!(InputMode::Normal == interface.input_mode);
-    //
-    //     println!("Should switch input modes...");
-    //     let event = Event::Input(Key::Char('/'));
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //     assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
-    //
-    //     let event = Event::Input(Key::Esc);
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //     assert!(InputMode::Normal == interface.input_mode);
-    //
-    //     let event = Event::Input(Key::Ctrl('f'));
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //     assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
-    //
-    //     let event = Event::Input(Key::Esc);
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //     assert!(InputMode::Normal == interface.input_mode);
-    //
-    //     let event = Event::Input(Key::Char('h'));
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //     assert!(InputMode::Suppressed(SuppressedAction::ShowHelp) == interface.input_mode);
-    //
-    //     let event = Event::Input(Key::Esc);
-    //     let quit = interface
-    //         .handle_input(event)
-    //         .expect("Failed to handle event");
-    //     assert!(!quit);
-    //     assert!(InputMode::Normal == interface.input_mode);
-    //
-    //     println!("Should go to normal mode...");
-    //     let go_to_normal_events = vec![
-    //         Event::Input(Key::Up),
-    //         Event::Input(Key::Down),
-    //         Event::Input(Key::Esc),
-    //         Event::Input(Key::Char('\n')),
-    //     ];
-    //
-    //     for event in go_to_normal_events {
-    //         interface.input_mode = InputMode::Edit(EditAction::Search);
-    //         let quit = interface
-    //             .handle_input(event)
-    //             .expect("Failed to handle event");
-    //         assert!(!quit);
-    //         assert!(InputMode::Normal == interface.input_mode);
-    //     }
-    //
-    //     println!("Should go to edit mode...");
-    //     let go_to_edit_events = vec![Event::Input(Key::Char('/')), Event::Input(Key::Ctrl('f'))];
-    //
-    //     for event in go_to_edit_events {
-    //         interface.input_mode = InputMode::Normal;
-    //         let quit = interface
-    //             .handle_input(event)
-    //             .expect("Failed to handle event");
-    //         assert!(!quit);
-    //         assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
-    //     }
-    // }
+    #[test]
+    fn test_handle_input_input_modes() {
+        let mut interface = init!();
+
+        assert!(InputMode::Normal == interface.input_mode);
+
+        println!("Should switch input modes...");
+        let event = Event::Input(Key::Char('/'));
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Search == interface.input_mode);
+
+        let event = Event::Input(Key::Esc);
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Normal == interface.input_mode);
+
+        let event = Event::Input(Key::Ctrl('f'));
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Search == interface.input_mode);
+
+        let event = Event::Input(Key::Esc);
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Normal == interface.input_mode);
+
+        let event = Event::Input(Key::Char('h'));
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Suppressed(SuppressedAction::ShowHelp) == interface.input_mode);
+
+        let event = Event::Input(Key::Esc);
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Normal == interface.input_mode);
+
+        println!("Should go to normal mode...");
+        let go_to_normal_events = vec![
+            Event::Input(Key::Up),
+            Event::Input(Key::Down),
+            Event::Input(Key::Esc),
+            Event::Input(Key::Char('\n')),
+        ];
+
+        for event in go_to_normal_events {
+            interface.input_mode = InputMode::Search;
+            let quit = interface
+                .handle_input(event)
+                .expect("Failed to handle event");
+            assert!(!quit);
+            assert!(InputMode::Normal == interface.input_mode);
+        }
+
+        println!("Should go to Search mode...");
+        let go_to_search_events = vec![Event::Input(Key::Char('/')), Event::Input(Key::Ctrl('f'))];
+
+        for event in go_to_search_events {
+            interface.input_mode = InputMode::Normal;
+            let quit = interface
+                .handle_input(event)
+                .expect("Failed to handle event");
+            assert!(!quit);
+            assert!(InputMode::Search == interface.input_mode);
+        }
+    }
 
     #[test]
     fn test_handle_input_switch_input_modes() {
@@ -620,6 +620,22 @@ mod test {
                 .expect("Failed to handle event");
             assert!(!quit);
         }
+        assert_eq!(2, interface.table.visible.len()); // URLs with tag 'tag'
+
+        println!("Should preserve search, when going in and out of Search mode...");
+        let event = Event::Input(Key::Esc);
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Normal == interface.input_mode);
+        assert_eq!(2, interface.table.visible.len()); // URLs with tag 'tag'
+
+        let event = Event::Input(Key::Char('/'));
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
         assert_eq!(2, interface.table.visible.len()); // URLs with tag 'tag'
 
         println!("Should filter items in table on backspace...");

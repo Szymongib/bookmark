@@ -174,25 +174,6 @@ mod test {
             assert!(mode == InputMode::Search);
         }
         assert_eq!("test-2".to_string(), search_module.search_phrase);
-
-        // TODO: test it in interface.rs
-        // println!("Should preserve search phrase when going to normal mode...");
-        // let event = Event::Input(Key::Esc);
-        // let quit = interface
-        //     .handle_input(event)
-        //     .expect("Failed to handle event");
-        // assert!(!quit);
-        // assert!(InputMode::Normal == interface.input_mode);
-        //
-        // assert_eq!("test-2".to_string(), interface.command_input);
-        //
-        // let event = Event::Input(Key::Char('/'));
-        // let quit = interface
-        //     .handle_input(event)
-        //     .expect("Failed to handle event");
-        // assert!(!quit);
-        //
-        // assert_eq!("test-2".to_string(), interface.command_input);
     }
 
 }
