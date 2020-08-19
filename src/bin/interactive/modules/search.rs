@@ -10,6 +10,7 @@ use tui::widgets::{Paragraph, Block, Borders, Clear};
 use tui::style::Style;
 use tui::layout::{Rect, Layout, Direction, Constraint};
 use crate::interactive::modules::{HandleInput, Draw, Module};
+use std::error::Error;
 
 
 pub(crate) struct Search {
@@ -19,11 +20,20 @@ pub(crate) struct Search {
 impl<R: Registry, B: Backend> Module<R, B> for Search {}
 
 impl<R: Registry> HandleInput<R> for Search {
-    fn handle_input(&mut self, input: Key, _registry: &R, table: &mut StatefulTable<URLItem>) -> Result<InputMode, Box<dyn std::error::Error>> {
+    fn try_activate(&mut self, input: Key, _registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+        if input != Key::Char('/') && input != Key::Ctrl('f') {
+            return Ok(None)
+        }
+
+        table.unselect();
+        return Ok(Some(InputMode::Search))
+    }
+
+    fn handle_input(&mut self, input: Key, _registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
         match input {
             Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
                 table.unselect();
-                return Ok(InputMode::Normal)
+                return Ok(Some(InputMode::Normal))
             }
             Key::Char(c) => {
                 self.search_phrase.push(c);
@@ -34,7 +44,8 @@ impl<R: Registry> HandleInput<R> for Search {
             _ => {}
         }
 
-        Ok(self.apply_search(table))
+        self.apply_search(table);
+        Ok(None)
     }
 
 }
@@ -69,8 +80,7 @@ impl Search {
     }
 
     /// updates URLs visibility inside the `table` according to the `search_phrase`
-    fn apply_search(&mut self, table: &mut StatefulTable<URLItem>) -> InputMode {
-
+    fn apply_search(&mut self, table: &mut StatefulTable<URLItem>) {
         let filter = FilterSet::new_combined_filter(self.search_phrase.clone().as_str());
 
         for item in &mut table.items {
@@ -78,8 +88,6 @@ impl Search {
         }
 
         table.refresh_visible();
-
-        InputMode::Search
     }
 
     pub fn render_search_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {

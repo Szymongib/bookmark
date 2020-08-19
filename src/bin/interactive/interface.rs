@@ -12,9 +12,11 @@ use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
 use tui::Frame;
 use bookmark_lib::Registry;
 use std::collections::HashMap;
-use crate::interactive::modules::{Module};
+use crate::interactive::modules::{Module, HandleInput};
 use crate::interactive::modules::search::Search;
 use crate::interactive::modules::help::HelpPanel;
+use bookmark_lib::types::URLRecord;
+use crate::interactive::modules::delete::Delete;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -53,11 +55,16 @@ pub enum InputMode {
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum SuppressedAction {
     ShowHelp,
-    Delete(String),
+    Delete,
 }
 
 pub struct Interface<R: Registry, B: tui::backend::Backend> {
     registry: R,
+
+    // search_module: Box<dyn Module<R, B>>,
+    // help_module: Box<dyn Module<R, B>>,
+    // delete_module: Box<dyn Module<R, B>>,
+
     modules: HashMap<InputMode, Box<dyn Module<R, B>>>,
 
     /// Current mode of input
@@ -79,6 +86,17 @@ struct Styles {
     header: Style,
 }
 
+// struct ModuleMapping {
+//     activation_key: Key,
+//     handling_mode: InputMode,
+// }
+//
+// impl ModuleMapping {
+//     pub fn new(key: Key, mode: InputMode) -> ModuleMapping {
+//         ModuleMapping{activation_key: key, handling_mode: mode}
+//     }
+// }
+
 impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
     pub(crate) fn new(registry: R) -> Result<Interface<R, B>, Box<dyn std::error::Error>> {
         let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None, None)?);
@@ -87,15 +105,20 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
 
         let search_mod: Box<dyn Module<R,B>> = Box::new(Search::new());
         let help_mod: Box<dyn Module<R,B>> = Box::new(HelpPanel::new());
+        let delete_mod: Box<dyn Module<R,B>> = Box::new(Delete::new());
 
         Ok(Interface {
             registry,
             input_mode: InputMode::Normal,
             command_input: "".to_string(),
 
+            // search_module: search_mod,
+            // help_module: help_mod,
+            // delete_module: delete_mod,
             modules: hashmap![
                 InputMode::Search => search_mod,
-                InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod
+                InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
+                InputMode::Suppressed(SuppressedAction::Delete) => delete_mod
             ],
 
             table,
@@ -129,25 +152,12 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     Key::Char('q') => {
                         return Ok(true);
                     }
-                    Key::Char('h') => {
-                        self.input_mode = InputMode::Suppressed(SuppressedAction::ShowHelp)
-                    }
-                    Key::Char('d') => {
-                        let selected_id = self.table.state.selected();
-                        if selected_id.is_none() {
-                            return Ok(false);
-                        }
-
-                        let item_id = self.table.visible[selected_id.unwrap()].id();
-                        self.input_mode = InputMode::Suppressed(SuppressedAction::Delete(item_id))
-                    }
-                    Key::Char('t') => {
-                        // TODO: tag logic
-                        // self.input_mode = InputMode::Edit(EditAction::Tag)
-                    }
-                    Key::Char('n') => {
-                        // self.input_mode = InputMode::Edit(EditAction::Add)
-                    }
+                    // Key::Char('h') => {
+                    //     self.input_mode = self.help_module.activate(&self.registry, &mut self.table)?;
+                    // }
+                    // Key::Char('d') => {
+                    //     self.input_mode = self.delete_module.activate(&self.registry, &mut self.table)?;
+                    // }
                     Key::Left => {
                         self.table.unselect();
                     }
@@ -157,10 +167,9 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     Key::Up => {
                         self.table.previous();
                     }
-                    Key::Char('/') | Key::Ctrl('f') => {
-                        self.table.unselect();
-                        self.input_mode = InputMode::Search
-                    }
+                    // Key::Char('/') | Key::Ctrl('f') => {
+                    //     self.input_mode = self.search_module.activate(&self.registry, &mut self.table)?;
+                    // }
                     Key::Char(':') => {
                         self.input_mode = InputMode::Command;
                         self.command_input = ":".to_string();
@@ -182,55 +191,42 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                             )));
                         }
                     }
-                    _ => {}
+                    _ => {
+                        for m in self.modules.values_mut() {
+                            if let Some(mode) = m.try_activate(input, &self.registry, &mut self.table)? {
+                                self.input_mode = mode;
+                                return Ok(false)
+                            }
+                        }
+                    }
                 },
-                InputMode::Command => match input {
-                    Key::Char('\n') => {
-                        // TODO: run the command
-                    }
-                    Key::Char(c) => {
-                        self.command_input.push(c);
-                    }
-                    Key::Backspace => {
-                        self.command_input.pop();
-                    }
-                    Key::Esc => {
-                        // TODO: discard command
-                        self.input_mode = InputMode::Normal;
-                    }
-                    _ => {}
-                }
-                // TODO: think if stuff like help should be subcategory of InputMode - could be more generic like ShowInfo, or could be completly different mechanism
-                InputMode::Suppressed(SuppressedAction::Delete(url_id)) => match input {
-                    Key::Char('\n') => {
-                        self.delete_url(url_id.clone())?;
-                        self.input_mode = InputMode::Normal;
-                    }
-                    Key::Esc => {
-                        self.input_mode = InputMode::Normal
-                    }
-                    _ => {}
-                },
+                // InputMode::Command => match input {
+                //     Key::Char('\n') => {
+                //         // TODO: run the command
+                //     }
+                //     Key::Char(c) => {
+                //         self.command_input.push(c);
+                //     }
+                //     Key::Backspace => {
+                //         self.command_input.pop();
+                //     }
+                //     Key::Esc => {
+                //         // TODO: discard command
+                //         self.input_mode = InputMode::Normal;
+                //     }
+                //     _ => {}
+                // }
                 _ => {
                     if let Some(module) = self.modules.get_mut(&self.input_mode) {
-                        self.input_mode = module.handle_input(input, &self.registry, &mut self.table)?;
+                        if let Some(new_mode) = module.handle_input(input, &self.registry, &mut self.table)? {
+                            self.input_mode = new_mode;
+                        }
                     }
                 }
             }
         }
 
         Ok(false)
-    }
-
-    fn delete_url(&mut self, url_id: String) -> Result<(), Box<dyn Error>> {
-        let deleted = self.registry.delete_by_id(&url_id)?;
-        if deleted {
-            let items = URLItem::from_vec(self.registry.list_urls(None, None)?);
-            self.table.override_items(items.as_slice()); // TODO: cache items?
-            self.apply_search()
-        }
-
-        Ok(())
     }
 
     pub(crate) fn draw(&mut self, f: &mut Frame<B>) {
@@ -288,50 +284,16 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
             InputMode::Normal =>
                 // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
-            InputMode::Suppressed(action) => match action {
-                SuppressedAction::Delete(url_id) => {
-                    self.confirm_delete(f, url_id.clone());
-                }
-                _ => {}
-            },
+            // InputMode::Suppressed(action) => match action {
+            //     SuppressedAction::Delete(url_id) => {
+            //         self.confirm_delete(f, url_id.clone());
+            //     }
+            //     _ => {}
+            // },
             _ => {}
         }
     }
 
-    fn confirm_delete(&self, f: &mut Frame<B>, url_id: String) {
-        let area = centered_fixed_rect(50, 10, f.size());
-
-        let item = self.registry.get_url(url_id);
-        let item = match item {
-            Err(err) => {
-                panic!("{:?}", err);
-                // TODO: log error - should not happen
-                // Cannot display popup - consider exiting Delete mode
-            }
-            Ok(opt_item) => match opt_item {
-                Some(item) => {item},
-                None => {
-                    // TODO: log error - should not happen
-                    // Cannot display popup - consider exiting Delete mode
-                    return
-                }
-            }
-        };
-
-        let text = vec![
-            Spans::from(format!("Delete '{}' from '{}' group?", item.name, item.group)),
-            Spans::from(""),
-            Spans::from("Yes (Enter)   ---   No (ESC)"), // TODO: consider y and n as confirmation
-        ];
-
-        let paragraph = Paragraph::new(text)
-            .style(Style::default().bg(Color::Black).fg(Color::White))
-            .block(self.create_block("Help - press ESC to close".to_string()))
-            .alignment(Alignment::Center);
-
-        f.render_widget(Clear, area);
-        f.render_widget(paragraph, area);
-    }
 
     // fn add_record_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
     //

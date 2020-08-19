@@ -18,18 +18,26 @@ pub(crate) struct HelpPanel {}
 impl<R: Registry, B: Backend> Module<R, B> for HelpPanel {}
 
 impl<R: Registry> HandleInput<R> for HelpPanel {
-    fn handle_input(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItem>) -> Result<InputMode, Box<dyn Error>> {
+    fn try_activate(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+        if input != Key::Char('h') {
+            return Ok(None)
+        }
+
+        return Ok(Some(InputMode::Suppressed(SuppressedAction::ShowHelp)))
+    }
+
+    fn handle_input(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
         match input {
             Key::Esc | Key::Char('\n') | Key::Char('h') => {
-                return Ok(InputMode::Normal);
+                return Ok(Some(InputMode::Normal));
             }
             Key::Char('q') => {
-                return Ok(InputMode::Normal);
+                return Ok(Some(InputMode::Normal));
             }
             _ => {}
         }
 
-        return Ok(InputMode::Suppressed(SuppressedAction::ShowHelp)) // TODO: consider returning Option<InputMode>
+        return Ok(None)
     }
 }
 
@@ -62,7 +70,7 @@ impl HelpPanel {
                 Style::default().add_modifier(Modifier::BOLD),
             ));
 
-        let area = centered_rect(60, 40, f.size());
+        let area = centered_rect(30, 30, f.size());
         let paragraph = Paragraph::new(text)
             .style(Style::default().bg(Color::Black).fg(Color::White))
             .block(block)
