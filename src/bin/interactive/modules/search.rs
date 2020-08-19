@@ -164,7 +164,7 @@ mod test {
             let mode = search_module
                 .handle_input(key, &dummy_registry, &mut dummy_table)
                 .expect("Failed to handle event");
-            assert!(mode == InputMode::Search);
+            assert!(mode == None);
         }
         assert_eq!("test 1".to_string(), search_module.search_phrase);
 
@@ -179,7 +179,7 @@ mod test {
             let mode = search_module
                 .handle_input(key, &dummy_registry, &mut dummy_table)
                 .expect("Failed to handle event");
-            assert!(mode == InputMode::Search);
+            assert!(mode == None);
         }
         assert_eq!("test-2".to_string(), search_module.search_phrase);
     }

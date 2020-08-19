@@ -1,21 +1,18 @@
 use crate::interactive::event::Event;
 use crate::interactive::table::{StatefulTable, TableItem};
 use crate::interactive::url_table_item::URLItem;
-use crate::interactive::widgets::rect::{centered_fixed_rect};
-use bookmark_lib::record_filter::FilterSet;
 use std::error::Error;
 use termion::event::Key;
-use tui::layout::{Alignment, Constraint, Direction, Layout};
+use tui::layout::{Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
+use tui::text::{Span};
+use tui::widgets::{Block, Borders, Row, Table};
 use tui::Frame;
 use bookmark_lib::Registry;
 use std::collections::HashMap;
-use crate::interactive::modules::{Module, HandleInput};
+use crate::interactive::modules::{Module};
 use crate::interactive::modules::search::Search;
 use crate::interactive::modules::help::HelpPanel;
-use bookmark_lib::types::URLRecord;
 use crate::interactive::modules::delete::Delete;
 
 // TODO: some decisions
@@ -61,10 +58,7 @@ pub enum SuppressedAction {
 pub struct Interface<R: Registry, B: tui::backend::Backend> {
     registry: R,
 
-    // search_module: Box<dyn Module<R, B>>,
-    // help_module: Box<dyn Module<R, B>>,
-    // delete_module: Box<dyn Module<R, B>>,
-
+    /// Interface modules
     modules: HashMap<InputMode, Box<dyn Module<R, B>>>,
 
     /// Current mode of input
@@ -86,17 +80,6 @@ struct Styles {
     header: Style,
 }
 
-// struct ModuleMapping {
-//     activation_key: Key,
-//     handling_mode: InputMode,
-// }
-//
-// impl ModuleMapping {
-//     pub fn new(key: Key, mode: InputMode) -> ModuleMapping {
-//         ModuleMapping{activation_key: key, handling_mode: mode}
-//     }
-// }
-
 impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
     pub(crate) fn new(registry: R) -> Result<Interface<R, B>, Box<dyn std::error::Error>> {
         let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None, None)?);
@@ -112,9 +95,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
             input_mode: InputMode::Normal,
             command_input: "".to_string(),
 
-            // search_module: search_mod,
-            // help_module: help_mod,
-            // delete_module: delete_mod,
             modules: hashmap![
                 InputMode::Search => search_mod,
                 InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
@@ -134,17 +114,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
         })
     }
 
-    /// updates URLs visibility inside the `table` according to the `search_phrase`
-    fn apply_search(&mut self) {
-        let filter = FilterSet::new_combined_filter(self.command_input.as_str());
-
-        for item in &mut self.table.items {
-            item.filter(&filter)
-        }
-
-        self.table.refresh_visible()
-    }
-
     pub(crate) fn handle_input(&mut self, event: Event<Key>) -> Result<bool, Box<dyn Error>> {
         if let Event::Input(input) = event {
             match &self.input_mode {
@@ -152,12 +121,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     Key::Char('q') => {
                         return Ok(true);
                     }
-                    // Key::Char('h') => {
-                    //     self.input_mode = self.help_module.activate(&self.registry, &mut self.table)?;
-                    // }
-                    // Key::Char('d') => {
-                    //     self.input_mode = self.delete_module.activate(&self.registry, &mut self.table)?;
-                    // }
                     Key::Left => {
                         self.table.unselect();
                     }
@@ -167,9 +130,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     Key::Up => {
                         self.table.previous();
                     }
-                    // Key::Char('/') | Key::Ctrl('f') => {
-                    //     self.input_mode = self.search_module.activate(&self.registry, &mut self.table)?;
-                    // }
                     Key::Char(':') => {
                         self.input_mode = InputMode::Command;
                         self.command_input = ":".to_string();
@@ -191,6 +151,7 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                             )));
                         }
                     }
+                    // Activate first module that can handle the key - if none just skip
                     _ => {
                         for m in self.modules.values_mut() {
                             if let Some(mode) = m.try_activate(input, &self.registry, &mut self.table)? {
@@ -275,25 +236,7 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
         for module in self.modules.values() {
             module.draw(self.input_mode.clone(), f)
         }
-
-        self.handle_input_mode(f);
     }
-
-    fn handle_input_mode(&mut self, f: &mut Frame<B>) {
-        match &self.input_mode {
-            InputMode::Normal =>
-                // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
-                {}
-            // InputMode::Suppressed(action) => match action {
-            //     SuppressedAction::Delete(url_id) => {
-            //         self.confirm_delete(f, url_id.clone());
-            //     }
-            //     _ => {}
-            // },
-            _ => {}
-        }
-    }
-
 
     // fn add_record_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
     //
