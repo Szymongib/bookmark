@@ -9,6 +9,7 @@ use crate::interactive::url_table_item::URLItem;
 pub mod search;
 pub mod help;
 pub mod delete;
+pub mod command;
 
 pub trait Module<R: Registry, B: Backend>: HandleInput<R> + Draw<B> {}
 

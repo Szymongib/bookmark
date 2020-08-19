@@ -140,7 +140,6 @@ mod test {
     use bookmark_lib::registry::URLRegistry;
     use crate::interactive::table::StatefulTable;
     use crate::interactive::url_table_item::URLItem;
-    use crate::interactive::interface::InputMode;
 
     #[test]
     fn test_handle_input_search_phrase() {

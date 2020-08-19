@@ -14,9 +14,11 @@ use crate::interactive::modules::{Module};
 use crate::interactive::modules::search::Search;
 use crate::interactive::modules::help::HelpPanel;
 use crate::interactive::modules::delete::Delete;
+use crate::interactive::modules::command::Command;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
+// - :q quit
 // - ':' to start action
 // - ':et' - edit tag of selected
 // - ':eg' - edit group of selected
@@ -89,6 +91,7 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
         let search_mod: Box<dyn Module<R,B>> = Box::new(Search::new());
         let help_mod: Box<dyn Module<R,B>> = Box::new(HelpPanel::new());
         let delete_mod: Box<dyn Module<R,B>> = Box::new(Delete::new());
+        let command_mod: Box<dyn Module<R,B>> = Box::new(Command::new());
 
         Ok(Interface {
             registry,
@@ -98,7 +101,8 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
             modules: hashmap![
                 InputMode::Search => search_mod,
                 InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
-                InputMode::Suppressed(SuppressedAction::Delete) => delete_mod
+                InputMode::Suppressed(SuppressedAction::Delete) => delete_mod,
+                InputMode::Command => command_mod
             ],
 
             table,
@@ -129,10 +133,6 @@ impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
                     }
                     Key::Up => {
                         self.table.previous();
-                    }
-                    Key::Char(':') => {
-                        self.input_mode = InputMode::Command;
-                        self.command_input = ":".to_string();
                     }
                     Key::Char('\n') => {
                         let selected_id = self.table.state.selected();

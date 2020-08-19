@@ -11,5 +11,6 @@ mod interface;
 mod widgets;
 
 mod modules;
+mod command;
 
 mod fake;
