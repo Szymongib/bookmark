@@ -90,12 +90,16 @@ impl<T: Repository> Registry for URLRegistry<T> {
     }
 
     fn tag_url(&self, id: String, tag: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
-        let record = self.storage.get(id)?; // TODO: what should be returned here
+        if tag == "" {
+            return Err(From::from("Tag cannot be an empty string"))
+        }
 
-        // record.map_or(None, |record| {
-        //
-        // })
+        let mut record = self.storage.get(id.clone())?; // TODO: what should be returned here
 
+        record.map_or(Ok(None), |mut record| {
+            record.tags.entry(tag.clone()).or_insert(true);
+            self.storage.update(id, record)
+        })
     }
 }
 

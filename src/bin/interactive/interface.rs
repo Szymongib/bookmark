@@ -15,6 +15,7 @@ use crate::interactive::modules::search::Search;
 use crate::interactive::modules::help::HelpPanel;
 use crate::interactive::modules::delete::Delete;
 use crate::interactive::modules::command::Command;
+use crate::interactive::helpers;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -34,16 +35,6 @@ use crate::interactive::modules::command::Command;
 // - Command - show command bar
 //   - Action
 // - Suppressed
-
-
-// TODO: consider moving to some lib
-macro_rules! hashmap {
-    ($( $key: expr => $val: expr ),*) => {{
-         let mut map = ::std::collections::HashMap::new();
-         $( map.insert($key, $val); )*
-         map
-    }}
-}
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum InputMode {
@@ -84,7 +75,7 @@ struct Styles {
     header: Style,
 }
 
-impl<R: Registry, B: tui::backend::Backend> Interface<R, B> {
+impl<R: Registry + 'static, B: tui::backend::Backend> Interface<R, B> {
     pub(crate) fn new(registry: R) -> Result<Interface<R, B>, Box<dyn std::error::Error>> {
         let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None, None)?);
 

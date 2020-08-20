@@ -11,9 +11,17 @@ pub fn get_selected_item_id(table: &mut StatefulTable<URLItem>) -> Option<String
 }
 
 pub fn get_selected_item<R: Registry>(registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<URLRecord>, Box<dyn std::error::Error>> {
-    Ok(get_selected_item_id(table)
-        .map_or(None, |id: String| {
-            registry.get_url(id)?
-        }))
+    let id = get_selected_item_id(table);
+    if id.is_none() { return Ok(None) }
+    let url = registry.get_url(id.unwrap())?;
+    Ok(url)
 }
 
+// TODO: consider moving to some lib
+macro_rules! hashmap {
+    ($( $key: expr => $val: expr ),*) => {{
+         let mut map = ::std::collections::HashMap::new();
+         $( map.insert($key, $val); )*
+         map
+    }}
+}

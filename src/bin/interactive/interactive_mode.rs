@@ -8,7 +8,7 @@ use crate::interactive::interface::Interface;
 use bookmark_lib::Registry;
 
 
-pub fn enter_interactive_mode<T: Registry>(registry: T) -> Result<(), Box<dyn Error>> {
+pub fn enter_interactive_mode<T: Registry + 'static>(registry: T) -> Result<(), Box<dyn Error>> {
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
     let stdout = AlternateScreen::from(stdout);

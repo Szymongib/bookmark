@@ -11,16 +11,22 @@ use tui::style::{Style, Color};
 use tui::layout::{Rect, Layout, Direction, Constraint};
 use crate::interactive::modules::{HandleInput, Draw, Module};
 use std::error::Error;
+use std::collections::HashMap;
+use crate::interactive::command::Execute;
+use crate::interactive::helpers;
+use crate::interactive::command::tag::{TagAction};
 
 
-pub(crate) struct Command {
+pub(crate) struct Command<R: Registry> {
     command_input: String,
     command_display: String,
+
+    actions: HashMap<String, Box<dyn Execute<R>>>
 }
 
-impl<R: Registry, B: Backend> Module<R, B> for Command {}
+impl<R: Registry, B: Backend> Module<R, B> for Command<R> {}
 
-impl<R: Registry> HandleInput<R> for Command {
+impl<R: Registry> HandleInput<R> for Command<R> {
     fn try_activate(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char(':') {
             return Ok(None)
@@ -30,7 +36,7 @@ impl<R: Registry> HandleInput<R> for Command {
         return Ok(Some(InputMode::Command))
     }
 
-    fn handle_input(&mut self, input: Key, _registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
+    fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
         match input {
             Key::Esc => {
                 // TODO: discard command
@@ -40,15 +46,41 @@ impl<R: Registry> HandleInput<R> for Command {
             }
             Key::Char('\n') => {
                 // TODO: run command
+                if self.command_input == "" {
+                    return Ok(None)
+                }
+
+                let action_index = self.command_input.find(' ').unwrap_or(self.command_input.len());
+
+                let action = &self.command_input.as_str()[0..action_index];
+                let args: Vec<&str> = (self.command_input.as_str())[action_index..].split(' ')
+                    .filter(|s| { *s != "" })
+                    .collect();
+
+                let action = self.actions.get_mut(action);
+                if action.is_none() {
+                    self.command_display = "ERROR".to_string(); // TODO: indicate that error is displayed
+                    return Ok(None);
+                }
+
+                return match action.unwrap().execute(registry, table, args) {
+                    Ok(_ ) => {
+                        self.command_display = format!("URL tagged"); // TODO: indicate that info is displayed
+                        // TODO: refresh visible tags
+                        Ok(None)
+                    }
+                    Err(cmd_err) => {
+                        self.command_display = format!("ERROR: {}", cmd_err.to_string()); // TODO: indicate that error is displayed
+                        Ok(None)
+                    }
+                }
             }
             Key::Char(c) => {
                 // TODO: as function on mut self
-                self.command_input.push(c);
-                self.command_display.push(c);
+                self.input_push(c);
             }
             Key::Backspace => {
-                self.command_input.pop();
-                self.command_display.pop();
+                self.input_pop()
             }
             _ => {}
         }
@@ -58,7 +90,7 @@ impl<R: Registry> HandleInput<R> for Command {
 
 }
 
-impl<B: Backend> Draw<B> for Command {
+impl<R: Registry, B: Backend> Draw<B> for Command<R> {
     fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
         return match mode {
             InputMode::Command => {
@@ -81,12 +113,30 @@ impl<B: Backend> Draw<B> for Command {
     }
 }
 
-impl Command {
-    pub fn new() -> Command {
-        Command{ command_input: "".to_string(), command_display: "".to_string()}
+impl<R: Registry> Command<R> {
+    pub fn new() -> Command<R> {
+
+        let tag_action: Box<dyn Execute<R>> = Box::new(TagAction::new());
+
+        Command{
+            command_input: "".to_string(),
+            command_display: "".to_string(),
+            actions: hashmap![
+                "tag".to_string() => tag_action
+            ],
+        }
     }
 
-    // fn input_push(&mut self, )
+    fn input_push(&mut self, ch: char) {
+        self.command_input.push(ch);
+        self.command_display.push(ch);
+    }
+    fn input_pop(&mut self) {
+        self.command_input.pop();
+        if self.command_display.len() > 1 {
+            self.command_display.pop();
+        }
+    }
 
     pub fn render_command_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
         let input_widget = Paragraph::new(self.command_display.as_ref())

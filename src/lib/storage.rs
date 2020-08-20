@@ -129,9 +129,24 @@ impl Repository for FileStorage {
         Ok(distinct.keys().map(|k| k.to_string()).collect())
     }
 
-    // TODO: implment
     fn update(&self, id: String, record: URLRecord) -> Result<Option<URLRecord>, Box<dyn Error>> {
-        unimplemented!()
+        let mut file = open_urls_file(self.file_path.as_str())?;
+        let mut registry = read_urls(&mut file)?;
+
+        let mut found = false;
+        for i in 0..registry.urls.items.len() {
+            if registry.urls.items[i].id.clone() == id.clone(){
+                registry.urls.items[i] = record.clone();
+                found = true
+            }
+        }
+        if !found {
+            return Ok(None)
+        }
+
+        write_urls(&mut file, registry)?;
+
+        return Ok(Some(record))
     }
 }
 

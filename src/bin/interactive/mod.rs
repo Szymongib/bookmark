@@ -1,4 +1,3 @@
-pub mod interactive_mode;
 
 mod event;
 
@@ -6,9 +5,10 @@ mod table;
 
 mod url_table_item;
 
-mod interface;
-
+#[macro_use]
 mod helpers;
+
+mod interface;
 
 mod widgets;
 
@@ -16,3 +16,5 @@ mod modules;
 mod command;
 
 mod fake;
+
+pub mod interactive_mode;
