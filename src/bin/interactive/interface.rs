@@ -1,6 +1,6 @@
 use crate::interactive::event::Event;
 use crate::interactive::table::{StatefulTable, TableItem};
-use crate::interactive::url_table_item::URLItem;
+use crate::interactive::url_table_item::{URLItem, URLItemSource};
 use std::error::Error;
 use termion::event::Key;
 use tui::layout::{Constraint, Direction, Layout};
@@ -50,7 +50,7 @@ pub enum SuppressedAction {
     Delete,
 }
 
-pub struct Interface<R: Registry, B: tui::backend::Backend> {
+pub struct Interface<R: Registry + 'static, B: tui::backend::Backend> {
     registry: R,
 
     /// Interface modules
@@ -63,7 +63,7 @@ pub struct Interface<R: Registry, B: tui::backend::Backend> {
     command_input: String,
 
     /// Table with URLs
-    table: StatefulTable<URLItem>,
+    table: StatefulTable<URLItemSource<R>, URLItem>,
 
     /// Styles used for displaying user interface
     styles: Styles,
@@ -79,7 +79,8 @@ impl<R: Registry + 'static, B: tui::backend::Backend> Interface<R, B> {
     pub(crate) fn new(registry: R) -> Result<Interface<R, B>, Box<dyn std::error::Error>> {
         let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None, None)?);
 
-        let table = StatefulTable::with_items(items.as_slice());
+        let url_items_source = URLItemSource::new(&registry);
+        let table = StatefulTable::with_items(url_items_source,items.as_slice());
 
         let search_mod: Box<dyn Module<R,B>> = Box::new(Search::new());
         let help_mod: Box<dyn Module<R,B>> = Box::new(HelpPanel::new());

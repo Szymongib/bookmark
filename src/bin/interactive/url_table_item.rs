@@ -1,6 +1,24 @@
 use bookmark_lib::record_filter::URLFilter;
 use bookmark_lib::types::URLRecord;
-use crate::interactive::table::TableItem;
+use crate::interactive::table::{TableItem, Source};
+use bookmark_lib::Registry;
+
+pub struct URLItemSource<R: Registry +'static> {
+    registry: &'static R,
+}
+
+impl<R: Registry> Source<URLItem> for URLItemSource<R> {
+    fn get_items(&self) -> Result<Vec<URLItem>, Box<dyn std::error::Error>> {
+        Ok(URLItem::from_vec(self.registry.list_urls(None, None)?))
+    }
+}
+
+impl<R: Registry +'static> URLItemSource<R> {
+    pub fn new(registry: &'static R) -> URLItemSource<R> {
+        URLItemSource{registry}
+    }
+}
+
 
 #[derive(Clone, Debug)]
 pub struct URLItem {

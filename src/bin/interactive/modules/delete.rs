@@ -3,7 +3,7 @@ use tui::backend::Backend;
 use crate::interactive::modules::{Module, HandleInput, Draw};
 use termion::event::Key;
 use crate::interactive::table::{StatefulTable, TableItem};
-use crate::interactive::url_table_item::URLItem;
+use crate::interactive::url_table_item::{URLItem, URLItemSource};
 use crate::interactive::interface::{InputMode, SuppressedAction};
 use std::error::Error;
 use tui::Frame;
@@ -24,7 +24,7 @@ pub(crate) struct Delete {
 impl<R: Registry, B: Backend> Module<R, B> for Delete {}
 
 impl<R: Registry> HandleInput<R> for Delete {
-    fn try_activate(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+    fn try_activate(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char('d') {
             return Ok(None)
         }
@@ -42,7 +42,7 @@ impl<R: Registry> HandleInput<R> for Delete {
         return Ok(Some(InputMode::Suppressed(SuppressedAction::Delete)))
     }
 
-    fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+    fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
         match input {
             Key::Char('\n') => {
                 self.delete_url(registry, table)?;
@@ -75,7 +75,7 @@ impl Delete {
         return Delete{record: None}
     }
 
-    fn get_selected_item_id(&self, table: &mut StatefulTable<URLItem>) -> Option<String> {
+    fn get_selected_item_id<R: Registry>(&self, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Option<String> {
         let selected_id = table.state.selected();
         if selected_id.is_none() {
             return None;
@@ -85,7 +85,7 @@ impl Delete {
         Some(item_id)
     }
 
-    fn delete_url<R: Registry>(&self, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<(), Box<dyn Error>> {
+    fn delete_url<R: Registry>(&self, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<(), Box<dyn Error>> {
         let url_id = self.get_selected_item_id(table);
         if url_id.is_none() {
             return Ok(())

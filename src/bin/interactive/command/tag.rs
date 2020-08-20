@@ -5,7 +5,7 @@ use tui::backend::Backend;
 use crate::interactive::modules::{HandleInput, Draw};
 use crate::interactive::interface::InputMode;
 use crate::interactive::table::StatefulTable;
-use crate::interactive::url_table_item::URLItem;
+use crate::interactive::url_table_item::{URLItem, URLItemSource};
 use termion::event::Key;
 use tui::Frame;
 use crate::interactive::helpers::get_selected_item;
@@ -15,11 +15,11 @@ pub struct TagAction {}
 // impl<R: Registry, B: Backend> Command<R,B> for TagCmd{ }
 //
 // impl<R: Registry> HandleInput<R> for TagCmd {
-//     fn try_activate(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+//     fn try_activate(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
 //         unimplemented!()
 //     }
 //
-//     fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+//     fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
 //         unimplemented!()
 //     }
 // }
@@ -32,7 +32,7 @@ pub struct TagAction {}
 
 // TODO: custom errors - command input error
 impl<R: Registry> Execute<R> for TagAction {
-    fn execute(&self, registry: &R, table: &mut StatefulTable<URLItem>, args: Vec<&str>) -> Result<bool, command::Error> {
+    fn execute(&self, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>, args: Vec<&str>) -> Result<bool, command::Error> {
         let url_item = get_selected_item(registry, table)?;
         if url_item.is_none() {
             // TODO: what should be return if failed? Probably error

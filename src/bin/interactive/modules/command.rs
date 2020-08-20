@@ -2,7 +2,7 @@ use termion::event::Key;
 use tui::backend::Backend;
 use tui::Frame;
 use crate::interactive::table::StatefulTable;
-use crate::interactive::url_table_item::URLItem;
+use crate::interactive::url_table_item::{URLItem, URLItemSource};
 use crate::interactive::interface::InputMode;
 use bookmark_lib::Registry;
 use bookmark_lib::record_filter::FilterSet;
@@ -27,7 +27,7 @@ pub(crate) struct Command<R: Registry> {
 impl<R: Registry, B: Backend> Module<R, B> for Command<R> {}
 
 impl<R: Registry> HandleInput<R> for Command<R> {
-    fn try_activate(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+    fn try_activate(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char(':') {
             return Ok(None)
         }
@@ -36,7 +36,7 @@ impl<R: Registry> HandleInput<R> for Command<R> {
         return Ok(Some(InputMode::Command))
     }
 
-    fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItem>) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
+    fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
         match input {
             Key::Esc => {
                 // TODO: discard command

@@ -1,6 +1,6 @@
 use bookmark_lib::Registry;
 use crate::interactive::table::StatefulTable;
-use crate::interactive::url_table_item::URLItem;
+use crate::interactive::url_table_item::{URLItem, URLItemSource};
 use tui::backend::Backend;
 use crate::interactive::modules::{HandleInput, Draw};
 use std::fmt::{Debug, Display};
@@ -11,7 +11,7 @@ pub mod tag;
 pub trait Command<R: Registry, B: Backend>: HandleInput<R> + Draw<B> + Execute<R> {}
 
 pub trait Execute<R: Registry> {
-    fn execute(&self, registry: &R, table: &mut StatefulTable<URLItem>, args: Vec<&str>) -> Result<bool, Error>; // TODO: consider what should be returned here
+    fn execute(&self, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>, args: Vec<&str>) -> Result<bool, Error>; // TODO: consider what should be returned here
 }
 
 // TODO: Move it further to the top?
