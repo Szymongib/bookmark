@@ -1,30 +1,42 @@
 use tui::widgets::TableState;
+use bookmark_lib::filters::Filter;
+use crate::interactive::url_table_item::{URLItemSource, URLItem, URLItemFilter};
+use bookmark_lib::types::URLRegistry;
+use bookmark_lib::storage::FileStorage;
 
 // TODO: make registry clonable?
 // TODO: only lister for table?
 // TODO: remove some generics
 
+
+pub trait TableFilter<T: TableItem> {
+    fn apply(&self, item: T) -> bool;
+}
+
 pub trait TableItem {
-    fn visible(&self) -> bool;
+    // fn visible(&self) -> bool;
     fn row(&self) -> &Vec<String>;
     fn id(&self) -> String;
+    fn filter<T: TableFilter>(&self, filter: T) -> bool;
 }
 
 pub trait Source<T: TableItem> {
     fn get_items(&self) -> Result<Vec<T>, Box<dyn std::error::Error>>;
 }
 
-pub struct StatefulTable<S: Source<T>, T: TableItem> {
+pub struct StatefulTable<S: Source<T>, T: TableItem, F: TableFilter<T>> {
     source: S,
+    filter: Option<F>,
     pub visible: Vec<T>,
     pub state: TableState,
 }
 
-impl<S: Source<T>, T: TableItem + Clone> StatefulTable<S, T> {
+impl<S: Source<T>, T: TableItem + Clone, F: Filter> StatefulTable<S, T, F> {
     // TODO: cleanup
-    pub fn with_items(source: S, items: &[T]) -> StatefulTable<S, T> {
+    pub fn with_items(source: S, items: &[T]) -> StatefulTable<S, T, F> {
         StatefulTable {
             source,
+            filter: None,
             state: TableState::default(),
             // items: items.to_vec(),
             visible: items.to_vec(),
@@ -35,15 +47,27 @@ impl<S: Source<T>, T: TableItem + Clone> StatefulTable<S, T> {
         self.source.get_items()
     }
 
-    pub fn refresh_visible(&mut self) {
-        self.visible.clear();
-        let items = self.source.get_items().expect("ERROR");// TODO: handle
+    pub fn set_filter(&mut self, filter: F<T>) {
+        self.filter = Some(filter)
+    }
 
+    pub fn refresh_visible(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        if self.filter.is_none() {
+            self.visible = self.items()?;
+            return Ok(())
+        }
+
+        self.visible.clear();
+        let items = self.source.get_items()?;
+
+        let filter = &self.filter.unwrap();
         for i in items {
-            if i.visible() {
+            if filter.apply(i) {
                 self.visible.push(i.clone())
             }
         }
+
+        Ok(())
     }
 
     // pub fn override_items(&mut self, items: &[T]) {

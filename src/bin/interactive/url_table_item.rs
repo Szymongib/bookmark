@@ -1,7 +1,12 @@
-use bookmark_lib::record_filter::URLFilter;
+use bookmark_lib::record_filter::Filter;
 use bookmark_lib::types::URLRecord;
-use crate::interactive::table::{TableItem, Source};
+use crate::interactive::table::{TableItem, Source, TableFilter, StatefulTable};
 use bookmark_lib::Registry;
+use bookmark_lib::filters::Filter;
+use bookmark_lib::registry::URLRegistry;
+use bookmark_lib::storage::FileStorage;
+
+// type URLsTable = StatefulTable<URLItemSource<URLRegistry<FileStorage>>, URLItem, URLItemFilter>;
 
 pub struct URLItemSource<R: Registry +'static> {
     registry: &'static R,
@@ -18,6 +23,7 @@ impl<R: Registry +'static> URLItemSource<R> {
         URLItemSource{registry}
     }
 }
+
 
 
 #[derive(Clone, Debug)]
@@ -44,15 +50,15 @@ impl URLItem {
         return self.url.url.clone();
     }
 
-    pub fn filter<T: URLFilter>(&mut self, filter: &T) {
+    pub fn filter<T: Filter>(&mut self, filter: &T) {
         self.visible = filter.matches(&self.url)
     }
 }
 
 impl TableItem for URLItem {
-    fn visible(&self) -> bool {
-        return self.visible;
-    }
+    // fn visible(&self) -> bool {
+    //     return self.visible;
+    // }
 
     fn row(&self) -> &Vec<String> {
         &self.row
@@ -60,6 +66,20 @@ impl TableItem for URLItem {
 
     fn id(&self) -> String {
         self.url.id.clone()
+    }
+
+    fn filter<T: TableFilter>(&self, filter: T) -> bool {
+        unimplemented!()
+    }
+}
+
+pub struct URLItemFilter {
+
+}
+
+impl TableFilter<URLItem> for URLItemFilter {
+    fn apply(&self, items: Vec<URLItem>) -> Vec<URLItem> {
+
     }
 }
 
@@ -76,7 +96,7 @@ fn url_to_row(record: &URLRecord) -> Vec<String> {
 mod test {
     use crate::interactive::table::TableItem;
     use crate::interactive::url_table_item::URLItem;
-    use bookmark_lib::record_filter::URLFilter;
+    use bookmark_lib::record_filter::Filter;
     use bookmark_lib::types::URLRecord;
 
     struct TestCase {
@@ -94,7 +114,7 @@ mod test {
         }
     }
 
-    impl URLFilter for FixedFilter {
+    impl Filter for FixedFilter {
         fn matches(&self, _: &URLRecord) -> bool {
             return self.matches;
         }

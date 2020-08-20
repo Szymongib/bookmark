@@ -1,11 +1,25 @@
 use crate::types::URLRecord;
 
-pub trait URLFilter {
+pub trait Filter {
     fn matches(&self, record: &URLRecord) -> bool;
 }
 
+pub struct NoopFilter {}
+
+impl NoopFilter {
+    pub fn new() -> NoopFilter {
+        NoopFilter {}
+    }
+}
+
+impl Filter for NoopFilter {
+    fn matches(&self, record: &URLRecord) -> bool {
+        true
+    }
+}
+
 pub struct FilterSet {
-    filters: Vec<Filter>,
+    filters: Vec<URLFilter>,
 }
 
 // TODO: consider refactoring to use only as a function
@@ -15,16 +29,16 @@ impl FilterSet {
     pub fn new_combined_filter(phrase: &str) -> FilterSet {
         return FilterSet {
             filters: vec![
-                Filter::new_name_filter(phrase),
-                Filter::new_url_filter(phrase),
-                Filter::new_group_filter(phrase),
-                Filter::new_tag_filter(phrase),
+                URLFilter::new_name_filter(phrase),
+                URLFilter::new_url_filter(phrase),
+                URLFilter::new_group_filter(phrase),
+                URLFilter::new_tag_filter(phrase),
             ],
         };
     }
 }
 
-impl URLFilter for FilterSet {
+impl Filter for FilterSet {
     fn matches(&self, record: &URLRecord) -> bool {
         for f in &self.filters {
             if f.matches(record) {
@@ -35,6 +49,47 @@ impl URLFilter for FilterSet {
     }
 }
 
+// TODO: Tag filter, Group filter etc.
+// TODO: combine filters
+
+pub struct GroupFilter {
+    group: String,
+}
+
+impl Filter for GroupFilter {
+    fn matches(&self, record: &URLRecord) -> bool {
+        record.group == self.group
+    }
+}
+
+impl GroupFilter {
+    pub fn new(group: &str) -> GroupFilter {
+        GroupFilter{group: group.to_string()}
+    }
+}
+
+// TODO: support multiple tags?
+pub struct TagsFilter {
+    tags: Vec<String>,
+}
+
+impl Filter for TagsFilter {
+    fn matches(&self, record: &URLRecord) -> bool {
+        for t in &self.tags {
+            if record.tags.contains_key(t) {
+                return true
+            }
+        }
+        return false
+    }
+}
+
+impl TagsFilter {
+    pub fn new(tags: Vec<&str>) -> TagsFilter {
+        TagsFilter {tags: tags.iter().map(|t| {t.to_string()}).collect()}
+    }
+}
+
 enum SearchElement {
     Name,
     URL,
@@ -42,35 +97,35 @@ enum SearchElement {
     Tag,
 }
 
-pub struct Filter {
+pub struct URLFilter {
     phrase: String,
     element: SearchElement,
 }
 
-impl Filter {
-    pub fn new_name_filter(phrase: &str) -> Filter {
-        Filter {
+impl URLFilter {
+    pub fn new_name_filter(phrase: &str) -> URLFilter {
+        URLFilter {
             phrase: phrase.to_lowercase(),
             element: SearchElement::Name,
         }
     }
 
-    pub fn new_url_filter(phrase: &str) -> Filter {
-        Filter {
+    pub fn new_url_filter(phrase: &str) -> URLFilter {
+        URLFilter {
             phrase: phrase.to_lowercase(),
             element: SearchElement::URL,
         }
     }
 
-    pub fn new_group_filter(phrase: &str) -> Filter {
-        Filter {
+    pub fn new_group_filter(phrase: &str) -> URLFilter {
+        URLFilter {
             phrase: phrase.to_lowercase(),
             element: SearchElement::Group,
         }
     }
 
-    pub fn new_tag_filter(phrase: &str) -> Filter {
-        Filter {
+    pub fn new_tag_filter(phrase: &str) -> URLFilter {
+        URLFilter {
             phrase: phrase.to_lowercase(),
             element: SearchElement::Tag,
         }
@@ -97,7 +152,7 @@ impl Filter {
 
 #[cfg(test)]
 mod test {
-    use crate::record_filter::{FilterSet, URLFilter};
+    use crate::record_filter::{FilterSet, Filter};
     use crate::types::URLRecord;
 
     #[test]

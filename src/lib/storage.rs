@@ -1,5 +1,4 @@
 use super::types::{URLRecord, URLRegistry};
-use crate::filters::Filter;
 use crate::types::URLs;
 use crate::Repository;
 use std::collections::HashMap;
@@ -59,41 +58,16 @@ impl Repository for FileStorage {
         return Ok(record);
     }
 
-    fn delete(&self, name: &str, group: &str) -> Result<bool, Box<dyn std::error::Error>> {
-        return self.delete_url(|u| {
-            u.group == group && u.name == name
-        })
-    }
-
     fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn Error>> {
         return self.delete_url(|u| {
             u.id == id.to_string()
         })
     }
 
-    fn list(
-        &self,
-        group: Option<&str>,
-        filter: &dyn Filter,
-    ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
+    fn list(&self) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let registry = read_urls(&mut file)?;
-
-        if group.is_none() {
-            return Ok(filter.apply(registry.urls.items));
-        }
-
-        let group = group.unwrap();
-
-        let urls = registry
-            .urls
-            .items
-            .iter()
-            .filter(|rec| rec.group == group)
-            .map(|rec| rec.clone())
-            .collect();
-
-        return Ok(filter.apply(urls));
+        return Ok(registry.urls.items);
     }
 
     fn get(&self, id: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
