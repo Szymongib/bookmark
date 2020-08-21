@@ -1,8 +1,7 @@
-use bookmark_lib::record_filter::Filter;
+use bookmark_lib::filters::Filter;
 use bookmark_lib::types::URLRecord;
 use crate::interactive::table::{TableItem, Source, TableFilter, StatefulTable};
 use bookmark_lib::Registry;
-use bookmark_lib::filters::Filter;
 use bookmark_lib::registry::URLRegistry;
 use bookmark_lib::storage::FileStorage;
 
@@ -96,7 +95,7 @@ fn url_to_row(record: &URLRecord) -> Vec<String> {
 mod test {
     use crate::interactive::table::TableItem;
     use crate::interactive::url_table_item::URLItem;
-    use bookmark_lib::record_filter::Filter;
+    use bookmark_lib::filters::Filter;
     use bookmark_lib::types::URLRecord;
 
     struct TestCase {

@@ -5,7 +5,7 @@ use std::ops::Deref;
 use std::error::Error;
 use std::path::PathBuf;
 use crate::util::create_temp_file;
-use crate::record_filter::{Filter, NoopFilter};
+use crate::filters::{Filter, NoopFilter};
 
 // TODO: introduce custom errors
 
@@ -87,11 +87,6 @@ impl<T: Repository> Registry for URLRegistry<'_, T> {
 
 impl<T: Repository> RegistryReader for URLRegistry<'_,T> {
     fn list_urls(&self) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
-        // let filter: Box<dyn Filter> = if let Some(t) = tags {
-        //     Box::new(ListFilter::new_tags_filter(t))
-        // } else {
-        //     Box::new(NoopFilter::new())
-        // };
         let urls = self.storage.list()?;
 
         Ok(urls.iter().filter(|url|{
@@ -119,7 +114,7 @@ mod test {
     use std::collections::HashMap;
     use std::{fs};
     use crate::{Registry, RegistryReader, RegistryConfig};
-    use crate::record_filter::{NoopFilter, GroupFilter, TagsFilter};
+    use crate::filters::{NoopFilter, GroupFilter, TagsFilter};
 
     struct TestUrl {
         name: &'static str,

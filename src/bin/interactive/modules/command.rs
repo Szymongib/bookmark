@@ -5,7 +5,7 @@ use crate::interactive::table::StatefulTable;
 use crate::interactive::url_table_item::{URLItem, URLItemSource};
 use crate::interactive::interface::InputMode;
 use bookmark_lib::Registry;
-use bookmark_lib::record_filter::FilterSet;
+use bookmark_lib::filters::FilterSet;
 use tui::widgets::{Paragraph, Block, Borders, Clear};
 use tui::style::{Style, Color};
 use tui::layout::{Rect, Layout, Direction, Constraint};

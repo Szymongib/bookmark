@@ -5,7 +5,7 @@ use crate::interactive::table::StatefulTable;
 use crate::interactive::url_table_item::{URLItem, URLItemSource};
 use crate::interactive::interface::InputMode;
 use bookmark_lib::Registry;
-use bookmark_lib::record_filter::FilterSet;
+use bookmark_lib::filters::FilterSet;
 use tui::widgets::{Paragraph, Block, Borders, Clear};
 use tui::style::Style;
 use tui::layout::{Rect, Layout, Direction, Constraint};
@@ -81,7 +81,7 @@ impl Search {
 
     /// updates URLs visibility inside the `table` according to the `search_phrase`
     fn apply_search<R: Registry>(&mut self, table: &mut StatefulTable<URLItemSource<R>, URLItem>) {
-        let filter = FilterSet::new_combined_filter(self.search_phrase.clone().as_str());
+        let filter = FilterSet::new_combined_for_phrase(self.search_phrase.clone().as_str());
 
         for item in &mut table.items() {
             item.filter(&filter)

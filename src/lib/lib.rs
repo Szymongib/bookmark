@@ -1,8 +1,7 @@
 use crate::types::URLRecord;
-use crate::record_filter::Filter;
+use crate::filters::Filter;
 
 pub mod filters;
-pub mod record_filter;
 pub mod registry;
 pub mod storage;
 pub mod types;
