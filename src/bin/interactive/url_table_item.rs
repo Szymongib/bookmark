@@ -5,26 +5,6 @@ use bookmark_lib::Registry;
 use bookmark_lib::registry::URLRegistry;
 use bookmark_lib::storage::FileStorage;
 
-// type URLsTable = StatefulTable<URLItemSource<URLRegistry<FileStorage>>, URLItem, URLItemFilter>;
-
-pub struct URLItemSource<R: Registry +'static> {
-    registry: &'static R,
-}
-
-impl<R: Registry> Source<URLItem> for URLItemSource<R> {
-    fn get_items(&self) -> Result<Vec<URLItem>, Box<dyn std::error::Error>> {
-        Ok(URLItem::from_vec(self.registry.list_urls(None, None)?))
-    }
-}
-
-impl<R: Registry +'static> URLItemSource<R> {
-    pub fn new(registry: &'static R) -> URLItemSource<R> {
-        URLItemSource{registry}
-    }
-}
-
-
-
 #[derive(Clone, Debug)]
 pub struct URLItem {
     visible: bool,
@@ -49,16 +29,12 @@ impl URLItem {
         return self.url.url.clone();
     }
 
-    pub fn filter<T: Filter>(&mut self, filter: &T) {
-        self.visible = filter.matches(&self.url)
-    }
+    // pub fn filter<T: Filter>(&mut self, filter: &T) {
+    //     self.visible = filter.matches(&self.url)
+    // }
 }
 
 impl TableItem for URLItem {
-    // fn visible(&self) -> bool {
-    //     return self.visible;
-    // }
-
     fn row(&self) -> &Vec<String> {
         &self.row
     }
@@ -66,20 +42,10 @@ impl TableItem for URLItem {
     fn id(&self) -> String {
         self.url.id.clone()
     }
-
-    fn filter<T: TableFilter>(&self, filter: T) -> bool {
-        unimplemented!()
-    }
 }
 
 pub struct URLItemFilter {
 
-}
-
-impl TableFilter<URLItem> for URLItemFilter {
-    fn apply(&self, items: Vec<URLItem>) -> Vec<URLItem> {
-
-    }
 }
 
 fn url_to_row(record: &URLRecord) -> Vec<String> {

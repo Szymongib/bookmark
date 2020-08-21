@@ -8,77 +8,41 @@ use bookmark_lib::storage::FileStorage;
 // TODO: only lister for table?
 // TODO: remove some generics
 
-
-pub trait TableFilter<T: TableItem> {
-    fn apply(&self, item: T) -> bool;
-}
-
 pub trait TableItem {
-    // fn visible(&self) -> bool;
     fn row(&self) -> &Vec<String>;
     fn id(&self) -> String;
-    fn filter<T: TableFilter>(&self, filter: T) -> bool;
 }
 
-pub trait Source<T: TableItem> {
-    fn get_items(&self) -> Result<Vec<T>, Box<dyn std::error::Error>>;
-}
-
-pub struct StatefulTable<S: Source<T>, T: TableItem, F: TableFilter<T>> {
-    source: S,
-    filter: Option<F>,
-    pub visible: Vec<T>,
+pub struct StatefulTable<T> {
+    pub items: Vec<T>,
     pub state: TableState,
 }
 
-impl<S: Source<T>, T: TableItem + Clone, F: Filter> StatefulTable<S, T, F> {
-    // TODO: cleanup
-    pub fn with_items(source: S, items: &[T]) -> StatefulTable<S, T, F> {
+impl<T> StatefulTable<T> {
+    pub fn new() -> StatefulTable<T> {
+        let vec: Vec<T> = vec![];
+
         StatefulTable {
-            source,
-            filter: None,
             state: TableState::default(),
-            // items: items.to_vec(),
-            visible: items.to_vec(),
+            items: vec,
         }
     }
 
-    pub fn items(&self) -> Result<Vec<T>, Box<dyn std::error::Error>> {
-        self.source.get_items()
-    }
-
-    pub fn set_filter(&mut self, filter: F<T>) {
-        self.filter = Some(filter)
-    }
-
-    pub fn refresh_visible(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        if self.filter.is_none() {
-            self.visible = self.items()?;
-            return Ok(())
+    pub fn with_items(items: Vec<T>) -> StatefulTable<T> {
+        StatefulTable {
+            state: TableState::default(),
+            items,
         }
-
-        self.visible.clear();
-        let items = self.source.get_items()?;
-
-        let filter = &self.filter.unwrap();
-        for i in items {
-            if filter.apply(i) {
-                self.visible.push(i.clone())
-            }
-        }
-
-        Ok(())
     }
 
-    // pub fn override_items(&mut self, items: &[T]) {
-    //     self.items = items.to_vec();
-    //     self.visible = items.to_vec();
-    // }
+    pub fn override_items(&mut self, items: Vec<T>) {
+        self.items = items.to_vec();
+    }
 
     pub fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.visible.len() - 1 {
+                if i >= self.items.len() - 1 {
                     0
                 } else {
                     i + 1
@@ -93,7 +57,7 @@ impl<S: Source<T>, T: TableItem + Clone, F: Filter> StatefulTable<S, T, F> {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.visible.len() - 1
+                    self.items.len() - 1
                 } else {
                     i - 1
                 }
@@ -107,6 +71,64 @@ impl<S: Source<T>, T: TableItem + Clone, F: Filter> StatefulTable<S, T, F> {
         self.state.select(None);
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::interactive::table::StatefulTable;
+
+    #[test]
+    fn stateful_list_test() {
+        let items = vec!["one", "two", "three", "four", "five"];
+
+        let mut table = StatefulTable::with_items(items);
+        assert_eq!(table.state.selected(), None);
+
+        table.next();
+        assert_eq!(table.state.selected(), Some(0));
+
+        table.previous();
+        assert_eq!(table.state.selected(), Some(4));
+
+        table.next();
+        table.next();
+        table.next();
+        table.next();
+        table.next();
+        table.next();
+        assert_eq!(table.state.selected(), Some(0));
+
+        table.unselect();
+        assert_eq!(table.state.selected(), None);
+    }
+}
+
+//     pub fn items(&self) -> Result<Vec<T>, Box<dyn std::error::Error>> {
+//         self.source.get_items()
+//     }
+//
+//     pub fn set_filter(&mut self, filter: F<T>) {
+//         self.filter = Some(filter)
+//     }
+//
+//     pub fn refresh_visible(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+//         if self.filter.is_none() {
+//             self.visible = self.items()?;
+//             return Ok(())
+//         }
+//
+//         self.visible.clear();
+//         let items = self.source.get_items()?;
+//
+//         let filter = &self.filter.unwrap();
+//         for i in items {
+//             if filter.apply(i) {
+//                 self.visible.push(i.clone())
+//             }
+//         }
+//
+//         Ok(())
+//     }
+
 //
 // #[cfg(test)]
 // mod test {
