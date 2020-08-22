@@ -71,6 +71,9 @@ mod test {
         fn matches(&self, _: &URLRecord) -> bool {
             return self.matches;
         }
+        fn chain(self, _filter: Box<dyn Filter>) -> Box<dyn Filter> {
+            todo!() 
+        }
     }
 
     #[test]

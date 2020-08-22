@@ -2,6 +2,7 @@ use crate::types::URLRecord;
 
 pub trait Filter {
     fn matches(&self, record: &URLRecord) -> bool;
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter>;
 }
 
 pub struct NoopFilter {}
@@ -15,6 +16,11 @@ impl NoopFilter {
 impl Filter for NoopFilter {
     fn matches(&self, _record: &URLRecord) -> bool {
         true
+    }
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
+        Box::new(FilterSet::new_combined(vec![
+            filter,
+        ]))
     }
 }
 
@@ -36,6 +42,12 @@ impl FilterSet {
             ],
         };
     }
+
+    pub fn new_combined(filters: Vec<Box<dyn Filter>>) -> FilterSet {
+        return FilterSet {
+            filters
+        }
+    }
 }
 
 impl Filter for FilterSet {
@@ -46,6 +58,13 @@ impl Filter for FilterSet {
             }
         }
         return false;
+    }
+
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
+        Box::new(FilterSet::new_combined(vec![
+            Box::new(self),
+            filter,
+        ]))
     }
 }
 
@@ -58,6 +77,12 @@ pub struct GroupFilter {
 impl Filter for GroupFilter {
     fn matches(&self, record: &URLRecord) -> bool {
         record.group == self.group
+    }
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
+        Box::new(FilterSet::new_combined(vec![
+            Box::new(self),
+            filter,
+        ]))
     }
 }
 
@@ -79,6 +104,12 @@ impl Filter for TagsFilter {
             }
         }
         return false
+    }
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
+        Box::new(FilterSet::new_combined(vec![
+            Box::new(self),
+            filter,
+        ]))
     }
 }
 
@@ -115,6 +146,12 @@ impl Filter for PhraseFilter {
                 return false;
             }
         };
+    }
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
+        Box::new(FilterSet::new_combined(vec![
+            Box::new(self),
+            filter,
+        ]))
     }
 }
 

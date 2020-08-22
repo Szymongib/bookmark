@@ -6,6 +6,8 @@ use bookmark_lib::storage::FileStorage;
 use bookmark_lib::{Registry};
 use crate::interactive::interactive_mode::enter_interactive_mode;
 
+use bookmark_lib::filters::{GroupFilter, TagsFilter, Filter, NoopFilter};
+
 mod interactive;
 mod display;
 
@@ -190,12 +192,20 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn list_sub_cmd(&self, matches: &ArgMatches) {
-        // TODO: setup filters
-        let group = matches.value_of("group");
-        let tags = get_multiple_values(matches, "tag");
+        let noop_filter: Box<dyn Filter> = Box::new(NoopFilter::new());
+
+        let group_filter: Box<dyn Filter> = matches.value_of("group").map(|g| {
+            let f: Box<dyn Filter> = Box::new(GroupFilter::new(g));
+            f
+        }).unwrap_or(noop_filter);
+
+        let tags_filter: Box<dyn Filter> = get_multiple_values(matches, "tag").map(|t| {
+            let f: Box<dyn Filter> = Box::new(TagsFilter::new(t));
+            f
+        }).unwrap_or(group_filter);
 
         // TODO: support output as json?
-        return match self.registry.list_urls(None) {
+        return match self.registry.list_urls(Some(&tags_filter)) {
             Ok(urls) => {
                 display::display_urls(urls);
             }
