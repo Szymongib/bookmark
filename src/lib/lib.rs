@@ -39,10 +39,6 @@ pub trait RegistryReader {
     fn get_url(&self, id: String) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 }
 
-pub trait RegistryConfig<'a> {
-    fn set_filter<F: Filter + 'a>(&mut self, filter: F);
-}
-
 pub trait Repository {
     fn add(&self, record: URLRecord) -> Result<URLRecord, Box<dyn std::error::Error>>;
     fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn std::error::Error>>;

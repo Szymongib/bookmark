@@ -38,7 +38,7 @@ impl HandleInput for Delete {
     fn handle_input(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         match input {
             Key::Char('\n') => {
-                table.delete();
+                table.delete()?;
                 return Ok(Some(InputMode::Normal));
             }
             Key::Char('q') | Key::Esc => {

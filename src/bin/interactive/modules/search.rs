@@ -45,8 +45,7 @@ impl HandleInput for Search {
             _ => {}
         }
 
-        table.search(&self.search_phrase);
-        // self.apply_search(table);
+        table.search(&self.search_phrase)?;
         Ok(None)
     }
 
@@ -79,17 +78,6 @@ impl Search {
 
     pub fn new() -> Search {
         Search{search_phrase: "".to_string()}
-    }
-
-    /// updates URLs visibility inside the `table` according to the `search_phrase`
-    fn apply_search(&mut self, table: &mut BookmarksTable) {
-        // let filter = FilterSet::new_combined_for_phrase(self.search_phrase.clone().as_str());
-
-        // for item in &mut table.items() {
-            // item.filter(&filter)
-        // }
-
-        // table.refresh_visible();
     }
 
     pub fn render_search_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
@@ -142,14 +130,16 @@ mod test {
     use bookmark_lib::registry::URLRegistry;
     use crate::interactive::table::StatefulTable;
     use crate::interactive::url_table_item::URLItem;
+    use crate::interactive::bookmarks_table::BookmarksTable;
 
     #[test]
     fn test_handle_input_search_phrase() {
         let mut search_module = Search::new();
         let (dummy_registry, _) = URLRegistry::with_temp_file("search_test1.json")
             .expect("Failed to initialize Registry");
-        let mut dummy_table = StatefulTable::<URLItem>::with_items(&vec![]);
+        let mut dummy_table = StatefulTable::<URLItem>::with_items(vec![]);
 
+        let mut bookmarks_table = BookmarksTable::new(Box::new(dummy_registry), dummy_table);
 
         println!("Should input search phrase...");
         let key_events = vec![
@@ -163,7 +153,7 @@ mod test {
 
         for key in key_events {
             let mode = search_module
-                .handle_input(key, &dummy_registry, &mut dummy_table)
+                .handle_input(key, &mut bookmarks_table)
                 .expect("Failed to handle event");
             assert!(mode == None);
         }
@@ -178,7 +168,7 @@ mod test {
 
         for key in key_events {
             let mode = search_module
-                .handle_input(key, &dummy_registry, &mut dummy_table)
+                .handle_input(key,  &mut bookmarks_table)
                 .expect("Failed to handle event");
             assert!(mode == None);
         }

@@ -1,5 +1,4 @@
 extern crate clap;
-use bookmark_lib::filters::NoopFilter;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 use bookmark_lib::registry::URLRegistry;
@@ -152,9 +151,9 @@ struct Application<T: Registry> {
     registry: T,
 }
 
-impl<'a> Application<URLRegistry<'a, FileStorage>> {
-    pub fn new_file_based_registry(file_path: String) -> Application<URLRegistry<'a, FileStorage>> {
-        Application { registry: URLRegistry::new_file_based::<NoopFilter>(file_path, None) }
+impl Application<URLRegistry<FileStorage>> {
+    pub fn new_file_based_registry(file_path: String) -> Application<URLRegistry<FileStorage>> {
+        Application { registry: URLRegistry::new_file_based(file_path) }
     }
 }
 
@@ -191,6 +190,7 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn list_sub_cmd(&self, matches: &ArgMatches) {
+        // TODO: setup filters
         let group = matches.value_of("group");
         let tags = get_multiple_values(matches, "tag");
 

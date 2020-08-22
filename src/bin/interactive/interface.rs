@@ -260,12 +260,12 @@ mod test {
     use bookmark_lib::types::URLRecord;
     use termion::event::Key;
     use bookmark_lib::registry::URLRegistry;
-    use std::path::PathBuf;
+    use std::path::{PathBuf, Path};
     use bookmark_lib::Registry;
-    use std::{fs};
-    use bookmark_lib::storage::FileStorage;
+    use std::{fs, thread};
     use rand::{thread_rng, Rng};
     use rand::distributions::Alphanumeric;
+    use std::time::Duration;
 
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
@@ -288,7 +288,9 @@ mod test {
         }
 
         fn clean(&self) {
-            fs::remove_file(&self.file_path).expect("Failed to remove file");
+            if Path::new(&self.file_path).exists() {
+                fs::remove_file(&self.file_path).expect("Failed to remove file");
+            }
         }
     }
 
@@ -311,15 +313,15 @@ mod test {
     ($($urls:expr), *) => (
         {
             let (registry, file_path) = URLRegistry::with_temp_file(&rand_str()).expect("Failed to initialize registry");
-            let _cleaner = Cleaner::new(file_path); // makes sure that temp file is deleted even in case of panic
+            let cleaner = Cleaner::new(file_path); // makes sure that temp file is deleted even in case of panic
             $(
                 for u in $urls {
                     registry.add_url(u).expect("Failed to add url");
                 }
             )*
-            let interface = Interface::<URLRegistry<FileStorage>, MockBackend>::new(registry).expect("Failed to initialize interface");
+            let interface = Interface::<MockBackend>::new(registry).expect("Failed to initialize interface");
 
-            (interface)
+            (interface, cleaner)
         };
     );
     () => (
@@ -329,7 +331,7 @@ mod test {
 
     #[test]
     fn test_handle_input_returns() {
-        let mut interface = init!();
+        let (mut interface, _) = init!();
 
         // Should quit when input 'q'
         let event = Event::Input(Key::Char('q'));
@@ -355,7 +357,7 @@ mod test {
 
     #[test]
     fn test_handle_input_input_modes() {
-        let mut interface = init!();
+        let (mut interface, _)  = init!();
 
         assert!(InputMode::Normal == interface.input_mode);
 
@@ -434,7 +436,7 @@ mod test {
 
     #[test]
     fn test_handle_input_switch_input_modes() {
-        let mut interface = init!();
+        let (mut interface, _)  = init!();
 
         assert!(InputMode::Normal == interface.input_mode);
 
@@ -468,7 +470,7 @@ mod test {
 
     #[test]
     fn test_handle_input_search() {
-        let mut interface = init!(fix_url_records());
+        let (mut interface, _cleaner)  = init!(fix_url_records());
 
         println!("Should filter items in table on input...");
         let event = Event::Input(Key::Char('/'));
@@ -487,7 +489,7 @@ mod test {
                 .expect("Failed to handle event");
             assert!(!quit);
         }
-        assert_eq!(2, interface.table.visible.len()); // URLs with tag 'tag'
+        assert_eq!(2, interface.bookmarks_table.table().items.len()); // URLs with tag 'tag'
 
         println!("Should preserve search, when going in and out of Search mode...");
         let event = Event::Input(Key::Esc);
@@ -496,14 +498,14 @@ mod test {
             .expect("Failed to handle event");
         assert!(!quit);
         assert!(InputMode::Normal == interface.input_mode);
-        assert_eq!(2, interface.table.visible.len()); // URLs with tag 'tag'
+        assert_eq!(2, interface.bookmarks_table.table().items.len()); // URLs with tag 'tag'
 
         let event = Event::Input(Key::Char('/'));
         let quit = interface
             .handle_input(event)
             .expect("Failed to handle event");
         assert!(!quit);
-        assert_eq!(2, interface.table.visible.len()); // URLs with tag 'tag'
+        assert_eq!(2, interface.bookmarks_table.table().items.len()); // URLs with tag 'tag'
 
         println!("Should filter items in table on backspace...");
         for event in vec![Event::Input(Key::Backspace), Event::Input(Key::Backspace)] {
@@ -512,7 +514,7 @@ mod test {
                 .expect("Failed to handle event");
             assert!(!quit);
         }
-        assert_eq!(4, interface.table.visible.len()); // URLs with letter 't'
+        assert_eq!(4, interface.bookmarks_table.table().items.len()); // URLs with letter 't'
     }
 
     struct TestCase {
@@ -605,14 +607,14 @@ mod test {
         for test in &test_cases {
             println!("Running test case: {}", test.description);
 
-            let mut interface = init!(fix_url_records());
+            let (mut interface, _)  = init!(fix_url_records());
 
             for i in 0..test.events.len() {
                 let quit = interface
                     .handle_input(test.events[i].clone())
                     .expect("Failed to handle event");
                 assert!(!quit);
-                assert_eq!(test.selected[i], interface.table.state.selected())
+                assert_eq!(test.selected[i], interface.bookmarks_table.table().state.selected())
             }
         }
     }

@@ -1,10 +1,7 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::modules::{Module, HandleInput, Draw};
-use bookmark_lib::Registry;
 use tui::backend::Backend;
-use crate::interactive::table::StatefulTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
-use crate::interactive::url_table_item::{URLItem};
 use std::error::Error;
 use termion::event::Key;
 use tui::Frame;

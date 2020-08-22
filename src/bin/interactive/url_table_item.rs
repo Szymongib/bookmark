@@ -121,13 +121,6 @@ mod test {
             let mut table_item = URLItem::new(item.url_record);
             let row = table_item.row();
             assert_eq!(&item.expected_row, row);
-            assert!(table_item.visible());
-
-            table_item.filter(&do_not_match_filter);
-            assert!(!table_item.visible());
-
-            table_item.filter(&match_filter);
-            assert!(table_item.visible());
         }
     }
 }
