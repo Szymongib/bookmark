@@ -1,4 +1,5 @@
 extern crate clap;
+use bookmark_lib::filters::NoopFilter;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 use bookmark_lib::registry::URLRegistry;
@@ -151,9 +152,9 @@ struct Application<T: Registry> {
     registry: T,
 }
 
-impl Application<URLRegistry<FileStorage>> {
-    pub fn new_file_based_registry(file_path: String) -> Application<URLRegistry<FileStorage>> {
-        Application { registry: URLRegistry::new_file_based(file_path) }
+impl<'a> Application<URLRegistry<'a, FileStorage>> {
+    pub fn new_file_based_registry(file_path: String) -> Application<URLRegistry<'a, FileStorage>> {
+        Application { registry: URLRegistry::new_file_based::<NoopFilter>(file_path, None) }
     }
 }
 
@@ -194,7 +195,7 @@ impl<T: Registry> Application<T> {
         let tags = get_multiple_values(matches, "tag");
 
         // TODO: support output as json?
-        return match self.registry.list_urls(group, tags) {
+        return match self.registry.list_urls(None) {
             Ok(urls) => {
                 display::display_urls(urls);
             }
@@ -210,7 +211,7 @@ impl<T: Registry> Application<T> {
 
         let group_name = group.unwrap_or("default");
 
-        match self.registry.delete_url(url_name, group) {
+        match self.registry.delete_by_id("TODO: id") {
             Ok(deleted) => {
                 if deleted {
                     println!("URL {} removed from {} group", url_name, group_name,)

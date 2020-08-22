@@ -34,7 +34,7 @@ pub trait Registry: RegistryReader {
 }
 
 pub trait RegistryReader {
-    fn list_urls(&self) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>;
+    fn list_urls(&self, filter: Option<Box<dyn Filter>>) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>;
 
     fn get_url(&self, id: String) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 }

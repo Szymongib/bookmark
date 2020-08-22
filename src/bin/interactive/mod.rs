@@ -13,7 +13,7 @@ mod interface;
 mod widgets;
 
 mod modules;
-mod command;
+// mod command;
 
 mod fake;
 

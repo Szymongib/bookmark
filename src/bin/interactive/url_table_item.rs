@@ -1,6 +1,6 @@
 use bookmark_lib::filters::Filter;
 use bookmark_lib::types::URLRecord;
-use crate::interactive::table::{TableItem, Source, TableFilter, StatefulTable};
+use crate::interactive::table::{TableItem, StatefulTable};
 use bookmark_lib::Registry;
 use bookmark_lib::registry::URLRegistry;
 use bookmark_lib::storage::FileStorage;

@@ -1,6 +1,7 @@
+use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::event::Event;
 use crate::interactive::table::{StatefulTable, TableItem};
-use crate::interactive::url_table_item::{URLItem, URLItemSource};
+use crate::interactive::url_table_item::{URLItem};
 use std::error::Error;
 use termion::event::Key;
 use tui::layout::{Constraint, Direction, Layout};
@@ -12,10 +13,10 @@ use bookmark_lib::Registry;
 use std::collections::HashMap;
 use crate::interactive::modules::{Module};
 use crate::interactive::modules::search::Search;
-use crate::interactive::modules::help::HelpPanel;
-use crate::interactive::modules::delete::Delete;
-use crate::interactive::modules::command::Command;
-use crate::interactive::helpers;
+// use crate::interactive::modules::help::HelpPanel;
+// use crate::interactive::modules::delete::Delete;
+// use crate::interactive::modules::command::Command;
+// use crate::interactive::helpers;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -50,11 +51,13 @@ pub enum SuppressedAction {
     Delete,
 }
 
-pub struct Interface<R: Registry + 'static, B: tui::backend::Backend> {
-    registry: R,
+pub struct Interface<B: tui::backend::Backend> {
+    // registry: R,
+
+    bookmarks_table: BookmarksTable,
 
     /// Interface modules
-    modules: HashMap<InputMode, Box<dyn Module<R, B>>>,
+    modules: HashMap<InputMode, Box<dyn Module<B>>>,
 
     /// Current mode of input
     input_mode: InputMode,
@@ -63,7 +66,7 @@ pub struct Interface<R: Registry + 'static, B: tui::backend::Backend> {
     command_input: String,
 
     /// Table with URLs
-    table: StatefulTable<URLItemSource<R>, URLItem>,
+    // table: StatefulTable<URLItem>,
 
     /// Styles used for displaying user interface
     styles: Styles,
@@ -75,31 +78,35 @@ struct Styles {
     header: Style,
 }
 
-impl<R: Registry + 'static, B: tui::backend::Backend> Interface<R, B> {
-    pub(crate) fn new(registry: R) -> Result<Interface<R, B>, Box<dyn std::error::Error>> {
-        let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None, None)?);
+impl<B: tui::backend::Backend> Interface<B> {
+    pub(crate) fn new<R: Registry + 'static>(registry: R) -> Result<Interface<B>, Box<dyn std::error::Error>> {
+        let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None)?);
 
-        let url_items_source = URLItemSource::new(&registry);
-        let table = StatefulTable::with_items(url_items_source,items.as_slice());
+        // let url_items_source = URLItemSource::new(&registry);
+        let table = StatefulTable::with_items(items);
 
-        let search_mod: Box<dyn Module<R,B>> = Box::new(Search::new());
-        let help_mod: Box<dyn Module<R,B>> = Box::new(HelpPanel::new());
-        let delete_mod: Box<dyn Module<R,B>> = Box::new(Delete::new());
-        let command_mod: Box<dyn Module<R,B>> = Box::new(Command::new());
+        let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
+        // let help_mod: Box<dyn Module<R,B>> = Box::new(HelpPanel::new());
+        // let delete_mod: Box<dyn Module<R,B>> = Box::new(Delete::new());
+        // let command_mod: Box<dyn Module<R,B>> = Box::new(Command::new());
+
+        let bookmarks_table = BookmarksTable::new(Box::new(registry), table);
 
         Ok(Interface {
-            registry,
-            input_mode: InputMode::Normal,
+            // registry,
+            bookmarks_table: bookmarks_table,
+
+            input_mode: InputMode::Normal, // TODO: move to table?
             command_input: "".to_string(),
 
             modules: hashmap![
-                InputMode::Search => search_mod,
-                InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
-                InputMode::Suppressed(SuppressedAction::Delete) => delete_mod,
-                InputMode::Command => command_mod
+                InputMode::Search => search_mod
+            //     InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
+            //     InputMode::Suppressed(SuppressedAction::Delete) => delete_mod,
+            //     InputMode::Command => command_mod
             ],
 
-            table,
+            // table,
             styles: Styles {
                 selected: Style::default()
                     .fg(Color::Green)
@@ -120,35 +127,21 @@ impl<R: Registry + 'static, B: tui::backend::Backend> Interface<R, B> {
                         return Ok(true);
                     }
                     Key::Left => {
-                        self.table.unselect();
+                        self.bookmarks_table.unselect();
                     }
                     Key::Down => {
-                        self.table.next();
+                        self.bookmarks_table.next();
                     }
                     Key::Up => {
-                        self.table.previous();
+                        self.bookmarks_table.previous();
                     }
                     Key::Char('\n') => {
-                        let selected_id = self.table.state.selected();
-                        if selected_id.is_none() {
-                            return Ok(false);
-                        }
-                        let selected_id = selected_id.unwrap();
-
-                        let item = &self.table.visible[selected_id];
-
-                        let res = open::that(item.url().as_str());
-                        if let Err(err) = res {
-                            return Err(From::from(format!(
-                                "failed to open URL in the browser: {}",
-                                err.to_string()
-                            )));
-                        }
+                        self.bookmarks_table.open()?;
                     }
                     // Activate first module that can handle the key - if none just skip
                     _ => {
                         for m in self.modules.values_mut() {
-                            if let Some(mode) = m.try_activate(input, &self.registry, &mut self.table)? {
+                            if let Some(mode) = m.try_activate(input, &mut self.bookmarks_table)? {
                                 self.input_mode = mode;
                                 return Ok(false)
                             }
@@ -173,7 +166,7 @@ impl<R: Registry + 'static, B: tui::backend::Backend> Interface<R, B> {
                 // }
                 _ => {
                     if let Some(module) = self.modules.get_mut(&self.input_mode) {
-                        if let Some(new_mode) = module.handle_input(input, &self.registry, &mut self.table)? {
+                        if let Some(new_mode) = module.handle_input(input, &mut self.bookmarks_table)? {
                             self.input_mode = new_mode;
                         }
                     }
@@ -200,13 +193,11 @@ impl<R: Registry + 'static, B: tui::backend::Backend> Interface<R, B> {
             )
             .split(f.size());
 
+        let table = self.bookmarks_table.table();
+
         let header = ["  Name", "URL", "Group", "Tags"];
-        let rows = self.table.visible.iter().map(|i| {
-            if i.visible() {
-                Row::StyledData(i.row().iter(), normal_style)
-            } else {
-                Row::Data(i.row().iter())
-            }
+        let rows = table.items.iter().map(|i| {
+            Row::StyledData(i.row().iter(), normal_style)
         });
         let t = Table::new(header.iter(), rows)
             .header_style(self.styles.header)
@@ -224,7 +215,7 @@ impl<R: Registry + 'static, B: tui::backend::Backend> Interface<R, B> {
                 Constraint::Percentage(15),
             ]);
 
-        f.render_stateful_widget(t, chunks[0], &mut self.table.state);
+        f.render_stateful_widget(t, chunks[0], &mut table.state);
 
         // draw modules
         for module in self.modules.values() {

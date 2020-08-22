@@ -1,6 +1,6 @@
 use tui::widgets::TableState;
 use bookmark_lib::filters::Filter;
-use crate::interactive::url_table_item::{URLItemSource, URLItem, URLItemFilter};
+use crate::interactive::url_table_item::{URLItem, URLItemFilter};
 use bookmark_lib::types::URLRegistry;
 use bookmark_lib::storage::FileStorage;
 
@@ -36,7 +36,7 @@ impl<T> StatefulTable<T> {
     }
 
     pub fn override_items(&mut self, items: Vec<T>) {
-        self.items = items.to_vec();
+        self.items = items;
     }
 
     pub fn next(&mut self) {

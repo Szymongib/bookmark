@@ -9,6 +9,8 @@ use crate::filters::{Filter, NoopFilter};
 
 // TODO: introduce custom errors
 
+// TODO: pass filter to list function?
+
 pub struct URLRegistry<'a, T: Repository> {
     storage: T,
     filter: Box<dyn Filter + 'a>,
@@ -86,11 +88,14 @@ impl<T: Repository> Registry for URLRegistry<'_, T> {
 }
 
 impl<T: Repository> RegistryReader for URLRegistry<'_,T> {
-    fn list_urls(&self) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
+    fn list_urls(&self, filter: Option<Box<dyn Filter>>) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
         let urls = self.storage.list()?;
 
+        let filter = filter.unwrap_or(Box::new(NoopFilter::new()));
+
         Ok(urls.iter().filter(|url|{
-            self.filter.matches(*url)
+            // self.filter.matches(*url)
+            filter.matches(*url) // TODO: do not unwrap
         }).map(|u| {u.to_owned()})
             .collect())
     }

@@ -1,8 +1,9 @@
+use crate::interactive::bookmarks_table::BookmarksTable;
 use termion::event::Key;
 use tui::backend::Backend;
 use tui::Frame;
 use crate::interactive::table::StatefulTable;
-use crate::interactive::url_table_item::{URLItem, URLItemSource};
+use crate::interactive::url_table_item::{URLItem};
 use crate::interactive::interface::InputMode;
 use bookmark_lib::Registry;
 use bookmark_lib::filters::FilterSet;
@@ -17,10 +18,10 @@ pub(crate) struct Search {
     search_phrase: String,
 }
 
-impl<R: Registry, B: Backend> Module<R, B> for Search {}
+impl<B: Backend> Module<B> for Search {}
 
-impl<R: Registry> HandleInput<R> for Search {
-    fn try_activate(&mut self, input: Key, _registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+impl HandleInput for Search {
+    fn try_activate(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char('/') && input != Key::Ctrl('f') {
             return Ok(None)
         }
@@ -29,7 +30,7 @@ impl<R: Registry> HandleInput<R> for Search {
         return Ok(Some(InputMode::Search))
     }
 
-    fn handle_input(&mut self, input: Key, _registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
+    fn handle_input(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
         match input {
             Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
                 table.unselect();
@@ -44,7 +45,8 @@ impl<R: Registry> HandleInput<R> for Search {
             _ => {}
         }
 
-        self.apply_search(table);
+        table.search(&self.search_phrase);
+        // self.apply_search(table);
         Ok(None)
     }
 
@@ -80,14 +82,14 @@ impl Search {
     }
 
     /// updates URLs visibility inside the `table` according to the `search_phrase`
-    fn apply_search<R: Registry>(&mut self, table: &mut StatefulTable<URLItemSource<R>, URLItem>) {
-        let filter = FilterSet::new_combined_for_phrase(self.search_phrase.clone().as_str());
+    fn apply_search(&mut self, table: &mut BookmarksTable) {
+        // let filter = FilterSet::new_combined_for_phrase(self.search_phrase.clone().as_str());
 
-        for item in &mut table.items() {
-            item.filter(&filter)
-        }
+        // for item in &mut table.items() {
+            // item.filter(&filter)
+        // }
 
-        table.refresh_visible();
+        // table.refresh_visible();
     }
 
     pub fn render_search_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
