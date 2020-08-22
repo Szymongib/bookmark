@@ -1,6 +1,5 @@
 use bookmark_lib::types::URLRecord;
 use bookmark_lib::filters::Filter;
-use tui::widgets::TableState;
 use crate::interactive::table::{StatefulTable, TableItem};
 use crate::interactive::url_table_item::URLItem;
 use bookmark_lib::filters::FilterSet;
@@ -41,9 +40,9 @@ impl BookmarksTable {
     }
 
     pub fn open(&self) -> Result<(), Box<dyn std::error::Error>> {
-        return match self.get_selected()? {
-            Some(item) => {
-                return match open::that(item.url.as_str()) {
+        match self.table.state.selected() {
+            Some(id) => {
+                match open::that(self.table.items[id].url().as_str()) {
                     Ok(_) => Ok(()),
                     Err(err) => Err(From::from(format!(
                         "failed to open URL in the browser: {}", err.to_string()

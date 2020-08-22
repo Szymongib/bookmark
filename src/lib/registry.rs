@@ -1,7 +1,6 @@
 use crate::storage::FileStorage;
 use crate::types::URLRecord;
 use crate::{Repository, Registry, RegistryReader};
-use std::ops::Deref;
 use std::error::Error;
 use std::path::PathBuf;
 use crate::util::create_temp_file;
@@ -70,7 +69,7 @@ impl<T: Repository> Registry for URLRegistry<T> {
             return Err(From::from("Tag cannot be an empty string"))
         }
 
-        let mut record = self.storage.get(id.clone())?; // TODO: what should be returned here
+        let record = self.storage.get(id.clone())?; // TODO: what should be returned here
 
         record.map_or(Ok(None), |mut record| {
             record.tags.entry(tag.clone()).or_insert(true);

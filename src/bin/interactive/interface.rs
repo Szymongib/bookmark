@@ -59,9 +59,6 @@ pub struct Interface<B: tui::backend::Backend> {
     /// Current mode of input
     input_mode: InputMode,
 
-    /// Current command input
-    command_input: String,
-
     /// Styles used for displaying user interface
     styles: Styles,
 }
@@ -86,11 +83,9 @@ impl<B: tui::backend::Backend> Interface<B> {
         let bookmarks_table = BookmarksTable::new(Box::new(registry), table);
 
         Ok(Interface {
-            // registry,
             bookmarks_table: bookmarks_table,
 
             input_mode: InputMode::Normal, // TODO: move to table?
-            command_input: "".to_string(),
 
             modules: hashmap![
                 InputMode::Search => search_mod,
@@ -262,10 +257,9 @@ mod test {
     use bookmark_lib::registry::URLRegistry;
     use std::path::{PathBuf, Path};
     use bookmark_lib::Registry;
-    use std::{fs, thread};
+    use std::{fs};
     use rand::{thread_rng, Rng};
     use rand::distributions::Alphanumeric;
-    use std::time::Duration;
 
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
