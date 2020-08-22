@@ -8,8 +8,8 @@ use crate::interactive::table::StatefulTable;
 use crate::interactive::url_table_item::{URLItem};
 
 pub mod search;
-// pub mod help;
-// pub mod delete;
+pub mod help;
+pub mod delete;
 // pub mod command;
 
 pub trait Module<B: Backend>: HandleInput + Draw<B> {}

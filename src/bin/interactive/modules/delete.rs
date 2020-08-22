@@ -1,9 +1,10 @@
+use crate::interactive::bookmarks_table::BookmarksTable;
 use bookmark_lib::Registry;
 use tui::backend::Backend;
 use crate::interactive::modules::{Module, HandleInput, Draw};
 use termion::event::Key;
 use crate::interactive::table::{StatefulTable, TableItem};
-use crate::interactive::url_table_item::{URLItem, URLItemSource};
+use crate::interactive::url_table_item::{URLItem};
 use crate::interactive::interface::{InputMode, SuppressedAction};
 use std::error::Error;
 use tui::Frame;
@@ -21,20 +22,26 @@ pub(crate) struct Delete {
     record: Option<URLRecord>,
 }
 
-impl<R: Registry, B: Backend> Module<R, B> for Delete {}
+impl<B: Backend> Module<B> for Delete {}
 
-impl<R: Registry> HandleInput<R> for Delete {
-    fn try_activate(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+impl HandleInput for Delete {
+    fn try_activate(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char('d') {
             return Ok(None)
         }
 
-        let item_id = self.get_selected_item_id(table);
-        if item_id.is_none() {
-            return Ok(Some(InputMode::Normal))
-        }
 
-        self.record  = registry.get_url(item_id.unwrap())?;
+        // let item_id = self.get_selected_item_id(table);
+        // if item_id.is_none() {
+        //     return Ok(Some(InputMode::Normal))
+        // }
+
+        // self.record  = registry.get_url(item_id.unwrap())?;
+        // if self.record .is_none() {
+        //     return Ok(Some(InputMode::Normal))
+        // }
+
+        self.record  = table.get_selected()?;
         if self.record .is_none() {
             return Ok(Some(InputMode::Normal))
         }
@@ -42,10 +49,10 @@ impl<R: Registry> HandleInput<R> for Delete {
         return Ok(Some(InputMode::Suppressed(SuppressedAction::Delete)))
     }
 
-    fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+    fn handle_input(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         match input {
             Key::Char('\n') => {
-                self.delete_url(registry, table)?;
+                table.delete();
                 return Ok(Some(InputMode::Normal));
             }
             Key::Char('q') | Key::Esc => {
@@ -75,42 +82,42 @@ impl Delete {
         return Delete{record: None}
     }
 
-    fn get_selected_item_id<R: Registry>(&self, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Option<String> {
-        let selected_id = table.state.selected();
-        if selected_id.is_none() {
-            return None;
-        }
+    // fn get_selected_item_id<R: Registry>(&self, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Option<String> {
+    //     let selected_id = table.state.selected();
+    //     if selected_id.is_none() {
+    //         return None;
+    //     }
 
-        let item_id = table.visible[selected_id.unwrap()].id();
-        Some(item_id)
-    }
+    //     let item_id = table.visible[selected_id.unwrap()].id();
+    //     Some(item_id)
+    // }
 
-    fn delete_url<R: Registry>(&self, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<(), Box<dyn Error>> {
-        let url_id = self.get_selected_item_id(table);
-        if url_id.is_none() {
-            return Ok(())
-        }
-        let url_id = url_id.unwrap();
+    // fn delete_url<R: Registry>(&self, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<(), Box<dyn Error>> {
+    //     let url_id = self.get_selected_item_id(table);
+    //     if url_id.is_none() {
+    //         return Ok(())
+    //     }
+    //     let url_id = url_id.unwrap();
 
-        let deleted = registry.delete_by_id(&url_id)?;
-        if deleted {
-            Delete::remove_item(url_id.clone(), &mut table.items);
-            Delete::remove_item(url_id, &mut table.visible);
-        }
+    //     let deleted = registry.delete_by_id(&url_id)?;
+    //     if deleted {
+    //         Delete::remove_item(url_id.clone(), &mut table.items);
+    //         Delete::remove_item(url_id, &mut table.visible);
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    fn remove_item(item_id: String, vec: &mut Vec<URLItem>) {
-        let mut i: usize = 0;
-        for item in vec.clone() {
-            if item.id() == item_id {
-                break
-            }
-            i+=1;
-        }
-        vec.remove(i);
-    }
+    // fn remove_item(item_id: String, vec: &mut Vec<URLItem>) {
+    //     let mut i: usize = 0;
+    //     for item in vec.clone() {
+    //         if item.id() == item_id {
+    //             break
+    //         }
+    //         i+=1;
+    //     }
+    //     vec.remove(i);
+    // }
 
     fn confirm_delete_popup<B: Backend>(&self, f: &mut Frame<B>) {
         let area = centered_fixed_rect(50, 10, f.size());

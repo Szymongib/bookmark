@@ -88,10 +88,11 @@ impl<T: Repository> Registry for URLRegistry<'_, T> {
 }
 
 impl<T: Repository> RegistryReader for URLRegistry<'_,T> {
-    fn list_urls(&self, filter: Option<Box<dyn Filter>>) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
+    fn list_urls(&self, filter: Option<&Box<dyn Filter>>) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
         let urls = self.storage.list()?;
+        let noop: Box<dyn Filter> = Box::new(NoopFilter::new()); // TODO: move as struct member
 
-        let filter = filter.unwrap_or(Box::new(NoopFilter::new()));
+        let filter = filter.unwrap_or(&noop);
 
         Ok(urls.iter().filter(|url|{
             // self.filter.matches(*url)

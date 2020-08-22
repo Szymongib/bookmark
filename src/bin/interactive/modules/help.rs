@@ -1,9 +1,10 @@
+use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::modules::{Module, HandleInput, Draw};
 use bookmark_lib::Registry;
 use tui::backend::Backend;
 use crate::interactive::table::StatefulTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
-use crate::interactive::url_table_item::{URLItem, URLItemSource};
+use crate::interactive::url_table_item::{URLItem};
 use std::error::Error;
 use termion::event::Key;
 use tui::Frame;
@@ -15,10 +16,10 @@ use tui::text::{Span, Spans};
 
 pub(crate) struct HelpPanel {}
 
-impl<R: Registry, B: Backend> Module<R, B> for HelpPanel {}
+impl<B: Backend> Module<B> for HelpPanel {}
 
-impl<R: Registry> HandleInput<R> for HelpPanel {
-    fn try_activate(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+impl HandleInput for HelpPanel {
+    fn try_activate(&mut self, input: Key, _table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char('h') {
             return Ok(None)
         }
@@ -26,7 +27,7 @@ impl<R: Registry> HandleInput<R> for HelpPanel {
         return Ok(Some(InputMode::Suppressed(SuppressedAction::ShowHelp)))
     }
 
-    fn handle_input(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+    fn handle_input(&mut self, input: Key, _table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         match input {
             Key::Esc | Key::Char('\n') | Key::Char('h') => {
                 return Ok(Some(InputMode::Normal));

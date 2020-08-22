@@ -13,8 +13,8 @@ use bookmark_lib::Registry;
 use std::collections::HashMap;
 use crate::interactive::modules::{Module};
 use crate::interactive::modules::search::Search;
-// use crate::interactive::modules::help::HelpPanel;
-// use crate::interactive::modules::delete::Delete;
+use crate::interactive::modules::help::HelpPanel;
+use crate::interactive::modules::delete::Delete;
 // use crate::interactive::modules::command::Command;
 // use crate::interactive::helpers;
 
@@ -86,8 +86,8 @@ impl<B: tui::backend::Backend> Interface<B> {
         let table = StatefulTable::with_items(items);
 
         let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
-        // let help_mod: Box<dyn Module<R,B>> = Box::new(HelpPanel::new());
-        // let delete_mod: Box<dyn Module<R,B>> = Box::new(Delete::new());
+        let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
+        let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
         // let command_mod: Box<dyn Module<R,B>> = Box::new(Command::new());
 
         let bookmarks_table = BookmarksTable::new(Box::new(registry), table);
@@ -100,9 +100,9 @@ impl<B: tui::backend::Backend> Interface<B> {
             command_input: "".to_string(),
 
             modules: hashmap![
-                InputMode::Search => search_mod
-            //     InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
-            //     InputMode::Suppressed(SuppressedAction::Delete) => delete_mod,
+                InputMode::Search => search_mod,
+                InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
+                InputMode::Suppressed(SuppressedAction::Delete) => delete_mod
             //     InputMode::Command => command_mod
             ],
 
