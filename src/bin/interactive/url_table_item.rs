@@ -1,9 +1,5 @@
-use bookmark_lib::filters::Filter;
 use bookmark_lib::types::URLRecord;
-use crate::interactive::table::{TableItem, StatefulTable};
-use bookmark_lib::Registry;
-use bookmark_lib::registry::URLRegistry;
-use bookmark_lib::storage::FileStorage;
+use crate::interactive::table::{TableItem};
 
 #[derive(Clone, Debug)]
 pub struct URLItem {
@@ -28,10 +24,6 @@ impl URLItem {
     pub fn url(&self) -> String {
         return self.url.url.clone();
     }
-
-    // pub fn filter<T: Filter>(&mut self, filter: &T) {
-    //     self.visible = filter.matches(&self.url)
-    // }
 }
 
 impl TableItem for URLItem {
@@ -42,10 +34,6 @@ impl TableItem for URLItem {
     fn id(&self) -> String {
         self.url.id.clone()
     }
-}
-
-pub struct URLItemFilter {
-
 }
 
 fn url_to_row(record: &URLRecord) -> Vec<String> {

@@ -1,11 +1,8 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
-use bookmark_lib::Registry;
 use tui::backend::Backend;
 use crate::interactive::interface::InputMode;
 use termion::event::Key;
 use tui::Frame;
-use crate::interactive::table::StatefulTable;
-use crate::interactive::url_table_item::{URLItem};
 
 pub mod search;
 pub mod help;

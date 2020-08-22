@@ -16,7 +16,6 @@ use crate::interactive::modules::search::Search;
 use crate::interactive::modules::help::HelpPanel;
 use crate::interactive::modules::delete::Delete;
 // use crate::interactive::modules::command::Command;
-// use crate::interactive::helpers;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -52,8 +51,6 @@ pub enum SuppressedAction {
 }
 
 pub struct Interface<B: tui::backend::Backend> {
-    // registry: R,
-
     bookmarks_table: BookmarksTable,
 
     /// Interface modules
@@ -64,9 +61,6 @@ pub struct Interface<B: tui::backend::Backend> {
 
     /// Current command input
     command_input: String,
-
-    /// Table with URLs
-    // table: StatefulTable<URLItem>,
 
     /// Styles used for displaying user interface
     styles: Styles,
@@ -82,7 +76,6 @@ impl<B: tui::backend::Backend> Interface<B> {
     pub(crate) fn new<R: Registry + 'static>(registry: R) -> Result<Interface<B>, Box<dyn std::error::Error>> {
         let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None)?);
 
-        // let url_items_source = URLItemSource::new(&registry);
         let table = StatefulTable::with_items(items);
 
         let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
@@ -148,22 +141,6 @@ impl<B: tui::backend::Backend> Interface<B> {
                         }
                     }
                 },
-                // InputMode::Command => match input {
-                //     Key::Char('\n') => {
-                //         // TODO: run the command
-                //     }
-                //     Key::Char(c) => {
-                //         self.command_input.push(c);
-                //     }
-                //     Key::Backspace => {
-                //         self.command_input.pop();
-                //     }
-                //     Key::Esc => {
-                //         // TODO: discard command
-                //         self.input_mode = InputMode::Normal;
-                //     }
-                //     _ => {}
-                // }
                 _ => {
                     if let Some(module) = self.modules.get_mut(&self.input_mode) {
                         if let Some(new_mode) = module.handle_input(input, &mut self.bookmarks_table)? {

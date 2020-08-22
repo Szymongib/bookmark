@@ -1,12 +1,4 @@
 use tui::widgets::TableState;
-use bookmark_lib::filters::Filter;
-use crate::interactive::url_table_item::{URLItem, URLItemFilter};
-use bookmark_lib::types::URLRegistry;
-use bookmark_lib::storage::FileStorage;
-
-// TODO: make registry clonable?
-// TODO: only lister for table?
-// TODO: remove some generics
 
 pub trait TableItem {
     fn row(&self) -> &Vec<String>;
