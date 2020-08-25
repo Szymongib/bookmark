@@ -4,8 +4,13 @@ use crate::interactive::table::{StatefulTable, TableItem};
 use crate::interactive::url_table_item::URLItem;
 use bookmark_lib::filters::FilterSet;
 use bookmark_lib::Registry;
+use std::sync::mpsc;
+use crate::interactive::event::Event;
+use termion::event::Key;
+use crate::interactive::event::Signal;
 
-pub struct BookmarksTable {
+pub struct BookmarksTable<'a> {
+    signal_sender: &'a mpsc::Sender<Event<Key>>,
     registry: Box<dyn Registry>,
     table: StatefulTable<URLItem>,
     filter: Option<Box<dyn Filter>>,
@@ -61,13 +66,10 @@ impl BookmarksTable {
     // TODO: consider returning some command result
     pub fn exec(&mut self, command: &str, args: Vec<&str>) -> Result<(), Box<dyn std::error::Error>> {
         let id = self.get_selected_id();
-        if id.is_none() {
-            return Err(From::from("error: no item selected"))
-        }
-        let id = id.unwrap();
 
         match command {
             "tag" =>  self.tag(id, args)?,
+            "q" => self.signal_sender.send(Event::Signal(Signal::Quit))?,
             _ => return Err(From::from(format!("error: command {} not found", command)))
         };
 
@@ -77,7 +79,9 @@ impl BookmarksTable {
     }
 
     // TODO: some command wrapper? The same functions will be used in CLI version
-    pub fn tag(&mut self, id: String, args: Vec<&str>) -> Result<(), Box<dyn std::error::Error>>  {
+    pub fn tag(&mut self, id: Option<String>, args: Vec<&str>) -> Result<(), Box<dyn std::error::Error>>  {
+        let id = unwrap_id(id)?;
+
         if args.len() < 1 {
             return Err(From::from("Tag requires exactly one argument. Usage: tag [TAG_1]")) // TODO: support multiple tags at once
         }
@@ -119,10 +123,11 @@ impl BookmarksTable {
 
 }
 
-impl BookmarksTable {
+impl<'a> BookmarksTable<'a> {
 
-    pub fn new(registry: Box<dyn Registry>, table: StatefulTable<URLItem>) -> BookmarksTable {
+    pub fn new(sender:  &'a mpsc::Sender<Event<Key>>, registry: Box<dyn Registry>, table: StatefulTable<URLItem>) -> BookmarksTable {
         BookmarksTable{
+            signal_sender: sender,
             registry,
             table,
             filter: None,
@@ -130,3 +135,11 @@ impl BookmarksTable {
     }
 
 }
+
+fn unwrap_id(id: Option<String>) -> Result<String, Box<dyn std::error::Error>> {
+    match id {
+        Some(id) => Ok(id),
+        None => Err(From::from(format!("error: item not selected")))
+    }
+}
+

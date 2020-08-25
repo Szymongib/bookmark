@@ -4,13 +4,21 @@ use std::thread;
 
 use termion::event::Key;
 use termion::input::TermRead;
+use std::sync::mpsc::SendError;
 
 #[derive(Clone)]
 pub enum Event<I> {
     Input(I),
+    Signal(Signal)
+}
+
+#[derive(Clone)]
+pub enum Signal {
+    Quit
 }
 
 pub struct Events {
+    pub tx: mpsc::Sender<Event<Key>>,
     rx: mpsc::Receiver<Event<Key>>,
     input_handle: thread::JoinHandle<()>,
 }
@@ -45,10 +53,14 @@ impl Events {
                 }
             })
         };
-        Events { rx, input_handle }
+        Events { tx, rx, input_handle }
     }
 
     pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {
         self.rx.recv()
+    }
+
+    pub fn quit(&self) -> Result<(), SendError<Event<Key>>> {
+        self.tx.send(Event::Signal(Signal::Quit))
     }
 }

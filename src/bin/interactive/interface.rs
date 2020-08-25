@@ -1,5 +1,5 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
-use crate::interactive::event::Event;
+use crate::interactive::event::{Event, Signal};
 use crate::interactive::table::{StatefulTable, TableItem};
 use crate::interactive::url_table_item::{URLItem};
 use std::error::Error;
@@ -16,7 +16,6 @@ use crate::interactive::modules::search::Search;
 use crate::interactive::modules::help::HelpPanel;
 use crate::interactive::modules::delete::Delete;
 use crate::interactive::modules::command::Command;
-// use crate::interactive::modules::command::Command;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
@@ -30,12 +29,6 @@ use crate::interactive::modules::command::Command;
 // TODO: Help not as a popup but toggle?
 // TODO: Toggle show ids
 
-// InputMode:
-// - Normal
-// - Search - show search bar
-// - Command - show command bar
-//   - Action
-// - Suppressed
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum InputMode {
@@ -51,8 +44,8 @@ pub enum SuppressedAction {
     Delete,
 }
 
-pub struct Interface<B: tui::backend::Backend> {
-    bookmarks_table: BookmarksTable,
+pub struct Interface<'a, B: tui::backend::Backend> {
+    bookmarks_table: BookmarksTable<'a>,
 
     /// Interface modules
     modules: HashMap<InputMode, Box<dyn Module<B>>>,
@@ -71,17 +64,12 @@ struct Styles {
 }
 
 impl<B: tui::backend::Backend> Interface<B> {
-    pub(crate) fn new<R: Registry + 'static>(registry: R) -> Result<Interface<B>, Box<dyn std::error::Error>> {
-        let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None)?);
-
-        let table = StatefulTable::with_items(items);
-
+    pub(crate) fn new<'a>(bookmarks_table: BookmarksTable<'a>) -> Result<Interface<B>, Box<dyn std::error::Error>> {
         let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
         let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
         let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
         let command_mod: Box<dyn Module<B>> = Box::new(Command::new());
 
-        let bookmarks_table = BookmarksTable::new(Box::new(registry), table);
 
         Ok(Interface {
             bookmarks_table: bookmarks_table,
@@ -144,6 +132,11 @@ impl<B: tui::backend::Backend> Interface<B> {
                         }
                     }
                 }
+            }
+        }
+        if let Event::Signal(s) = event {
+            match s {
+                Signal::Quit => return Ok(true)
             }
         }
 
