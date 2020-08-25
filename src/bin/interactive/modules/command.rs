@@ -15,8 +15,10 @@ use std::collections::HashMap;
 use crate::interactive::helpers;
 use crate::interactive::bookmarks_table::BookmarksTable;
 
+const DEFAULT_INFO_MESSAGE: &str =  "Press 'Enter' to execute command on selected Bookmark. Press 'Esc' to discard.";
 
 pub(crate) struct Command {
+    info_display: String,
     command_input: String,
     command_display: String,
     result_display: Option<String>,
@@ -39,6 +41,7 @@ impl HandleInput for Command {
         match input {
             Key::Esc => {
                 self.command_input = "".to_string();
+                self.info_display = DEFAULT_INFO_MESSAGE.to_string();
                 return Ok(Some(InputMode::Normal))
             }
             Key::Char('\n') => {
@@ -59,7 +62,7 @@ impl HandleInput for Command {
                         Ok(Some(InputMode::Normal))
                     },
                     Err(err) => {
-                        self.command_display = err.to_string();
+                        self.info_display = err.to_string();
                         Ok(None)
                     }
                 }
@@ -109,6 +112,7 @@ impl Command {
         // let tag_action: Box<dyn Execute<R>> = Box::new(TagAction::new());
 
         Command{
+            info_display: DEFAULT_INFO_MESSAGE.to_string(),
             command_input: "".to_string(),
             command_display: "".to_string(),
             result_display: None,
@@ -134,36 +138,44 @@ impl Command {
     }
 
     pub fn render_command_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
-        let input_widget = Paragraph::new(self.command_display.as_ref())
+        let info_widget = Paragraph::new(self.info_display.as_ref())
             .style(
                 Style::default()
             )
             .block(
-                Block::default()
-                    .borders(Borders::TOP)
+                Block::default().borders(Borders::TOP)
             );
 
-        let block = self.centered_command_input(f.size());
+        let input_widget = Paragraph::new(self.command_display.as_ref())
+            .style(
+                Style::default()
+            )
+            .block(Block::default().borders(Borders::BOTTOM));
 
-        f.render_widget(Clear, block);
-        f.render_widget(input_widget, block);  // TODO: render stateful widget?
+        let (info_block, input_block) = self.centered_command_input(f.size());
+
+        f.render_widget(Clear, info_block);
+        f.render_widget(info_widget, info_block);  // TODO: render stateful widget?
+        f.render_widget(Clear, input_block);
+        f.render_widget(input_widget, input_block);  // TODO: render stateful widget?
     }
 
+    // TODO: refactor
     // TODO: Remove duplication
-    fn centered_command_input(&self, r: Rect) -> Rect {
-        let command_input = Layout::default()
+    fn centered_command_input(&self, r: Rect) -> (Rect, Rect) {
+        let split_info = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
                 [
-                    Constraint::Length(r.height - 6),
+                    Constraint::Length(r.height - 7),
                     Constraint::Length(2),
-                    Constraint::Length(r.height - 4),
+                    Constraint::Length(r.height - 5),
                 ]
                     .as_ref(),
             )
             .split(r);
 
-        Layout::default()
+        let info = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(
                 [
@@ -173,7 +185,33 @@ impl Command {
                 ]
                     .as_ref(),
             )
-            .split(command_input[1])[1]
+            .split(split_info[1])[1];
+
+        let split_input = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Length(r.height - 5),
+                    Constraint::Length(2),
+                    Constraint::Length(r.height - 3),
+                ]
+                    .as_ref(),
+            )
+            .split(r);
+
+        let input =Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    Constraint::Length(1),
+                    Constraint::Length(r.width-2),
+                    Constraint::Length(r.width-1),
+                ]
+                    .as_ref(),
+            )
+            .split(split_input[1])[1];
+
+        (info, input)
     }
 }
 

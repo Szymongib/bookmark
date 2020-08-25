@@ -86,6 +86,8 @@ impl BookmarksTable {
         Ok(())
     }
 
+    // TODO: quit command
+
     pub fn delete(&mut self) -> Result<bool, Box<dyn std::error::Error>> {
         match self.get_selected_id() {
             Some(id) => {
