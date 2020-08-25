@@ -6,7 +6,7 @@ use bookmark_lib::filters::FilterSet;
 use bookmark_lib::Registry;
 
 pub struct BookmarksTable {
-    registry: Box<dyn Registry>,// TODO: or just Box<dyn Registry>?
+    registry: Box<dyn Registry>,
     table: StatefulTable<URLItem>,
     filter: Option<Box<dyn Filter>>,
 }
@@ -34,7 +34,7 @@ impl BookmarksTable {
             return Ok(None);
         }
 
-        let url_record = self.registry.get_url(selected_id.unwrap())?;
+        let url_record = self.registry.get_url(&selected_id.unwrap())?;
 
         return Ok(url_record)
     }
@@ -58,8 +58,32 @@ impl BookmarksTable {
         self.refresh_items()
     }
 
-    pub fn tag(&mut self, tag: String) {
-        // TODO: Tag selected URL
+    // TODO: consider returning some command result
+    pub fn exec(&mut self, command: &str, args: Vec<&str>) -> Result<(), Box<dyn std::error::Error>> {
+        let id = self.get_selected_id();
+        if id.is_none() {
+            return Err(From::from("error: no item selected"))
+        }
+        let id = id.unwrap();
+
+        match command {
+            "tag" =>  self.tag(id, args)?,
+            _ => return Err(From::from(format!("error: command {} not found", command)))
+        };
+
+        self.refresh_items()?;
+
+        Ok(())
+    }
+
+    // TODO: some command wrapper? The same functions will be used in CLI version
+    pub fn tag(&mut self, id: String, args: Vec<&str>) -> Result<(), Box<dyn std::error::Error>>  {
+        if args.len() < 1 {
+            return Err(From::from("Tag requires exactly one argument. Usage: tag [TAG_1]")) // TODO: support multiple tags at once
+        }
+
+        self.registry.tag_url(&id, args[0])?;
+        Ok(())
     }
 
     pub fn delete(&mut self) -> Result<bool, Box<dyn std::error::Error>> {

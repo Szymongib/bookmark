@@ -11,7 +11,7 @@ pub mod tag;
 pub trait Command<R: Registry, B: Backend>: HandleInput<R> + Draw<B> + Execute<R> {}
 
 pub trait Execute<R: Registry> {
-    fn execute(&self, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>, args: Vec<&str>) -> Result<bool, Error>; // TODO: consider what should be returned here
+    fn execute(&self, args: Vec<&str>) -> Result<bool, Error>; // TODO: consider what should be returned here
 }
 
 // TODO: Move it further to the top?

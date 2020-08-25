@@ -2,7 +2,7 @@ use termion::event::Key;
 use tui::backend::Backend;
 use tui::Frame;
 use crate::interactive::table::StatefulTable;
-use crate::interactive::url_table_item::{URLItem, URLItemSource};
+use crate::interactive::url_table_item::{URLItem};
 use crate::interactive::interface::InputMode;
 use bookmark_lib::Registry;
 use bookmark_lib::filters::FilterSet;
@@ -12,22 +12,21 @@ use tui::layout::{Rect, Layout, Direction, Constraint};
 use crate::interactive::modules::{HandleInput, Draw, Module};
 use std::error::Error;
 use std::collections::HashMap;
-use crate::interactive::command::Execute;
 use crate::interactive::helpers;
-use crate::interactive::command::tag::{TagAction};
+use crate::interactive::bookmarks_table::BookmarksTable;
 
 
-pub(crate) struct Command<R: Registry> {
+pub(crate) struct Command {
     command_input: String,
     command_display: String,
-
-    actions: HashMap<String, Box<dyn Execute<R>>>
+    result_display: Option<String>,
 }
 
-impl<R: Registry, B: Backend> Module<R, B> for Command<R> {}
+impl<B: Backend> Module<B> for Command {}
 
-impl<R: Registry> HandleInput<R> for Command<R> {
-    fn try_activate(&mut self, input: Key, _registry: &R, _table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn Error>> {
+// TODO: display error message in different line?
+impl HandleInput for Command {
+    fn try_activate(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char(':') {
             return Ok(None)
         }
@@ -36,16 +35,13 @@ impl<R: Registry> HandleInput<R> for Command<R> {
         return Ok(Some(InputMode::Command))
     }
 
-    fn handle_input(&mut self, input: Key, registry: &R, table: &mut StatefulTable<URLItemSource<R>, URLItem>) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
+    fn handle_input(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
         match input {
             Key::Esc => {
-                // TODO: discard command
                 self.command_input = "".to_string();
-                // table.unselect();
                 return Ok(Some(InputMode::Normal))
             }
             Key::Char('\n') => {
-                // TODO: run command
                 if self.command_input == "" {
                     return Ok(None)
                 }
@@ -57,32 +53,26 @@ impl<R: Registry> HandleInput<R> for Command<R> {
                     .filter(|s| { *s != "" })
                     .collect();
 
-                let action = self.actions.get_mut(action);
-                if action.is_none() {
-                    self.command_display = "ERROR".to_string(); // TODO: indicate that error is displayed
-                    return Ok(None);
-                }
-
-                return match action.unwrap().execute(registry, table, args) {
-                    Ok(_ ) => {
-                        self.command_display = format!("URL tagged"); // TODO: indicate that info is displayed
-                        // TODO: refresh visible tags
-                        Ok(None)
-                    }
-                    Err(cmd_err) => {
-                        self.command_display = format!("ERROR: {}", cmd_err.to_string()); // TODO: indicate that error is displayed
+                return match table.exec(action, args) { // TODO: here I want error, command error and msg
+                    Ok(msg) => {
+                        self.command_input = "".to_string();
+                        Ok(Some(InputMode::Normal))
+                    },
+                    Err(err) => {
+                        self.command_display = err.to_string();
                         Ok(None)
                     }
                 }
             }
             Key::Char(c) => {
-                // TODO: as function on mut self
                 self.input_push(c);
             }
             Key::Backspace => {
                 self.input_pop()
             }
-            _ => {}
+            _ => {
+                self.update_display()
+            }
         }
 
         Ok(None)
@@ -90,7 +80,7 @@ impl<R: Registry> HandleInput<R> for Command<R> {
 
 }
 
-impl<R: Registry, B: Backend> Draw<B> for Command<R> {
+impl<B: Backend> Draw<B> for Command {
     fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
         return match mode {
             InputMode::Command => {
@@ -113,17 +103,18 @@ impl<R: Registry, B: Backend> Draw<B> for Command<R> {
     }
 }
 
-impl<R: Registry> Command<R> {
-    pub fn new() -> Command<R> {
+impl Command {
+    pub fn new() -> Command {
 
-        let tag_action: Box<dyn Execute<R>> = Box::new(TagAction::new());
+        // let tag_action: Box<dyn Execute<R>> = Box::new(TagAction::new());
 
         Command{
             command_input: "".to_string(),
             command_display: "".to_string(),
-            actions: hashmap![
-                "tag".to_string() => tag_action
-            ],
+            result_display: None,
+            // actions: hashmap![
+            //     "tag".to_string() => tag_action
+            // ],
         }
     }
 
@@ -136,6 +127,10 @@ impl<R: Registry> Command<R> {
         if self.command_display.len() > 1 {
             self.command_display.pop();
         }
+    }
+
+    fn update_display(&mut self) {
+        self.command_display = format!(":{}", self.command_input)
     }
 
     pub fn render_command_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {

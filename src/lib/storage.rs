@@ -70,7 +70,7 @@ impl Repository for FileStorage {
         return Ok(registry.urls.items);
     }
 
-    fn get(&self, id: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
+    fn get(&self, id: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let registry = read_urls(&mut file)?;
 
@@ -103,7 +103,7 @@ impl Repository for FileStorage {
         Ok(distinct.keys().map(|k| k.to_string()).collect())
     }
 
-    fn update(&self, id: String, record: URLRecord) -> Result<Option<URLRecord>, Box<dyn Error>> {
+    fn update(&self, id: &str, record: URLRecord) -> Result<Option<URLRecord>, Box<dyn Error>> {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let mut registry = read_urls(&mut file)?;
 

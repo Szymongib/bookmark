@@ -64,15 +64,15 @@ impl<T: Repository> Registry for URLRegistry<T> {
         self.storage.list_groups()
     }
 
-    fn tag_url(&self, id: String, tag: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
+    fn tag_url(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
         if tag == "" {
             return Err(From::from("Tag cannot be an empty string"))
         }
 
-        let record = self.storage.get(id.clone())?; // TODO: what should be returned here
+        let record = self.storage.get(id)?; // TODO: what should be returned here
 
         record.map_or(Ok(None), |mut record| {
-            record.tags.entry(tag.clone()).or_insert(true);
+            record.tags.entry(tag.to_string()).or_insert(true);
             self.storage.update(id, record)
         })
     }
@@ -92,7 +92,7 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
             .collect())
     }
 
-    fn get_url(&self, id: String) -> Result<Option<URLRecord>, Box<dyn Error>> {
+    fn get_url(&self, id: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
         self.storage.get(id)
     }
 }
@@ -223,7 +223,7 @@ use crate::registry::URLRegistry;
 
         println!("Get url by ID...");
         let id = calculate_hash("test_tagged", "default");
-        let url_record = registry.get_url(id).expect("Failed to get URL");
+        let url_record = registry.get_url(&id).expect("Failed to get URL");
 
         assert_eq!(url_record.expect("URL is None").id, urls[0].id);
 
