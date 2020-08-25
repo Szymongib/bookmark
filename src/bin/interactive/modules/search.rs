@@ -8,6 +8,7 @@ use tui::style::Style;
 use tui::layout::{Rect, Layout, Direction, Constraint};
 use crate::interactive::modules::{HandleInput, Draw, Module};
 use std::error::Error;
+use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 
 
 pub(crate) struct Search {
@@ -92,28 +93,10 @@ impl Search {
     }
 
     fn centered_search_input(&self, r: Rect) -> Rect {
-        let search_input = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Length(r.height - 3),
-                    Constraint::Length(3),
-                    Constraint::Length(r.height),
-                ]
-                    .as_ref(),
-            )
+        let search_input = vertical_layout(vec![r.height - 3, 3, r.height])
             .split(r);
 
-        Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Length(0),
-                    Constraint::Length(r.width),
-                    Constraint::Length(r.width),
-                ]
-                    .as_ref(),
-            )
+        horizontal_layout(vec![0, r.width, r.height])
             .split(search_input[1])[1]
     }
 }

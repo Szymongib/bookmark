@@ -1,3 +1,4 @@
+use tui::layout::{Layout, Direction, Constraint};
 
 // TODO: consider moving to some lib
 macro_rules! hashmap {
@@ -6,4 +7,26 @@ macro_rules! hashmap {
          $( map.insert($key, $val); )*
          map
     }}
+}
+
+pub fn vertical_layout(heights: Vec<u16>) -> Layout {
+    let constraints = to_constraints(heights);
+
+    Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(constraints)
+}
+
+pub fn horizontal_layout(widths: Vec<u16>) -> Layout {
+    let constraints = to_constraints(widths);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(constraints)
+}
+
+fn to_constraints(vals: Vec<u16>) -> Vec<Constraint> {
+    vals.iter().map(|h| {
+        Constraint::Length(h.clone())
+    }).collect()
 }

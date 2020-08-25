@@ -14,6 +14,7 @@ use std::error::Error;
 use std::collections::HashMap;
 use crate::interactive::helpers;
 use crate::interactive::bookmarks_table::BookmarksTable;
+use crate::interactive::helpers::{vertical_layout, horizontal_layout};
 
 const DEFAULT_INFO_MESSAGE: &str =  "Press 'Enter' to execute command on selected Bookmark. Press 'Esc' to discard.";
 
@@ -26,7 +27,6 @@ pub(crate) struct Command {
 
 impl<B: Backend> Module<B> for Command {}
 
-// TODO: display error message in different line?
 impl HandleInput for Command {
     fn try_activate(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char(':') {
@@ -108,17 +108,11 @@ impl<B: Backend> Draw<B> for Command {
 
 impl Command {
     pub fn new() -> Command {
-
-        // let tag_action: Box<dyn Execute<R>> = Box::new(TagAction::new());
-
         Command{
             info_display: DEFAULT_INFO_MESSAGE.to_string(),
             command_input: "".to_string(),
             command_display: "".to_string(),
-            result_display: None,
-            // actions: hashmap![
-            //     "tag".to_string() => tag_action
-            // ],
+            result_display: None
         }
     }
 
@@ -160,56 +154,16 @@ impl Command {
         f.render_widget(input_widget, input_block);  // TODO: render stateful widget?
     }
 
-    // TODO: refactor
-    // TODO: Remove duplication
     fn centered_command_input(&self, r: Rect) -> (Rect, Rect) {
-        let split_info = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Length(r.height - 7),
-                    Constraint::Length(2),
-                    Constraint::Length(r.height - 5),
-                ]
-                    .as_ref(),
-            )
+        let horizontal_layout = horizontal_layout(vec![1, r.width - 2, r.width - 1]);
+
+        let split_info = vertical_layout(vec![r.height -7, 2, r.height -5,])
             .split(r);
+        let info = horizontal_layout.clone().split(split_info[1])[1];
 
-        let info = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Length(1),
-                    Constraint::Length(r.width-2),
-                    Constraint::Length(r.width-1),
-                ]
-                    .as_ref(),
-            )
-            .split(split_info[1])[1];
-
-        let split_input = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Length(r.height - 5),
-                    Constraint::Length(2),
-                    Constraint::Length(r.height - 3),
-                ]
-                    .as_ref(),
-            )
+        let split_input = vertical_layout(vec![r.height - 5, 2, r.height - 3])
             .split(r);
-
-        let input =Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Length(1),
-                    Constraint::Length(r.width-2),
-                    Constraint::Length(r.width-1),
-                ]
-                    .as_ref(),
-            )
-            .split(split_input[1])[1];
+        let input = horizontal_layout.split(split_input[1])[1];
 
         (info, input)
     }
