@@ -1,7 +1,7 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
 use crate::interactive::modules::{Draw, HandleInput, Module};
-use crate::interactive::widgets::rect::centered_rect;
+use crate::interactive::widgets::rect::{centered_rect, centered_fixed_rect};
 use std::error::Error;
 use termion::event::Key;
 use tui::backend::Backend;
@@ -62,10 +62,19 @@ impl HelpPanel {
 
     fn show_help_popup<'a, B: Backend>(&self, f: &mut Frame<B>) {
         let text = vec![
-            Spans::from("'ENTER'            - open bookmarked URL"),
-            Spans::from("'/' or 'CTRL + F'  - search for URLs"),
-            Spans::from("'d'                - delete URL"),
+            "'ENTER'            - open bookmarked URL",
+            "'/' or 'CTRL + F'  - search for URLs",
+            "'d'                - delete URL",
+            "':'                - go to command mode",
+            "",
+            "'Commands",
+            "':tag [TAG_NAME]'  - add tag to selected bookmark",
+            "':q'               - quit",
         ];
+        let max_width = text.iter().map(|t| t.len()).max().unwrap_or_default() as u16;
+        let spans: Vec<Spans> = text.iter().map(|t| {
+            Spans::from(t.to_owned())
+        }).collect();
 
         let block = Block::default()
             .borders(Borders::ALL)
@@ -75,8 +84,8 @@ impl HelpPanel {
                 Style::default().add_modifier(Modifier::BOLD),
             ));
 
-        let area = centered_rect(30, 30, f.size());
-        let paragraph = Paragraph::new(text)
+        let area = centered_fixed_rect(max_width+4, text.len() as u16 + 2, f.size());
+        let paragraph = Paragraph::new(spans)
             .style(Style::default().bg(Color::Black).fg(Color::White))
             .block(block)
             .alignment(Alignment::Left);
