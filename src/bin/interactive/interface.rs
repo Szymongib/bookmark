@@ -67,18 +67,14 @@ impl<B: tui::backend::Backend> Interface<B> {
 
 
         Ok(Interface {
-            bookmarks_table: bookmarks_table,
-
-            input_mode: InputMode::Normal, // TODO: move to table?
-
+            bookmarks_table,
+            input_mode: InputMode::Normal,
             modules: hashmap![
                 InputMode::Search => search_mod,
                 InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
                 InputMode::Suppressed(SuppressedAction::Delete) => delete_mod,
                 InputMode::Command => command_mod
             ],
-
-            // table,
             styles: Styles {
                 selected: Style::default()
                     .fg(Color::Green)
