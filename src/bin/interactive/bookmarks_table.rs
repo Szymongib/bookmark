@@ -90,8 +90,6 @@ impl BookmarksTable {
         Ok(())
     }
 
-    // TODO: quit command
-
     pub fn delete(&mut self) -> Result<bool, Box<dyn std::error::Error>> {
         match self.get_selected_id() {
             Some(id) => {
@@ -124,13 +122,16 @@ impl BookmarksTable {
 }
 
 impl BookmarksTable {
-    pub fn new(sender: mpsc::Sender<Event<Key>>, registry: Box<dyn Registry>, table: StatefulTable<URLItem>) -> BookmarksTable {
-        BookmarksTable{
+    pub fn new(sender: mpsc::Sender<Event<Key>>, registry: Box<dyn Registry>) -> Result<BookmarksTable, Box<dyn std::error::Error>> {
+        let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None)?);
+        let table = StatefulTable::with_items(items);
+
+        Ok(BookmarksTable{
             signal_sender: sender,
             registry,
             table,
             filter: None,
-        }
+        })
     }
 }
 

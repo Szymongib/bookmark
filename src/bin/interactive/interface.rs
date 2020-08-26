@@ -1,15 +1,12 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::event::{Event, Signal};
-use crate::interactive::table::{StatefulTable, TableItem};
-use crate::interactive::url_table_item::{URLItem};
+use crate::interactive::table::{TableItem};
 use std::error::Error;
 use termion::event::Key;
 use tui::layout::{Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
-use tui::text::{Span};
 use tui::widgets::{Block, Borders, Row, Table};
 use tui::Frame;
-use bookmark_lib::Registry;
 use std::collections::HashMap;
 use crate::interactive::modules::{Module};
 use crate::interactive::modules::search::Search;
@@ -19,8 +16,6 @@ use crate::interactive::modules::command::Command;
 
 // TODO: some decisions
 // - drop Add functionality from interactive mode for now
-// - :q quit
-// - ':' to start action
 // - ':et' - edit tag of selected
 // - ':eg' - edit group of selected
 // - ':g [GROUP]' - filter by group
@@ -188,62 +183,12 @@ impl<B: tui::backend::Backend> Interface<B> {
             module.draw(self.input_mode.clone(), f)
         }
     }
-
-    // fn add_record_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
-    //
-    //     let area = centered_rect(60, 40, f.size());
-    //     let name = Paragraph::new("")
-    //         .style(Style::default().bg(Color::Black).fg(Color::White))
-    //         // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
-    //         .alignment(Alignment::Left);
-    //     let url = Paragraph::new("")
-    //         .style(Style::default().bg(Color::Black).fg(Color::White))
-    //         // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
-    //         .alignment(Alignment::Left);
-    //     let group = Paragraph::new("")
-    //         .style(Style::default().bg(Color::Black).fg(Color::White))
-    //         // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
-    //         .alignment(Alignment::Left);
-    //     // let group = Paragraph::new("")
-    //     //     .style(Style::default().bg(Color::Black).fg(Color::White))
-    //     //     // .block(self.create_block("Confirm (Enter)   ---   Discard (ESC)".to_string()))
-    //     //     .alignment(Alignment::Left);
-    //
-    //     f.render_widget(Clear, area);
-    //     f.render_widget(name, area);
-    // }
-
-    // fn add_tag_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
-    //     let text = vec![
-    //         Spans::from("'ENTER'            - open bookmarked URL"),
-    //         Spans::from("'/' or 'CTRL + F'  - search for URLs"),
-    //     ];
-    //
-    //     let area = centered_rect(60, 40, f.size());
-    //     let paragraph = Paragraph::new(text)
-    //         .style(Style::default().bg(Color::Black).fg(Color::White))
-    //         .block(self.create_block("Help - press ESC to close".to_string()))
-    //         .alignment(Alignment::Left);
-    //
-    //     f.render_widget(Clear, area);
-    //     f.render_widget(paragraph, area);
-    // }
-
-    // TODO: move this function to widgets?
-    fn create_block(&self, title: String) -> Block {
-        Block::default()
-            .borders(Borders::ALL)
-            .style(Style::default().bg(Color::Black).fg(Color::LightBlue))
-            .title(Span::styled(
-                title,
-                Style::default().add_modifier(Modifier::BOLD),
-            ))
-    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::interactive::event::Event;
+    use crate::interactive::event::{Event, Events, Signal};
+    use crate::interactive::bookmarks_table::BookmarksTable;
     use crate::interactive::interface::{InputMode, Interface, SuppressedAction};
     use crate::interactive::fake::{MockBackend};
     use bookmark_lib::types::URLRecord;
@@ -307,7 +252,11 @@ mod test {
                     registry.add_url(u).expect("Failed to add url");
                 }
             )*
-            let interface = Interface::<MockBackend>::new(registry).expect("Failed to initialize interface");
+
+            let events = Events::new();
+            let bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry)).expect("Failed to initialize Bookmarks table");
+
+            let interface = Interface::<MockBackend>::new(bookmarks_table).expect("Failed to initialize interface");
 
             (interface, cleaner)
         };
@@ -341,6 +290,13 @@ mod test {
             .handle_input(event)
             .expect("Failed to handle event");
         assert!(!quit);
+
+        // Should quit on Signal(Quit)
+        let event = Event::Signal(Signal::Quit);
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(quit);
     }
 
     #[test]
@@ -436,6 +392,13 @@ mod test {
             Event::Input(Key::Char('\n')),
             Event::Input(Key::Char('h')),
             Event::Input(Key::Char('h')),
+            Event::Input(Key::Char('/')),
+            Event::Input(Key::Esc),
+            Event::Input(Key::Ctrl('f')),
+            Event::Input(Key::Esc),
+            Event::Input(Key::Char(':')),
+            Event::Input(Key::Char('a')),
+            Event::Input(Key::Esc),
         ];
 
         let expected_modes = vec![
@@ -444,6 +407,13 @@ mod test {
             InputMode::Suppressed(SuppressedAction::ShowHelp),
             InputMode::Normal,
             InputMode::Suppressed(SuppressedAction::ShowHelp),
+            InputMode::Normal,
+            InputMode::Search,
+            InputMode::Normal,
+            InputMode::Search,
+            InputMode::Normal,
+            InputMode::Command,
+            InputMode::Command,
             InputMode::Normal,
         ];
 

@@ -4,7 +4,6 @@ use std::thread;
 
 use termion::event::Key;
 use termion::input::TermRead;
-use std::sync::mpsc::SendError;
 
 #[derive(Clone)]
 pub enum Event<I> {
@@ -58,9 +57,5 @@ impl Events {
 
     pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {
         self.rx.recv()
-    }
-
-    pub fn quit(&self) -> Result<(), SendError<Event<Key>>> {
-        self.tx.send(Event::Signal(Signal::Quit))
     }
 }

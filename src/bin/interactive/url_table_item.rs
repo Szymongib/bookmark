@@ -49,7 +49,6 @@ fn url_to_row(record: &URLRecord) -> Vec<String> {
 mod test {
     use crate::interactive::table::TableItem;
     use crate::interactive::url_table_item::URLItem;
-    use bookmark_lib::filters::Filter;
     use bookmark_lib::types::URLRecord;
 
     struct TestCase {
@@ -57,30 +56,8 @@ mod test {
         expected_row: Vec<String>,
     }
 
-    struct FixedFilter {
-        matches: bool,
-    }
-
-    impl FixedFilter {
-        fn new(matches: bool) -> FixedFilter {
-            FixedFilter { matches }
-        }
-    }
-
-    impl Filter for FixedFilter {
-        fn matches(&self, _: &URLRecord) -> bool {
-            return self.matches;
-        }
-        fn chain(self, _filter: Box<dyn Filter>) -> Box<dyn Filter> {
-            todo!() 
-        }
-    }
-
     #[test]
     fn test_url_item() {
-        let match_filter = FixedFilter::new(true);
-        let do_not_match_filter = FixedFilter::new(false);
-
         let items = vec![
             TestCase {
                 url_record: URLRecord::new("url1", "name1", "group1", vec!["tag1, tag1.2"]),
@@ -121,7 +98,7 @@ mod test {
         ];
 
         for item in items {
-            let mut table_item = URLItem::new(item.url_record);
+            let table_item = URLItem::new(item.url_record);
             let row = table_item.row();
             assert_eq!(&item.expected_row, row);
         }

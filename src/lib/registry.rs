@@ -106,7 +106,7 @@ use crate::registry::URLRegistry;
     use std::collections::HashMap;
     use std::{fs};
     use crate::{Registry, RegistryReader};
-    use crate::filters::{NoopFilter, GroupFilter, TagsFilter};
+    use crate::filters::{GroupFilter, TagsFilter};
 
     struct TestUrl {
         name: &'static str,

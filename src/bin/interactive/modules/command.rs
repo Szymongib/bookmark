@@ -1,18 +1,12 @@
 use termion::event::Key;
 use tui::backend::Backend;
 use tui::Frame;
-use crate::interactive::table::StatefulTable;
-use crate::interactive::url_table_item::{URLItem};
 use crate::interactive::interface::InputMode;
-use bookmark_lib::Registry;
-use bookmark_lib::filters::FilterSet;
 use tui::widgets::{Paragraph, Block, Borders, Clear};
-use tui::style::{Style, Color};
-use tui::layout::{Rect, Layout, Direction, Constraint};
+use tui::style::{Style};
+use tui::layout::{Rect};
 use crate::interactive::modules::{HandleInput, Draw, Module};
 use std::error::Error;
-use std::collections::HashMap;
-use crate::interactive::helpers;
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::helpers::{vertical_layout, horizontal_layout};
 
@@ -22,17 +16,15 @@ pub(crate) struct Command {
     info_display: String,
     command_input: String,
     command_display: String,
-    result_display: Option<String>,
 }
 
 impl<B: Backend> Module<B> for Command {}
 
 impl HandleInput for Command {
-    fn try_activate(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
+    fn try_activate(&mut self, input: Key, _table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char(':') {
             return Ok(None)
         }
-        self.command_display = ":".to_string();
 
         return Ok(Some(InputMode::Command))
     }
@@ -40,8 +32,7 @@ impl HandleInput for Command {
     fn handle_input(&mut self, input: Key, table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn std::error::Error>> {
         match input {
             Key::Esc => {
-                self.command_input = "".to_string();
-                self.info_display = DEFAULT_INFO_MESSAGE.to_string();
+                self.reset_input();
                 return Ok(Some(InputMode::Normal))
             }
             Key::Char('\n') => {
@@ -57,8 +48,8 @@ impl HandleInput for Command {
                     .collect();
 
                 return match table.exec(action, args) { // TODO: here I want error, command error and msg
-                    Ok(msg) => {
-                        self.command_input = "".to_string();
+                    Ok(_) => {
+                        self.reset_input();
                         Ok(Some(InputMode::Normal))
                     },
                     Err(err) => {
@@ -111,24 +102,27 @@ impl Command {
         Command{
             info_display: DEFAULT_INFO_MESSAGE.to_string(),
             command_input: "".to_string(),
-            command_display: "".to_string(),
-            result_display: None
+            command_display: ":".to_string(),
         }
     }
 
     fn input_push(&mut self, ch: char) {
         self.command_input.push(ch);
-        self.command_display.push(ch);
+        self.update_display();
     }
     fn input_pop(&mut self) {
         self.command_input.pop();
-        if self.command_display.len() > 1 {
-            self.command_display.pop();
-        }
+        self.update_display();
     }
 
     fn update_display(&mut self) {
         self.command_display = format!(":{}", self.command_input)
+    }
+
+    fn reset_input(&mut self) {
+        self.info_display = DEFAULT_INFO_MESSAGE.to_string();
+        self.command_input = "".to_string();
+        self.update_display();
     }
 
     pub fn render_command_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
@@ -171,54 +165,127 @@ impl Command {
 
 #[cfg(test)]
 mod test {
-    // use termion::event::Key;
-    // use crate::interactive::modules::search::Command;
-    // use crate::interactive::modules::HandleInput;
-    // use bookmark_lib::registry::URLRegistry;
-    // use crate::interactive::table::StatefulTable;
-    // use crate::interactive::url_table_item::URLItem;
-    //
-    // #[test]
-    // fn test_handle_input_search_phrase() {
-    //     let mut search_module = Search::new();
-    //     let (dummy_registry, _) = URLRegistry::with_temp_file("search_test1.json")
-    //         .expect("Failed to initialize Registry");
-    //     let mut dummy_table = StatefulTable::<URLItem>::with_items(&vec![]);
-    //
-    //
-    //     println!("Should input search phrase...");
-    //     let key_events = vec![
-    //         Key::Char('t'),
-    //         Key::Char('e'),
-    //         Key::Char('s'),
-    //         Key::Char('t'),
-    //         Key::Char(' '),
-    //         Key::Char('1'),
-    //     ];
-    //
-    //     for key in key_events {
-    //         let mode = search_module
-    //             .handle_input(key, &dummy_registry, &mut dummy_table)
-    //             .expect("Failed to handle event");
-    //         assert!(mode == None);
-    //     }
-    //     assert_eq!("test 1".to_string(), search_module.search_phrase);
-    //
-    //     let key_events = vec![
-    //         Key::Backspace,
-    //         Key::Backspace,
-    //         Key::Char('-'),
-    //         Key::Char('2'),
-    //     ];
-    //
-    //     for key in key_events {
-    //         let mode = search_module
-    //             .handle_input(key, &dummy_registry, &mut dummy_table)
-    //             .expect("Failed to handle event");
-    //         assert!(mode == None);
-    //     }
-    //     assert_eq!("test-2".to_string(), search_module.search_phrase);
-    // }
+    use termion::event::Key;
+    use crate::interactive::modules::HandleInput;
+    use bookmark_lib::registry::URLRegistry;
+    use crate::interactive::bookmarks_table::BookmarksTable;
+    use crate::interactive::event::Events;
+    use crate::interactive::modules::command::{Command, DEFAULT_INFO_MESSAGE};
+    use crate::interactive::interface::InputMode;
+    use bookmark_lib::Registry;
+    use crate::interactive::helpers::to_key_events;
+
+    #[test]
+    fn test_exec_command() {
+        let mut command_module = Command::new();
+        let (dummy_registry, _) = URLRegistry::with_temp_file("command_test1.json")
+            .expect("Failed to initialize Registry");
+        dummy_registry.new("abcd", "url", None, vec![]).expect("Failed to create Bookmark");
+        let events = Events::new();
+
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry)).expect("Failed to initialized Bookmarks table");
+
+        println!("Should input command phrase...");
+        let key_events = to_key_events("tag test");
+
+        for key in key_events {
+            let mode = command_module
+                .handle_input(key, &mut bookmarks_table)
+                .expect("Failed to handle event");
+            assert!(mode == None);
+        }
+
+        println!("Should execute 'tag' command...");
+        bookmarks_table.table().state.select(Some(0));
+        let mode = command_module.handle_input(Key::Char('\n'), &mut bookmarks_table)
+            .expect("Failed to handle event");
+        assert!(mode == Some(InputMode::Normal));
+        assert_eq!(command_module.info_display, DEFAULT_INFO_MESSAGE);
+        assert_eq!(command_module.command_input, "");
+        assert_eq!(command_module.command_display, ":");
+    }
+
+    #[test]
+    fn test_exec_display_error_message_when_cmd_failed() {
+        let mut command_module = Command::new();
+        let (dummy_registry, _) = URLRegistry::with_temp_file("command_test2.json")
+            .expect("Failed to initialize Registry");
+        let events = Events::new();
+
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry)).expect("Failed to initialized Bookmarks table");
+
+        println!("Should input command phrase...");
+        let key_events = to_key_events("tag test");
+
+        for key in key_events {
+            let mode = command_module
+                .handle_input(key, &mut bookmarks_table)
+                .expect("Failed to handle event");
+            assert!(mode == None);
+        }
+
+        println!("Should fail to execute 'tag' command when no item selected...");
+        let mode = command_module.handle_input(Key::Char('\n'), &mut bookmarks_table)
+            .expect("Failed to handle event");
+        assert!(mode == None);
+        assert_eq!(command_module.info_display, "error: item not selected");
+        assert_eq!(command_module.command_input, "tag test");
+        assert_eq!(command_module.command_display, ":tag test");
+    }
+
+    #[test]
+    fn test_do_nothing_when_input_empty() {
+        let mut command_module = Command::new();
+        let (dummy_registry, _) = URLRegistry::with_temp_file("command_test2.json")
+            .expect("Failed to initialize Registry");
+        let events = Events::new();
+
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry)).expect("Failed to initialized Bookmarks table");
+
+        println!("Should do nothing when input is empty...");
+        let mode = command_module.handle_input(Key::Char('\n'), &mut bookmarks_table)
+            .expect("Failed to handle event");
+        assert!(mode == None);
+        assert_eq!(command_module.info_display, DEFAULT_INFO_MESSAGE);
+        assert_eq!(command_module.command_input, "");
+        assert_eq!(command_module.command_display, ":");
+    }
+
+    #[test]
+    fn test_handle_input_write_command() {
+        let mut command_module = Command::new();
+        let (dummy_registry, _) = URLRegistry::with_temp_file("command_test3.json")
+            .expect("Failed to initialize Registry");
+        let events = Events::new();
+
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry)).expect("Failed to initialized Bookmarks table");
+
+        println!("Should input command phrase...");
+        let key_events = to_key_events("tag test");
+
+        for key in key_events {
+            let mode = command_module
+                .handle_input(key, &mut bookmarks_table)
+                .expect("Failed to handle event");
+            assert!(mode == None);
+        }
+        assert_eq!("tag test".to_string(), command_module.command_input);
+
+        let key_events = vec![
+            Key::Backspace,
+            Key::Backspace,
+            Key::Char('m'),
+            Key::Char('p'),
+        ];
+
+        for key in key_events {
+            let mode = command_module
+                .handle_input(key,  &mut bookmarks_table)
+                .expect("Failed to handle event");
+            assert!(mode == None);
+        }
+        assert_eq!("tag temp".to_string(), command_module.command_input);
+    }
 
 }
 

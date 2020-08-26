@@ -5,7 +5,7 @@ use tui::Frame;
 use crate::interactive::interface::InputMode;
 use tui::widgets::{Paragraph, Block, Borders, Clear};
 use tui::style::Style;
-use tui::layout::{Rect, Layout, Direction, Constraint};
+use tui::layout::{Rect};
 use crate::interactive::modules::{HandleInput, Draw, Module};
 use std::error::Error;
 use crate::interactive::helpers::{horizontal_layout, vertical_layout};
@@ -107,28 +107,21 @@ mod test {
     use crate::interactive::modules::search::Search;
     use crate::interactive::modules::HandleInput;
     use bookmark_lib::registry::URLRegistry;
-    use crate::interactive::table::StatefulTable;
-    use crate::interactive::url_table_item::URLItem;
     use crate::interactive::bookmarks_table::BookmarksTable;
+    use crate::interactive::event::Events;
+    use crate::interactive::helpers::to_key_events;
 
     #[test]
     fn test_handle_input_search_phrase() {
         let mut search_module = Search::new();
         let (dummy_registry, _) = URLRegistry::with_temp_file("search_test1.json")
             .expect("Failed to initialize Registry");
-        let mut dummy_table = StatefulTable::<URLItem>::with_items(vec![]);
+        let events = Events::new();
 
-        let mut bookmarks_table = BookmarksTable::new(Box::new(dummy_registry), dummy_table);
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry)).expect("Failed to initialized Bookmarks table");
 
         println!("Should input search phrase...");
-        let key_events = vec![
-            Key::Char('t'),
-            Key::Char('e'),
-            Key::Char('s'),
-            Key::Char('t'),
-            Key::Char(' '),
-            Key::Char('1'),
-        ];
+        let key_events = to_key_events("test 1");
 
         for key in key_events {
             let mode = search_module
