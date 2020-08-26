@@ -121,7 +121,7 @@ mod test {
 
     #[test]
     fn registry_test() {
-        let (mut registry, file_path) =
+        let (registry, file_path) =
             URLRegistry::<FileStorage>::with_temp_file("registry_tests.json")
                 .expect("Failed to initialize registry");
 

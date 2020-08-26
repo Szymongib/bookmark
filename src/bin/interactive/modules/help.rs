@@ -1,7 +1,6 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
 use crate::interactive::modules::{Draw, HandleInput, Module};
-use crate::interactive::widgets::rect::{centered_rect, centered_fixed_rect};
 use std::error::Error;
 use termion::event::Key;
 use tui::backend::Backend;
@@ -10,6 +9,7 @@ use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Clear, Paragraph};
 use tui::Frame;
+use crate::interactive::widgets::rect::centered_fixed_rect;
 
 pub(crate) struct HelpPanel {}
 
