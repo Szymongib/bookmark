@@ -1,5 +1,5 @@
+use crate::interactive::table::TableItem;
 use bookmark_lib::types::URLRecord;
-use crate::interactive::table::{TableItem};
 
 #[derive(Clone, Debug)]
 pub struct URLItem {

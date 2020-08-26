@@ -39,9 +39,9 @@ pub struct URLRecord {
     pub tags: HashMap<String, bool>,
 }
 
-use sha1::{Sha1, Digest};
-use std::str;
 use hex;
+use sha1::{Digest, Sha1};
+use std::str;
 
 impl URLRecord {
     pub fn new(url: &str, name: &str, group: &str, tags_vec: Vec<&str>) -> URLRecord {
@@ -70,7 +70,7 @@ pub(crate) fn calculate_hash(name: &str, group: &str) -> String {
     // TODO: decide if calculate hash earlier to compare earlier
     let mut hasher = Sha1::new();
     hasher.update(format!("{}/{}", group.clone(), name.clone()));
-    return hex::encode(hasher.finalize())
+    return hex::encode(hasher.finalize());
 }
 
 impl fmt::Display for URLRecord {

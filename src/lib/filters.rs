@@ -17,10 +17,8 @@ impl Filter for NoopFilter {
     fn matches(&self, _record: &URLRecord) -> bool {
         true
     }
-    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
-        Box::new(FilterSet::new_combined(vec![
-            filter,
-        ]))
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
+        Box::new(FilterSet::new_combined(vec![filter]))
     }
 }
 
@@ -44,9 +42,7 @@ impl FilterSet {
     }
 
     pub fn new_combined(filters: Vec<Box<dyn Filter>>) -> FilterSet {
-        return FilterSet {
-            filters
-        }
+        return FilterSet { filters };
     }
 }
 
@@ -60,11 +56,8 @@ impl Filter for FilterSet {
         return false;
     }
 
-    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
-        Box::new(FilterSet::new_combined(vec![
-            Box::new(self),
-            filter,
-        ]))
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
+        Box::new(FilterSet::new_combined(vec![Box::new(self), filter]))
     }
 }
 
@@ -78,17 +71,16 @@ impl Filter for GroupFilter {
     fn matches(&self, record: &URLRecord) -> bool {
         record.group == self.group
     }
-    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
-        Box::new(FilterSet::new_combined(vec![
-            Box::new(self),
-            filter,
-        ]))
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
+        Box::new(FilterSet::new_combined(vec![Box::new(self), filter]))
     }
 }
 
 impl GroupFilter {
     pub fn new(group: &str) -> GroupFilter {
-        GroupFilter{group: group.to_string()}
+        GroupFilter {
+            group: group.to_string(),
+        }
     }
 }
 
@@ -100,22 +92,21 @@ impl Filter for TagsFilter {
     fn matches(&self, record: &URLRecord) -> bool {
         for t in &self.tags {
             if record.tags.contains_key(t) {
-                return true
+                return true;
             }
         }
-        return false
+        return false;
     }
-    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
-        Box::new(FilterSet::new_combined(vec![
-            Box::new(self),
-            filter,
-        ]))
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
+        Box::new(FilterSet::new_combined(vec![Box::new(self), filter]))
     }
 }
 
 impl TagsFilter {
     pub fn new(tags: Vec<&str>) -> TagsFilter {
-        TagsFilter {tags: tags.iter().map(|t| {t.to_string()}).collect()}
+        TagsFilter {
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+        }
     }
 }
 
@@ -147,11 +138,8 @@ impl Filter for PhraseFilter {
             }
         };
     }
-    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> { 
-        Box::new(FilterSet::new_combined(vec![
-            Box::new(self),
-            filter,
-        ]))
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
+        Box::new(FilterSet::new_combined(vec![Box::new(self), filter]))
     }
 }
 
@@ -189,7 +177,7 @@ impl PhraseFilter {
 
 #[cfg(test)]
 mod test {
-    use crate::filters::{FilterSet, Filter};
+    use crate::filters::{Filter, FilterSet};
     use crate::types::URLRecord;
 
     #[test]
@@ -257,7 +245,8 @@ mod test {
         for test in test_cases {
             println!("Phrase: {}", test.phrase);
 
-            let combined_filter: FilterSet = FilterSet::new_combined_for_phrase(test.phrase.as_str());
+            let combined_filter: FilterSet =
+                FilterSet::new_combined_for_phrase(test.phrase.as_str());
 
             for i in 0..test_set.len() {
                 println!("URL: {}", &test_set[i]);

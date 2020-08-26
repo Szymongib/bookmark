@@ -1,29 +1,18 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::event::{Event, Signal};
-use crate::interactive::table::{TableItem};
+use crate::interactive::modules::command::Command;
+use crate::interactive::modules::delete::Delete;
+use crate::interactive::modules::help::HelpPanel;
+use crate::interactive::modules::search::Search;
+use crate::interactive::modules::Module;
+use crate::interactive::table::TableItem;
+use std::collections::HashMap;
 use std::error::Error;
 use termion::event::Key;
 use tui::layout::{Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::widgets::{Block, Borders, Row, Table};
 use tui::Frame;
-use std::collections::HashMap;
-use crate::interactive::modules::{Module};
-use crate::interactive::modules::search::Search;
-use crate::interactive::modules::help::HelpPanel;
-use crate::interactive::modules::delete::Delete;
-use crate::interactive::modules::command::Command;
-
-// TODO: some decisions
-// - drop Add functionality from interactive mode for now
-// - ':et' - edit tag of selected
-// - ':eg' - edit group of selected
-// - ':g [GROUP]' - filter by group
-// - ':t [TAG]' - filter by tag
-// - '????" - remove filters
-// TODO: Help not as a popup but toggle?
-// TODO: Toggle show ids
-
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum InputMode {
@@ -59,12 +48,13 @@ struct Styles {
 }
 
 impl<B: tui::backend::Backend> Interface<B> {
-    pub(crate) fn new(bookmarks_table: BookmarksTable) -> Result<Interface<B>, Box<dyn std::error::Error>> {
+    pub(crate) fn new(
+        bookmarks_table: BookmarksTable,
+    ) -> Result<Interface<B>, Box<dyn std::error::Error>> {
         let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
         let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
         let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
         let command_mod: Box<dyn Module<B>> = Box::new(Command::new());
-
 
         Ok(Interface {
             bookmarks_table,
@@ -111,14 +101,16 @@ impl<B: tui::backend::Backend> Interface<B> {
                         for m in self.modules.values_mut() {
                             if let Some(mode) = m.try_activate(input, &mut self.bookmarks_table)? {
                                 self.input_mode = mode;
-                                return Ok(false)
+                                return Ok(false);
                             }
                         }
                     }
                 },
                 _ => {
                     if let Some(module) = self.modules.get_mut(&self.input_mode) {
-                        if let Some(new_mode) = module.handle_input(input, &mut self.bookmarks_table)? {
+                        if let Some(new_mode) =
+                            module.handle_input(input, &mut self.bookmarks_table)?
+                        {
                             self.input_mode = new_mode;
                         }
                     }
@@ -127,7 +119,7 @@ impl<B: tui::backend::Backend> Interface<B> {
         }
         if let Event::Signal(s) = event {
             match s {
-                Signal::Quit => return Ok(true)
+                Signal::Quit => return Ok(true),
             }
         }
 
@@ -153,9 +145,10 @@ impl<B: tui::backend::Backend> Interface<B> {
         let table = self.bookmarks_table.table();
 
         let header = ["  Name", "URL", "Group", "Tags"];
-        let rows = table.items.iter().map(|i| {
-            Row::StyledData(i.row().iter(), normal_style)
-        });
+        let rows = table
+            .items
+            .iter()
+            .map(|i| Row::StyledData(i.row().iter(), normal_style));
         let t = Table::new(header.iter(), rows)
             .header_style(self.styles.header)
             .block(
@@ -183,18 +176,18 @@ impl<B: tui::backend::Backend> Interface<B> {
 
 #[cfg(test)]
 mod test {
-    use crate::interactive::event::{Event, Events, Signal};
     use crate::interactive::bookmarks_table::BookmarksTable;
+    use crate::interactive::event::{Event, Events, Signal};
+    use crate::interactive::fake::MockBackend;
     use crate::interactive::interface::{InputMode, Interface, SuppressedAction};
-    use crate::interactive::fake::{MockBackend};
-    use bookmark_lib::types::URLRecord;
-    use termion::event::Key;
     use bookmark_lib::registry::URLRegistry;
-    use std::path::{PathBuf, Path};
+    use bookmark_lib::types::URLRecord;
     use bookmark_lib::Registry;
-    use std::{fs};
-    use rand::{thread_rng, Rng};
     use rand::distributions::Alphanumeric;
+    use rand::{thread_rng, Rng};
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use termion::event::Key;
 
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
@@ -213,7 +206,7 @@ mod test {
     // TODO: as general trait?
     impl Cleaner {
         fn new(file_path: PathBuf) -> Cleaner {
-            Cleaner{ file_path }
+            Cleaner { file_path }
         }
 
         fn clean(&self) {
@@ -230,10 +223,7 @@ mod test {
     }
 
     fn rand_str() -> String {
-        let rand_string: String = thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(30)
-            .collect();
+        let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(30).collect();
 
         rand_string
     }
@@ -297,7 +287,7 @@ mod test {
 
     #[test]
     fn test_handle_input_input_modes() {
-        let (mut interface, _)  = init!();
+        let (mut interface, _) = init!();
 
         assert!(InputMode::Normal == interface.input_mode);
 
@@ -376,7 +366,7 @@ mod test {
 
     #[test]
     fn test_handle_input_switch_input_modes() {
-        let (mut interface, _)  = init!();
+        let (mut interface, _) = init!();
 
         assert!(InputMode::Normal == interface.input_mode);
 
@@ -424,7 +414,7 @@ mod test {
 
     #[test]
     fn test_handle_input_search() {
-        let (mut interface, _cleaner)  = init!(fix_url_records());
+        let (mut interface, _cleaner) = init!(fix_url_records());
 
         println!("Should filter items in table on input...");
         let event = Event::Input(Key::Char('/'));
@@ -561,14 +551,17 @@ mod test {
         for test in &test_cases {
             println!("Running test case: {}", test.description);
 
-            let (mut interface, _)  = init!(fix_url_records());
+            let (mut interface, _) = init!(fix_url_records());
 
             for i in 0..test.events.len() {
                 let quit = interface
                     .handle_input(test.events[i].clone())
                     .expect("Failed to handle event");
                 assert!(!quit);
-                assert_eq!(test.selected[i], interface.bookmarks_table.table().state.selected())
+                assert_eq!(
+                    test.selected[i],
+                    interface.bookmarks_table.table().state.selected()
+                )
             }
         }
     }

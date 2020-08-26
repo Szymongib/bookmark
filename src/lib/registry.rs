@@ -1,10 +1,10 @@
+use crate::filters::{Filter, NoopFilter};
 use crate::storage::FileStorage;
 use crate::types::URLRecord;
-use crate::{Repository, Registry, RegistryReader};
+use crate::util::create_temp_file;
+use crate::{Registry, RegistryReader, Repository};
 use std::error::Error;
 use std::path::PathBuf;
-use crate::util::create_temp_file;
-use crate::filters::{Filter, NoopFilter};
 
 // TODO: introduce custom errors
 
@@ -18,22 +18,20 @@ impl URLRegistry<FileStorage> {
     pub fn new_file_based(file_path: String) -> URLRegistry<FileStorage> {
         let storage = FileStorage::new_urls_repository(file_path);
 
-        URLRegistry {
-            storage,
-        }
+        URLRegistry { storage }
     }
 
-    pub fn with_temp_file(suffix: &str) -> Result<(URLRegistry<FileStorage>, PathBuf), Box<dyn std::error::Error>> {
+    pub fn with_temp_file(
+        suffix: &str,
+    ) -> Result<(URLRegistry<FileStorage>, PathBuf), Box<dyn std::error::Error>> {
         let file_path = create_temp_file(suffix)?;
 
         return match file_path.to_str() {
-            Some(path) => {
-                Ok((URLRegistry::new_file_based(path.to_string()), file_path))
-            },
-            None => {
-                Err(From::from("failed to initialized registry with temp file, path is None"))
-            }
-        }
+            Some(path) => Ok((URLRegistry::new_file_based(path.to_string()), file_path)),
+            None => Err(From::from(
+                "failed to initialized registry with temp file, path is None",
+            )),
+        };
     }
 }
 
@@ -66,7 +64,7 @@ impl<T: Repository> Registry for URLRegistry<T> {
 
     fn tag_url(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
         if tag == "" {
-            return Err(From::from("Tag cannot be an empty string"))
+            return Err(From::from("Tag cannot be an empty string"));
         }
 
         let record = self.storage.get(id)?; // TODO: what should be returned here
@@ -79,16 +77,22 @@ impl<T: Repository> Registry for URLRegistry<T> {
 }
 
 impl<T: Repository> RegistryReader for URLRegistry<T> {
-    fn list_urls(&self, filter: Option<&Box<dyn Filter>>) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
+    fn list_urls(
+        &self,
+        filter: Option<&Box<dyn Filter>>,
+    ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
         let urls = self.storage.list()?;
         let noop: Box<dyn Filter> = Box::new(NoopFilter::new()); // TODO: move as struct member
 
         let filter = filter.unwrap_or(&noop);
 
-        Ok(urls.iter().filter(|url|{
-            // self.filter.matches(*url)
-            filter.matches(*url) // TODO: do not unwrap
-        }).map(|u| {u.to_owned()})
+        Ok(urls
+            .iter()
+            .filter(|url| {
+                // self.filter.matches(*url)
+                filter.matches(*url) // TODO: do not unwrap
+            })
+            .map(|u| u.to_owned())
             .collect())
     }
 
@@ -100,13 +104,13 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
 #[cfg(test)]
 mod test {
     use crate::filters::Filter;
-use crate::registry::URLRegistry;
-    use crate::storage::FileStorage;
-    use crate::types::{URLRecord, calculate_hash};
-    use std::collections::HashMap;
-    use std::{fs};
-    use crate::{Registry, RegistryReader};
     use crate::filters::{GroupFilter, TagsFilter};
+    use crate::registry::URLRegistry;
+    use crate::storage::FileStorage;
+    use crate::types::{calculate_hash, URLRecord};
+    use crate::{Registry, RegistryReader};
+    use std::collections::HashMap;
+    use std::fs;
 
     struct TestUrl {
         name: &'static str,
@@ -117,7 +121,9 @@ use crate::registry::URLRegistry;
 
     #[test]
     fn registry_test() {
-        let (mut registry, file_path) = URLRegistry::<FileStorage>::with_temp_file("registry_tests.json").expect("Failed to initialize registry");
+        let (mut registry, file_path) =
+            URLRegistry::<FileStorage>::with_temp_file("registry_tests.json")
+                .expect("Failed to initialize registry");
 
         let test_urls: Vec<TestUrl> = vec![
             TestUrl {
@@ -170,7 +176,7 @@ use crate::registry::URLRegistry;
         assert_urls_match(&all_urls, urls);
 
         println!("List URLs from specific group...");
-        let group_to_filter= "test";
+        let group_to_filter = "test";
         let group_filter: Box<dyn Filter> = Box::new(GroupFilter::new(group_to_filter.clone()));
 
         let urls = registry

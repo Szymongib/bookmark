@@ -34,9 +34,9 @@ pub(crate) fn centered_fixed_rect(size_x: u16, size_y: u16, r: Rect) -> Rect {
         .direction(Direction::Vertical)
         .constraints(
             [
-                Constraint::Length((r.height - size_y)/2),
+                Constraint::Length((r.height - size_y) / 2),
                 Constraint::Length(size_y),
-                Constraint::Length((r.height - size_y)/2),
+                Constraint::Length((r.height - size_y) / 2),
             ]
             .as_ref(),
         )
@@ -46,9 +46,9 @@ pub(crate) fn centered_fixed_rect(size_x: u16, size_y: u16, r: Rect) -> Rect {
         .direction(Direction::Horizontal)
         .constraints(
             [
-                Constraint::Length((r.width - size_x)/2),
+                Constraint::Length((r.width - size_x) / 2),
                 Constraint::Length(size_x),
-                Constraint::Length((r.width - size_x)/2),
+                Constraint::Length((r.width - size_x) / 2),
             ]
             .as_ref(),
         )

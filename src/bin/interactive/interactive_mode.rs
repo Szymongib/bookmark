@@ -4,10 +4,9 @@ use tui::{backend::TermionBackend, Terminal};
 
 use super::event::Events;
 
+use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::interface::Interface;
 use bookmark_lib::Registry;
-use crate::interactive::bookmarks_table::BookmarksTable;
-
 
 pub fn enter_interactive_mode<T: Registry + 'static>(registry: T) -> Result<(), Box<dyn Error>> {
     let stdout = io::stdout().into_raw_mode()?;

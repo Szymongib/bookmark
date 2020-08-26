@@ -1,15 +1,15 @@
 extern crate clap;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
+use crate::interactive::interactive_mode::enter_interactive_mode;
 use bookmark_lib::registry::URLRegistry;
 use bookmark_lib::storage::FileStorage;
-use bookmark_lib::{Registry};
-use crate::interactive::interactive_mode::enter_interactive_mode;
+use bookmark_lib::Registry;
 
-use bookmark_lib::filters::{GroupFilter, TagsFilter, Filter, NoopFilter};
+use bookmark_lib::filters::{Filter, GroupFilter, NoopFilter, TagsFilter};
 
-mod interactive;
 mod display;
+mod interactive;
 
 const GROUP_SUB_CMD: &str = "group";
 const GROUP_LIST_CMD: &str = "list";
@@ -129,12 +129,10 @@ fn main() {
         }
         ("", None) => {
             match enter_interactive_mode(application.registry) {
-                Err(err) => {
-                    panic!("Failed to enter interactive mode: {}", err.to_string())
-                },
+                Err(err) => panic!("Failed to enter interactive mode: {}", err.to_string()),
                 _ => {}
             };
-        },
+        }
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachabe!()
     }
 }
@@ -155,7 +153,9 @@ struct Application<T: Registry> {
 
 impl Application<URLRegistry<FileStorage>> {
     pub fn new_file_based_registry(file_path: String) -> Application<URLRegistry<FileStorage>> {
-        Application { registry: URLRegistry::new_file_based(file_path) }
+        Application {
+            registry: URLRegistry::new_file_based(file_path),
+        }
     }
 }
 
@@ -194,15 +194,20 @@ impl<T: Registry> Application<T> {
     pub fn list_sub_cmd(&self, matches: &ArgMatches) {
         let noop_filter: Box<dyn Filter> = Box::new(NoopFilter::new());
 
-        let group_filter: Box<dyn Filter> = matches.value_of("group").map(|g| {
-            let f: Box<dyn Filter> = Box::new(GroupFilter::new(g));
-            f
-        }).unwrap_or(noop_filter);
+        let group_filter: Box<dyn Filter> = matches
+            .value_of("group")
+            .map(|g| {
+                let f: Box<dyn Filter> = Box::new(GroupFilter::new(g));
+                f
+            })
+            .unwrap_or(noop_filter);
 
-        let tags_filter: Box<dyn Filter> = get_multiple_values(matches, "tag").map(|t| {
-            let f: Box<dyn Filter> = Box::new(TagsFilter::new(t));
-            f
-        }).unwrap_or(group_filter);
+        let tags_filter: Box<dyn Filter> = get_multiple_values(matches, "tag")
+            .map(|t| {
+                let f: Box<dyn Filter> = Box::new(TagsFilter::new(t));
+                f
+            })
+            .unwrap_or(group_filter);
 
         // TODO: support output as json?
         return match self.registry.list_urls(Some(&tags_filter)) {

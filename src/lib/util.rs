@@ -1,7 +1,7 @@
-use std::path::PathBuf;
 use std::env;
 use std::fs::File;
-use std::time::{SystemTime};
+use std::path::PathBuf;
+use std::time::SystemTime;
 
 pub(crate) fn create_temp_file(suffix: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let time = SystemTime::now().elapsed()?.as_nanos();
@@ -11,5 +11,5 @@ pub(crate) fn create_temp_file(suffix: &str) -> Result<PathBuf, Box<dyn std::err
 
     File::create(temp_path.clone())?;
 
-    return Ok(temp_path)
+    return Ok(temp_path);
 }

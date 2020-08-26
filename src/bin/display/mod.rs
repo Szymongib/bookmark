@@ -7,27 +7,35 @@ pub(crate) fn display_urls(urls: Vec<URLRecord>) {
 fn display_str(urls: Vec<URLRecord>) -> String {
     let (name_len, url_len, group_len, tags_len) = get_max_lengths(&urls);
     let id_len = if urls.len() > 0 {
-        urls[0].id.len()  // Ids have uniform length
+        urls[0].id.len() // Ids have uniform length
     } else {
         0
     };
 
-    let mut out =header(id_len, name_len, url_len, group_len, tags_len);
+    let mut out = header(id_len, name_len, url_len, group_len, tags_len);
     out.push('\n');
 
     for u in urls {
-        out.push_str( &format!("\n{}   {}   {}   {}   {}",
-                 pad(u.id.clone(), id_len),
-                 pad(u.name.clone(), name_len),
-                 pad(u.url.clone(), url_len),
-                 pad(u.group.clone(), group_len),
-                 pad(u.tags_as_string(), tags_len)))
+        out.push_str(&format!(
+            "\n{}   {}   {}   {}   {}",
+            pad(u.id.clone(), id_len),
+            pad(u.name.clone(), name_len),
+            pad(u.url.clone(), url_len),
+            pad(u.group.clone(), group_len),
+            pad(u.tags_as_string(), tags_len)
+        ))
     }
 
-    return out
+    return out;
 }
 
-fn header(id_len: usize, name_len: usize, url_len: usize, group_len: usize, tags_len: usize) -> String {
+fn header(
+    id_len: usize,
+    name_len: usize,
+    url_len: usize,
+    group_len: usize,
+    tags_len: usize,
+) -> String {
     let id = pad("Id".to_string(), id_len);
     let name = pad("Name".to_string(), name_len);
     let url = pad("URL".to_string(), url_len);
@@ -40,21 +48,17 @@ fn header(id_len: usize, name_len: usize, url_len: usize, group_len: usize, tags
 fn pad(s: String, len: usize) -> String {
     let mut s = s.clone();
 
-    let pad_count = if len >= s.len() {
-        len - s.len()
-    } else {
-        0
-    };
+    let pad_count = if len >= s.len() { len - s.len() } else { 0 };
 
     for _ in 0..pad_count {
         s.push(' ');
     }
-    return s
+    return s;
 }
 
 /// Returns max length of Name, URL, Group, Tags
 fn get_max_lengths(urls: &Vec<URLRecord>) -> (usize, usize, usize, usize) {
-    let mut max_len: [usize; 4] = [4,3,5,0];
+    let mut max_len: [usize; 4] = [4, 3, 5, 0];
 
     for u in urls {
         if u.name.len() > max_len[0] {
@@ -72,13 +76,13 @@ fn get_max_lengths(urls: &Vec<URLRecord>) -> (usize, usize, usize, usize) {
         }
     }
 
-    return (max_len[0], max_len[1], max_len[2], max_len[3])
+    return (max_len[0], max_len[1], max_len[2], max_len[3]);
 }
 
 #[cfg(test)]
 mod test {
+    use crate::display::display_str;
     use bookmark_lib::types::URLRecord;
-    use crate::display::{display_str};
 
     struct TestCase {
         description: String,
@@ -88,7 +92,6 @@ mod test {
 
     #[test]
     fn test_display_str() {
-
         let test_cases = vec![
             TestCase{
                 description: "Several URL records".to_string(),

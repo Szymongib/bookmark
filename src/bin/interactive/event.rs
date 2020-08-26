@@ -8,12 +8,12 @@ use termion::input::TermRead;
 #[derive(Clone)]
 pub enum Event<I> {
     Input(I),
-    Signal(Signal)
+    Signal(Signal),
 }
 
 #[derive(Clone)]
 pub enum Signal {
-    Quit
+    Quit,
 }
 
 pub struct Events {
@@ -52,7 +52,11 @@ impl Events {
                 }
             })
         };
-        Events { tx, rx, input_handle }
+        Events {
+            tx,
+            rx,
+            input_handle,
+        }
     }
 
     pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {

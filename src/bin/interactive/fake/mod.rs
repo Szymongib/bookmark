@@ -1,11 +1,13 @@
-use tui::buffer::Cell;
 use std::io::Error;
+use tui::buffer::Cell;
 use tui::layout::Rect;
 
 pub struct MockBackend {}
 impl tui::backend::Backend for MockBackend {
-    fn draw<'a, I>(&mut self, _content: I) -> Result<(), Error> where
-        I: Iterator<Item=(u16, u16, &'a Cell)> {
+    fn draw<'a, I>(&mut self, _content: I) -> Result<(), Error>
+    where
+        I: Iterator<Item = (u16, u16, &'a Cell)>,
+    {
         unimplemented!()
     }
 

@@ -1,5 +1,5 @@
-use tui::layout::{Layout, Direction, Constraint};
 use termion::event::Key;
+use tui::layout::{Constraint, Direction, Layout};
 
 // TODO: consider moving to some lib
 macro_rules! hashmap {
@@ -27,13 +27,9 @@ pub fn horizontal_layout(widths: Vec<u16>) -> Layout {
 }
 
 fn to_constraints(vals: Vec<u16>) -> Vec<Constraint> {
-    vals.iter().map(|h| {
-        Constraint::Length(h.clone())
-    }).collect()
+    vals.iter().map(|h| Constraint::Length(h.clone())).collect()
 }
 
 pub fn to_key_events(text: &str) -> Vec<Key> {
-    text.chars().map(|c| {
-        Key::Char(c)
-    }).collect()
+    text.chars().map(|c| Key::Char(c)).collect()
 }

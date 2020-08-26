@@ -1,30 +1,38 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
-use crate::interactive::modules::{Module, HandleInput, Draw};
-use tui::backend::Backend;
 use crate::interactive::interface::{InputMode, SuppressedAction};
+use crate::interactive::modules::{Draw, HandleInput, Module};
+use crate::interactive::widgets::rect::centered_rect;
 use std::error::Error;
 use termion::event::Key;
-use tui::Frame;
-use crate::interactive::widgets::rect::centered_rect;
-use tui::widgets::{Paragraph, Clear, Block, Borders};
-use tui::style::{Style, Color, Modifier};
+use tui::backend::Backend;
 use tui::layout::Alignment;
+use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
+use tui::widgets::{Block, Borders, Clear, Paragraph};
+use tui::Frame;
 
 pub(crate) struct HelpPanel {}
 
 impl<B: Backend> Module<B> for HelpPanel {}
 
 impl HandleInput for HelpPanel {
-    fn try_activate(&mut self, input: Key, _table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
+    fn try_activate(
+        &mut self,
+        input: Key,
+        _table: &mut BookmarksTable,
+    ) -> Result<Option<InputMode>, Box<dyn Error>> {
         if input != Key::Char('h') {
-            return Ok(None)
+            return Ok(None);
         }
 
-        return Ok(Some(InputMode::Suppressed(SuppressedAction::ShowHelp)))
+        return Ok(Some(InputMode::Suppressed(SuppressedAction::ShowHelp)));
     }
 
-    fn handle_input(&mut self, input: Key, _table: &mut BookmarksTable) -> Result<Option<InputMode>, Box<dyn Error>> {
+    fn handle_input(
+        &mut self,
+        input: Key,
+        _table: &mut BookmarksTable,
+    ) -> Result<Option<InputMode>, Box<dyn Error>> {
         match input {
             Key::Esc | Key::Char('\n') | Key::Char('h') => {
                 return Ok(Some(InputMode::Normal));
@@ -35,7 +43,7 @@ impl HandleInput for HelpPanel {
             _ => {}
         }
 
-        return Ok(None)
+        return Ok(None);
     }
 }
 
@@ -48,9 +56,8 @@ impl<B: Backend> Draw<B> for HelpPanel {
 }
 
 impl HelpPanel {
-
     pub fn new() -> HelpPanel {
-        return HelpPanel{}
+        return HelpPanel {};
     }
 
     fn show_help_popup<'a, B: Backend>(&self, f: &mut Frame<B>) {
@@ -77,5 +84,4 @@ impl HelpPanel {
         f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
     }
-
 }

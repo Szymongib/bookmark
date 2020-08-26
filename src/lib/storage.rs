@@ -19,7 +19,8 @@ impl FileStorage {
     }
 
     fn delete_url<F>(&self, match_first: F) -> Result<bool, Box<dyn std::error::Error>>
-    where F: Fn(&URLRecord) -> bool
+    where
+        F: Fn(&URLRecord) -> bool,
     {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let mut registry = read_urls(&mut file)?;
@@ -59,9 +60,7 @@ impl Repository for FileStorage {
     }
 
     fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn Error>> {
-        return self.delete_url(|u| {
-            u.id == id.to_string()
-        })
+        return self.delete_url(|u| u.id == id.to_string());
     }
 
     fn list(&self) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
@@ -76,7 +75,7 @@ impl Repository for FileStorage {
 
         for url in &registry.urls.items {
             if url.id == id {
-                return Ok(Some(url.clone()))
+                return Ok(Some(url.clone()));
             }
         }
 
@@ -109,18 +108,18 @@ impl Repository for FileStorage {
 
         let mut found = false;
         for i in 0..registry.urls.items.len() {
-            if registry.urls.items[i].id.clone() == id.clone(){
+            if registry.urls.items[i].id.clone() == id.clone() {
                 registry.urls.items[i] = record.clone();
                 found = true
             }
         }
         if !found {
-            return Ok(None)
+            return Ok(None);
         }
 
         write_urls(&mut file, registry)?;
 
-        return Ok(Some(record))
+        return Ok(Some(record));
     }
 }
 
