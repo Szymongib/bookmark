@@ -1,5 +1,4 @@
 use super::types::{URLRecord, URLRegistry};
-use crate::filters::Filter;
 use crate::types::URLs;
 use crate::Repository;
 use std::collections::HashMap;
@@ -17,6 +16,26 @@ pub struct FileStorage {
 impl FileStorage {
     pub fn new_urls_repository(file_path: String) -> FileStorage {
         FileStorage { file_path }
+    }
+
+    fn delete_url<F>(&self, match_first: F) -> Result<bool, Box<dyn std::error::Error>>
+    where
+        F: Fn(&URLRecord) -> bool,
+    {
+        let mut file = open_urls_file(self.file_path.as_str())?;
+        let mut registry = read_urls(&mut file)?;
+
+        let mut index: usize = 0;
+        for u in &registry.urls.items {
+            if match_first(u) {
+                registry.urls.items.remove(index);
+                write_urls(&mut file, registry)?;
+                return Ok(true);
+            }
+            index += 1;
+        }
+
+        return Ok(false);
     }
 }
 
@@ -40,46 +59,27 @@ impl Repository for FileStorage {
         return Ok(record);
     }
 
-    fn delete(&self, name: &str, group: &str) -> Result<bool, Box<dyn std::error::Error>> {
-        let mut file = open_urls_file(self.file_path.as_str())?;
-        let mut registry = read_urls(&mut file)?;
-
-        let mut index: usize = 0;
-        for u in &registry.urls.items {
-            if u.group == group && u.name == name {
-                registry.urls.items.remove(index);
-                write_urls(&mut file, registry)?;
-                return Ok(true);
-            }
-            index += 1;
-        }
-
-        return Ok(false);
+    fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn Error>> {
+        return self.delete_url(|u| u.id == id.to_string());
     }
 
-    fn list(
-        &self,
-        group: Option<&str>,
-        filter: &dyn Filter,
-    ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
+    fn list(&self) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
+        let mut file = open_urls_file(self.file_path.as_str())?;
+        let registry = read_urls(&mut file)?;
+        return Ok(registry.urls.items);
+    }
+
+    fn get(&self, id: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let registry = read_urls(&mut file)?;
 
-        if group.is_none() {
-            return Ok(filter.apply(registry.urls.items));
+        for url in &registry.urls.items {
+            if url.id == id {
+                return Ok(Some(url.clone()));
+            }
         }
 
-        let group = group.unwrap();
-
-        let urls = registry
-            .urls
-            .items
-            .iter()
-            .filter(|rec| rec.group == group)
-            .map(|rec| rec.clone())
-            .collect();
-
-        return Ok(filter.apply(urls));
+        Ok(None)
     }
 
     fn list_groups(&self) -> Result<Vec<String>, Box<dyn Error>> {
@@ -100,6 +100,26 @@ impl Repository for FileStorage {
         }
 
         Ok(distinct.keys().map(|k| k.to_string()).collect())
+    }
+
+    fn update(&self, id: &str, record: URLRecord) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        let mut file = open_urls_file(self.file_path.as_str())?;
+        let mut registry = read_urls(&mut file)?;
+
+        let mut found = false;
+        for i in 0..registry.urls.items.len() {
+            if registry.urls.items[i].id.clone() == id.clone() {
+                registry.urls.items[i] = record.clone();
+                found = true
+            }
+        }
+        if !found {
+            return Ok(None);
+        }
+
+        write_urls(&mut file, registry)?;
+
+        return Ok(Some(record));
     }
 }
 

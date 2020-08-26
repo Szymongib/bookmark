@@ -49,11 +49,17 @@ Add URL:
 bookmark add GitHub https://github.com
 ```
 
-List URLs with an interactive list:
+Enter interactive mode:
+```bash
+bookmark
+```
+Use `enter` to open URL in the browser, `q` to quite the interactive mode and `h` to display help panel.
+
+
+List URLs:
 ```bash
 bookmark list
 ```
-Use `enter` to open URL in the browser and `q` to quite the interactive list.
 
 Delete URL:
 ```bash

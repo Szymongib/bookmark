@@ -1,5 +1,4 @@
-use crate::ui::table::TableItem;
-use bookmark_lib::record_filter::URLFilter;
+use crate::interactive::table::TableItem;
 use bookmark_lib::types::URLRecord;
 
 #[derive(Clone, Debug)]
@@ -18,41 +17,38 @@ impl URLItem {
         }
     }
 
-    pub fn url(&self) -> String {
-        return self.url.url.clone();
+    pub fn from_vec(records: Vec<URLRecord>) -> Vec<URLItem> {
+        records.iter().map(|u| URLItem::new(u.clone())).collect()
     }
 
-    pub fn filter<T: URLFilter>(&mut self, filter: &T) {
-        self.visible = filter.matches(&self.url)
+    pub fn url(&self) -> String {
+        return self.url.url.clone();
     }
 }
 
 impl TableItem for URLItem {
-    fn visible(&self) -> bool {
-        return self.visible;
-    }
-
     fn row(&self) -> &Vec<String> {
         &self.row
+    }
+
+    fn id(&self) -> String {
+        self.url.id.clone()
     }
 }
 
 fn url_to_row(record: &URLRecord) -> Vec<String> {
-    let tags: Vec<&str> = record.tags.keys().map(|k| k.as_str()).collect();
-
     vec![
         record.name.clone(),
         record.url.clone(),
         record.group.clone(),
-        tags.join(", "),
+        record.tags_as_string(),
     ]
 }
 
 #[cfg(test)]
 mod test {
-    use crate::ui::table::TableItem;
-    use crate::ui::url_table_item::URLItem;
-    use bookmark_lib::record_filter::URLFilter;
+    use crate::interactive::table::TableItem;
+    use crate::interactive::url_table_item::URLItem;
     use bookmark_lib::types::URLRecord;
 
     struct TestCase {
@@ -60,27 +56,8 @@ mod test {
         expected_row: Vec<String>,
     }
 
-    struct FixedFilter {
-        matches: bool,
-    }
-
-    impl FixedFilter {
-        fn new(matches: bool) -> FixedFilter {
-            FixedFilter { matches }
-        }
-    }
-
-    impl URLFilter for FixedFilter {
-        fn matches(&self, _: &URLRecord) -> bool {
-            return self.matches;
-        }
-    }
-
     #[test]
     fn test_url_item() {
-        let match_filter = FixedFilter::new(true);
-        let do_not_match_filter = FixedFilter::new(false);
-
         let items = vec![
             TestCase {
                 url_record: URLRecord::new("url1", "name1", "group1", vec!["tag1, tag1.2"]),
@@ -121,16 +98,9 @@ mod test {
         ];
 
         for item in items {
-            let mut table_item = URLItem::new(item.url_record);
+            let table_item = URLItem::new(item.url_record);
             let row = table_item.row();
             assert_eq!(&item.expected_row, row);
-            assert!(table_item.visible());
-
-            table_item.filter(&do_not_match_filter);
-            assert!(!table_item.visible());
-
-            table_item.filter(&match_filter);
-            assert!(table_item.visible());
         }
     }
 }

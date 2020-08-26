@@ -4,10 +4,11 @@ use tui::{backend::TermionBackend, Terminal};
 
 use super::event::Events;
 
-use crate::ui::interface::Interface;
-use bookmark_lib::types::URLRecord;
+use crate::interactive::bookmarks_table::BookmarksTable;
+use crate::interactive::interface::Interface;
+use bookmark_lib::Registry;
 
-pub fn display_urls(urls: Vec<URLRecord>) -> Result<(), Box<dyn Error>> {
+pub fn enter_interactive_mode<T: Registry + 'static>(registry: T) -> Result<(), Box<dyn Error>> {
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
     let stdout = AlternateScreen::from(stdout);
@@ -17,7 +18,9 @@ pub fn display_urls(urls: Vec<URLRecord>) -> Result<(), Box<dyn Error>> {
 
     let events = Events::new();
 
-    let mut user_interface = Interface::new(urls);
+    let bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry));
+
+    let mut user_interface = Interface::new(bookmarks_table?)?;
 
     loop {
         terminal.draw(|f| user_interface.draw(f))?;

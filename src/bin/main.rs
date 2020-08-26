@@ -1,12 +1,15 @@
 extern crate clap;
-use crate::ui::lister;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-use bookmark_lib::registry::Registry;
+use crate::interactive::interactive_mode::enter_interactive_mode;
+use bookmark_lib::registry::URLRegistry;
 use bookmark_lib::storage::FileStorage;
-use bookmark_lib::Repository;
+use bookmark_lib::Registry;
 
-mod ui;
+use bookmark_lib::filters::{Filter, GroupFilter, NoopFilter, TagsFilter};
+
+mod display;
+mod interactive;
 
 const GROUP_SUB_CMD: &str = "group";
 const GROUP_LIST_CMD: &str = "list";
@@ -15,7 +18,10 @@ const ADD_SUB_CMD: &str = "add";
 const LIST_SUB_CMD: &str = "list";
 const DELETE_SUB_CMD: &str = "delete";
 
-const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
+// const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
+
+// TODO: change to that after modifying data model
+const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls_v0.1.json";
 
 fn main() {
     let matches = App::new("Bookmark CLI")
@@ -95,7 +101,7 @@ fn main() {
                 .index(1)
             )
         )
-        // TODO: add ability to modify tags
+        // TODO: Add import subcommand to import from v1
         .get_matches();
 
     let file_path = match matches.value_of("file") {
@@ -106,9 +112,7 @@ fn main() {
         },
     };
 
-    let registry = Registry::<FileStorage>::new_file_based(file_path);
-
-    let application = Application::new(registry);
+    let application = Application::new_file_based_registry(file_path);
 
     match matches.subcommand() {
         (GROUP_SUB_CMD, Some(group_matches)) => {
@@ -123,7 +127,12 @@ fn main() {
         (DELETE_SUB_CMD, Some(delete_matches)) => {
             application.delete_sub_cmd(delete_matches);
         }
-        ("", None) => println!("No subcommand was used"), // If no subcommand was usd it'll match the tuple ("", None)
+        ("", None) => {
+            match enter_interactive_mode(application.registry) {
+                Err(err) => panic!("Failed to enter interactive mode: {}", err.to_string()),
+                _ => {}
+            };
+        }
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachabe!()
     }
 }
@@ -138,15 +147,19 @@ fn get_default_registry_file_path() -> Option<String> {
     }
 }
 
-struct Application<T: Repository> {
-    registry: Registry<T>,
+struct Application<T: Registry> {
+    registry: T,
 }
 
-impl<T: Repository> Application<T> {
-    pub fn new(registry: Registry<T>) -> Application<T> {
-        Application { registry }
+impl Application<URLRegistry<FileStorage>> {
+    pub fn new_file_based_registry(file_path: String) -> Application<URLRegistry<FileStorage>> {
+        Application {
+            registry: URLRegistry::new_file_based(file_path),
+        }
     }
+}
 
+impl<T: Registry> Application<T> {
     pub fn group_sub_cmd(&self, matches: &ArgMatches) {
         self.list_groups_cmd(matches)
     }
@@ -169,7 +182,7 @@ impl<T: Repository> Application<T> {
 
         let tags = get_multiple_values(matches, "tag").unwrap_or(vec![]);
 
-        match self.registry.add_url(url_name, url, group, tags) {
+        match self.registry.new(url_name, url, group, tags) {
             Ok(url_record) => println!(
                 "Added url {}: {} to {} group",
                 url_record.name, url_record.url, url_record.group
@@ -179,14 +192,27 @@ impl<T: Repository> Application<T> {
     }
 
     pub fn list_sub_cmd(&self, matches: &ArgMatches) {
-        let group = matches.value_of("group");
-        let tags = get_multiple_values(matches, "tag");
+        let noop_filter: Box<dyn Filter> = Box::new(NoopFilter::new());
 
-        return match self.registry.list_urls(group, tags) {
+        let group_filter: Box<dyn Filter> = matches
+            .value_of("group")
+            .map(|g| {
+                let f: Box<dyn Filter> = Box::new(GroupFilter::new(g));
+                f
+            })
+            .unwrap_or(noop_filter);
+
+        let tags_filter: Box<dyn Filter> = get_multiple_values(matches, "tag")
+            .map(|t| {
+                let f: Box<dyn Filter> = Box::new(TagsFilter::new(t));
+                f
+            })
+            .unwrap_or(group_filter);
+
+        // TODO: support output as json?
+        return match self.registry.list_urls(Some(&tags_filter)) {
             Ok(urls) => {
-                if let Err(err) = lister::display_urls(urls) {
-                    println!("Error displaying urls: {}", err.to_string())
-                }
+                display::display_urls(urls);
             }
             Err(why) => {
                 println!("Error getting URLs: {}", why);
@@ -200,7 +226,7 @@ impl<T: Repository> Application<T> {
 
         let group_name = group.unwrap_or("default");
 
-        match self.registry.delete(url_name, group) {
+        match self.registry.delete_by_id("TODO: id") {
             Ok(deleted) => {
                 if deleted {
                     println!("URL {} removed from {} group", url_name, group_name,)

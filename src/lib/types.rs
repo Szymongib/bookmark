@@ -32,11 +32,16 @@ pub struct URLs {
 // + add some description
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct URLRecord {
+    pub id: String,
     pub url: String,
     pub name: String,
     pub group: String,
     pub tags: HashMap<String, bool>,
 }
+
+use hex;
+use sha1::{Digest, Sha1};
+use std::str;
 
 impl URLRecord {
     pub fn new(url: &str, name: &str, group: &str, tags_vec: Vec<&str>) -> URLRecord {
@@ -46,12 +51,26 @@ impl URLRecord {
         }
 
         URLRecord {
+            id: calculate_hash(name.clone(), group.clone()),
             url: url.to_string(),
             name: name.to_string(),
             group: group.to_string(),
             tags,
         }
     }
+
+    pub fn tags_as_string(&self) -> String {
+        let tags: Vec<&str> = self.tags.keys().map(|k| k.as_str()).collect();
+        tags.join(", ")
+    }
+}
+
+pub(crate) fn calculate_hash(name: &str, group: &str) -> String {
+    // TODO: consider using just uuid instead
+    // TODO: decide if calculate hash earlier to compare earlier
+    let mut hasher = Sha1::new();
+    hasher.update(format!("{}/{}", group.clone(), name.clone()));
+    return hex::encode(hasher.finalize());
 }
 
 impl fmt::Display for URLRecord {

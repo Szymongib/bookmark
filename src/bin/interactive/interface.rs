@@ -1,42 +1,41 @@
-use crate::ui::event::Event;
-use crate::ui::table::{StatefulTable, TableItem};
-use crate::ui::url_table_item::URLItem;
-use crate::ui::widgets::rect::centered_rect;
-use bookmark_lib::record_filter::FilterSet;
-use bookmark_lib::types::URLRecord;
+use crate::interactive::bookmarks_table::BookmarksTable;
+use crate::interactive::event::{Event, Signal};
+use crate::interactive::modules::command::Command;
+use crate::interactive::modules::delete::Delete;
+use crate::interactive::modules::help::HelpPanel;
+use crate::interactive::modules::search::Search;
+use crate::interactive::modules::Module;
+use crate::interactive::table::TableItem;
+use std::collections::HashMap;
 use std::error::Error;
 use termion::event::Key;
-use tui::layout::{Alignment, Constraint, Direction, Layout};
+use tui::layout::{Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Paragraph, Row, Table, Clear};
+use tui::widgets::{Block, Borders, Row, Table};
 use tui::Frame;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum InputMode {
     Normal,
-    Edit(EditAction),
+    Search,
+    Command,
     Suppressed(SuppressedAction),
 }
 
-#[derive(PartialEq)]
-pub enum EditAction {
-    Search,
-}
-
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum SuppressedAction {
     ShowHelp,
+    Delete,
 }
 
-pub struct Interface {
+pub struct Interface<B: tui::backend::Backend> {
+    bookmarks_table: BookmarksTable,
+
+    /// Interface modules
+    modules: HashMap<InputMode, Box<dyn Module<B>>>,
+
     /// Current mode of input
     input_mode: InputMode,
-    /// Current searched phrase
-    search_phrase: String,
-
-    /// Table with URLs
-    table: StatefulTable<URLItem>,
 
     /// Styles used for displaying user interface
     styles: Styles,
@@ -48,16 +47,24 @@ struct Styles {
     header: Style,
 }
 
-impl Interface {
-    pub(crate) fn new(urls: Vec<URLRecord>) -> Interface {
-        let items: Vec<URLItem> = urls.iter().map(|u| URLItem::new(u.clone())).collect();
+impl<B: tui::backend::Backend> Interface<B> {
+    pub(crate) fn new(
+        bookmarks_table: BookmarksTable,
+    ) -> Result<Interface<B>, Box<dyn std::error::Error>> {
+        let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
+        let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
+        let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
+        let command_mod: Box<dyn Module<B>> = Box::new(Command::new());
 
-        let table = StatefulTable::with_items(items.as_slice());
-
-        Interface {
+        Ok(Interface {
+            bookmarks_table,
             input_mode: InputMode::Normal,
-            search_phrase: "".to_string(),
-            table,
+            modules: hashmap![
+                InputMode::Search => search_mod,
+                InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
+                InputMode::Suppressed(SuppressedAction::Delete) => delete_mod,
+                InputMode::Command => command_mod
+            ],
             styles: Styles {
                 selected: Style::default()
                     .fg(Color::Green)
@@ -67,18 +74,7 @@ impl Interface {
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             },
-        }
-    }
-
-    /// updates URLs visibility inside the `table` according to the `search_phrase`
-    fn apply_search(&mut self) {
-        let filter = FilterSet::new_combined_filter(self.search_phrase.as_str());
-
-        for item in &mut self.table.items {
-            item.filter(&filter)
-        }
-
-        self.table.refresh_visible()
+        })
     }
 
     pub(crate) fn handle_input(&mut self, event: Event<Key>) -> Result<bool, Box<dyn Error>> {
@@ -88,73 +84,49 @@ impl Interface {
                     Key::Char('q') => {
                         return Ok(true);
                     }
-                    Key::Char('h') => {
-                        self.input_mode = InputMode::Suppressed(SuppressedAction::ShowHelp)
-                    }
                     Key::Left => {
-                        self.table.unselect();
+                        self.bookmarks_table.unselect();
                     }
                     Key::Down => {
-                        self.table.next();
+                        self.bookmarks_table.next();
                     }
                     Key::Up => {
-                        self.table.previous();
-                    }
-                    Key::Char('/') | Key::Ctrl('f') => {
-                        self.table.unselect();
-                        self.input_mode = InputMode::Edit(EditAction::Search)
+                        self.bookmarks_table.previous();
                     }
                     Key::Char('\n') => {
-                        let selected_id = self.table.state.selected();
-                        if selected_id.is_none() {
-                            return Ok(false);
-                        }
-                        let selected_id = selected_id.unwrap();
-
-                        let item = &self.table.visible[selected_id];
-
-                        let res = open::that(item.url().as_str());
-                        if let Err(err) = res {
-                            return Err(From::from(format!(
-                                "failed to open URL in the browser: {}",
-                                err.to_string()
-                            )));
+                        self.bookmarks_table.open()?;
+                    }
+                    // Activate first module that can handle the key - if none just skip
+                    _ => {
+                        for m in self.modules.values_mut() {
+                            if let Some(mode) = m.try_activate(input, &mut self.bookmarks_table)? {
+                                self.input_mode = mode;
+                                return Ok(false);
+                            }
                         }
                     }
-                    _ => {}
                 },
-                InputMode::Edit(_) => match input {
-                    Key::Esc | Key::Up | Key::Down | Key::Char('\n') => {
-                        self.input_mode = InputMode::Normal;
-                        self.table.unselect();
+                _ => {
+                    if let Some(module) = self.modules.get_mut(&self.input_mode) {
+                        if let Some(new_mode) =
+                            module.handle_input(input, &mut self.bookmarks_table)?
+                        {
+                            self.input_mode = new_mode;
+                        }
                     }
-                    Key::Char(c) => {
-                        self.search_phrase.push(c);
-                        self.apply_search();
-                    }
-                    Key::Backspace => {
-                        self.search_phrase.pop();
-                        self.apply_search();
-                    }
-                    _ => {}
-                },
-                // TODO: think if stuff like help should be subcategory of InputMode - could be more generic like ShowInfo, or could be completly different mechanism
-                InputMode::Suppressed(_) => match input {
-                    Key::Esc | Key::Char('\n') | Key::Char('h') => {
-                        self.input_mode = InputMode::Normal;
-                    }
-                    Key::Char('q') => {
-                        return Ok(true);
-                    }
-                    _ => {}
-                },
+                }
+            }
+        }
+        if let Event::Signal(s) = event {
+            match s {
+                Signal::Quit => return Ok(true),
             }
         }
 
         Ok(false)
     }
 
-    pub(crate) fn draw<B: tui::backend::Backend>(&mut self, f: &mut Frame<B>) {
+    pub(crate) fn draw(&mut self, f: &mut Frame<B>) {
         let size = f.size();
         let normal_style = self.styles.normal.clone();
 
@@ -162,6 +134,7 @@ impl Interface {
             .direction(Direction::Vertical)
             .constraints(
                 [
+                    // TODO: consider modules influencing dynamicly the main layout - maybe pass layout to draw?
                     Constraint::Length(size.height - 3), // URLs display table
                     Constraint::Length(3),               // Search input
                 ]
@@ -169,14 +142,13 @@ impl Interface {
             )
             .split(f.size());
 
+        let table = self.bookmarks_table.table();
+
         let header = ["  Name", "URL", "Group", "Tags"];
-        let rows = self.table.visible.iter().map(|i| {
-            if i.visible() {
-                Row::StyledData(i.row().iter(), normal_style)
-            } else {
-                Row::Data(i.row().iter())
-            }
-        });
+        let rows = table
+            .items
+            .iter()
+            .map(|i| Row::StyledData(i.row().iter(), normal_style));
         let t = Table::new(header.iter(), rows)
             .header_style(self.styles.header)
             .block(
@@ -193,77 +165,28 @@ impl Interface {
                 Constraint::Percentage(15),
             ]);
 
-        f.render_stateful_widget(t, chunks[0], &mut self.table.state);
+        f.render_stateful_widget(t, chunks[0], &mut table.state);
 
-        let input_widget = Paragraph::new(self.search_phrase.as_ref())
-            .style(Style::default())
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Press '/' or 'CTRL + f' to search for URLs"),
-            );
-
-        f.render_widget(input_widget, chunks[1]);
-
-        self.handle_input_mode(f);
-    }
-
-    fn handle_input_mode<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
-        match &self.input_mode {
-            InputMode::Normal =>
-                // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
-                {}
-            InputMode::Edit(_) => {
-                // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
-                f.set_cursor(
-                    // Put cursor past the end of the input text
-                    self.search_phrase.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
-                    // Move two line up from the bottom - search input
-                    f.size().height - 2,
-                )
-            }
-            InputMode::Suppressed(action) => match action {
-                // TODO: to display help I need to know exact suppressed action
-                SuppressedAction::ShowHelp => {
-                    self.show_help_popup(f);
-                }
-            },
+        // draw modules
+        for module in self.modules.values() {
+            module.draw(self.input_mode.clone(), f)
         }
-    }
-
-    fn show_help_popup<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
-        let text = vec![
-            Spans::from("'ENTER'            - open bookmarked URL"),
-            Spans::from("'/' or 'CTRL + F'  - search for URLs"),
-        ];
-
-        let area = centered_rect(60, 40, f.size());
-        let paragraph = Paragraph::new(text)
-            .style(Style::default().bg(Color::Black).fg(Color::White))
-            .block(self.create_block("Help - press ESC to close".to_string()))
-            .alignment(Alignment::Left);
-
-        f.render_widget(Clear, area);
-        f.render_widget(paragraph, area);
-    }
-
-    // TODO: move this function to widgets?
-    fn create_block(&self, title: String) -> Block {
-        Block::default()
-            .borders(Borders::ALL)
-            .style(Style::default().bg(Color::Black).fg(Color::LightBlue))
-            .title(Span::styled(
-                title,
-                Style::default().add_modifier(Modifier::BOLD),
-            ))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::ui::event::Event;
-    use crate::ui::interface::{EditAction, InputMode, Interface, SuppressedAction};
+    use crate::interactive::bookmarks_table::BookmarksTable;
+    use crate::interactive::event::{Event, Events, Signal};
+    use crate::interactive::fake::MockBackend;
+    use crate::interactive::interface::{InputMode, Interface, SuppressedAction};
+    use bookmark_lib::registry::URLRegistry;
     use bookmark_lib::types::URLRecord;
+    use bookmark_lib::Registry;
+    use rand::distributions::Alphanumeric;
+    use rand::{thread_rng, Rng};
+    use std::fs;
+    use std::path::{Path, PathBuf};
     use termion::event::Key;
 
     fn fix_url_records() -> Vec<URLRecord> {
@@ -276,9 +199,62 @@ mod test {
         ]
     }
 
+    struct Cleaner {
+        file_path: PathBuf,
+    }
+
+    // TODO: as general trait?
+    impl Cleaner {
+        fn new(file_path: PathBuf) -> Cleaner {
+            Cleaner { file_path }
+        }
+
+        fn clean(&self) {
+            if Path::new(&self.file_path).exists() {
+                fs::remove_file(&self.file_path).expect("Failed to remove file");
+            }
+        }
+    }
+
+    impl Drop for Cleaner {
+        fn drop(&mut self) {
+            self.clean()
+        }
+    }
+
+    fn rand_str() -> String {
+        let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(30).collect();
+
+        rand_string
+    }
+
+    macro_rules! init {
+    ($($urls:expr), *) => (
+        {
+            let (registry, file_path) = URLRegistry::with_temp_file(&rand_str()).expect("Failed to initialize registry");
+            let cleaner = Cleaner::new(file_path); // makes sure that temp file is deleted even in case of panic
+            $(
+                for u in $urls {
+                    registry.add_url(u).expect("Failed to add url");
+                }
+            )*
+
+            let events = Events::new();
+            let bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry)).expect("Failed to initialize Bookmarks table");
+
+            let interface = Interface::<MockBackend>::new(bookmarks_table).expect("Failed to initialize interface");
+
+            (interface, cleaner)
+        };
+    );
+    () => (
+        init!(vec![])
+    );
+    }
+
     #[test]
     fn test_handle_input_returns() {
-        let mut interface = Interface::new(fix_url_records());
+        let (mut interface, _) = init!();
 
         // Should quit when input 'q'
         let event = Event::Input(Key::Char('q'));
@@ -300,11 +276,18 @@ mod test {
             .handle_input(event)
             .expect("Failed to handle event");
         assert!(!quit);
+
+        // Should quit on Signal(Quit)
+        let event = Event::Signal(Signal::Quit);
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(quit);
     }
 
     #[test]
     fn test_handle_input_input_modes() {
-        let mut interface = Interface::new(fix_url_records());
+        let (mut interface, _) = init!();
 
         assert!(InputMode::Normal == interface.input_mode);
 
@@ -314,7 +297,7 @@ mod test {
             .handle_input(event)
             .expect("Failed to handle event");
         assert!(!quit);
-        assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
+        assert!(InputMode::Search == interface.input_mode);
 
         let event = Event::Input(Key::Esc);
         let quit = interface
@@ -328,7 +311,7 @@ mod test {
             .handle_input(event)
             .expect("Failed to handle event");
         assert!(!quit);
-        assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
+        assert!(InputMode::Search == interface.input_mode);
 
         let event = Event::Input(Key::Esc);
         let quit = interface
@@ -360,7 +343,7 @@ mod test {
         ];
 
         for event in go_to_normal_events {
-            interface.input_mode = InputMode::Edit(EditAction::Search);
+            interface.input_mode = InputMode::Search;
             let quit = interface
                 .handle_input(event)
                 .expect("Failed to handle event");
@@ -368,22 +351,23 @@ mod test {
             assert!(InputMode::Normal == interface.input_mode);
         }
 
-        println!("Should go to edit mode...");
-        let go_to_edit_events = vec![Event::Input(Key::Char('/')), Event::Input(Key::Ctrl('f'))];
+        println!("Should go to Search mode...");
+        let go_to_search_events = vec![Event::Input(Key::Char('/')), Event::Input(Key::Ctrl('f'))];
 
-        for event in go_to_edit_events {
+        for event in go_to_search_events {
             interface.input_mode = InputMode::Normal;
             let quit = interface
                 .handle_input(event)
                 .expect("Failed to handle event");
             assert!(!quit);
-            assert!(InputMode::Edit(EditAction::Search) == interface.input_mode);
+            assert!(InputMode::Search == interface.input_mode);
         }
     }
 
     #[test]
     fn test_handle_input_switch_input_modes() {
-        let mut interface = Interface::new(fix_url_records());
+        let (mut interface, _) = init!();
+
         assert!(InputMode::Normal == interface.input_mode);
 
         println!("Should switch InputModes...");
@@ -394,6 +378,13 @@ mod test {
             Event::Input(Key::Char('\n')),
             Event::Input(Key::Char('h')),
             Event::Input(Key::Char('h')),
+            Event::Input(Key::Char('/')),
+            Event::Input(Key::Esc),
+            Event::Input(Key::Ctrl('f')),
+            Event::Input(Key::Esc),
+            Event::Input(Key::Char(':')),
+            Event::Input(Key::Char('a')),
+            Event::Input(Key::Esc),
         ];
 
         let expected_modes = vec![
@@ -402,6 +393,13 @@ mod test {
             InputMode::Suppressed(SuppressedAction::ShowHelp),
             InputMode::Normal,
             InputMode::Suppressed(SuppressedAction::ShowHelp),
+            InputMode::Normal,
+            InputMode::Search,
+            InputMode::Normal,
+            InputMode::Search,
+            InputMode::Normal,
+            InputMode::Command,
+            InputMode::Command,
             InputMode::Normal,
         ];
 
@@ -415,70 +413,8 @@ mod test {
     }
 
     #[test]
-    fn test_handle_input_search_phrase() {
-        let mut interface = Interface::new(fix_url_records());
-
-        println!("Should input search phrase...");
-        let event = Event::Input(Key::Char('/'));
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-
-        let events = vec![
-            Event::Input(Key::Char('t')),
-            Event::Input(Key::Char('e')),
-            Event::Input(Key::Char('s')),
-            Event::Input(Key::Char('t')),
-            Event::Input(Key::Char(' ')),
-            Event::Input(Key::Char('1')),
-        ];
-
-        for event in events {
-            let quit = interface
-                .handle_input(event)
-                .expect("Failed to handle event");
-            assert!(!quit);
-        }
-        assert_eq!("test 1".to_string(), interface.search_phrase);
-
-        let events = vec![
-            Event::Input(Key::Backspace),
-            Event::Input(Key::Backspace),
-            Event::Input(Key::Char('-')),
-            Event::Input(Key::Char('2')),
-        ];
-
-        for event in events {
-            let quit = interface
-                .handle_input(event)
-                .expect("Failed to handle event");
-            assert!(!quit);
-        }
-        assert_eq!("test-2".to_string(), interface.search_phrase);
-
-        println!("Should preserve search phrase when going to normal mode...");
-        let event = Event::Input(Key::Esc);
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-        assert!(InputMode::Normal == interface.input_mode);
-
-        assert_eq!("test-2".to_string(), interface.search_phrase);
-
-        let event = Event::Input(Key::Char('/'));
-        let quit = interface
-            .handle_input(event)
-            .expect("Failed to handle event");
-        assert!(!quit);
-
-        assert_eq!("test-2".to_string(), interface.search_phrase);
-    }
-
-    #[test]
     fn test_handle_input_search() {
-        let mut interface = Interface::new(fix_url_records());
+        let (mut interface, _cleaner) = init!(fix_url_records());
 
         println!("Should filter items in table on input...");
         let event = Event::Input(Key::Char('/'));
@@ -497,7 +433,23 @@ mod test {
                 .expect("Failed to handle event");
             assert!(!quit);
         }
-        assert_eq!(2, interface.table.visible.len()); // URLs with tag 'tag'
+        assert_eq!(2, interface.bookmarks_table.table().items.len()); // URLs with tag 'tag'
+
+        println!("Should preserve search, when going in and out of Search mode...");
+        let event = Event::Input(Key::Esc);
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert!(InputMode::Normal == interface.input_mode);
+        assert_eq!(2, interface.bookmarks_table.table().items.len()); // URLs with tag 'tag'
+
+        let event = Event::Input(Key::Char('/'));
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert_eq!(2, interface.bookmarks_table.table().items.len()); // URLs with tag 'tag'
 
         println!("Should filter items in table on backspace...");
         for event in vec![Event::Input(Key::Backspace), Event::Input(Key::Backspace)] {
@@ -506,7 +458,7 @@ mod test {
                 .expect("Failed to handle event");
             assert!(!quit);
         }
-        assert_eq!(4, interface.table.visible.len()); // URLs with letter 't'
+        assert_eq!(4, interface.bookmarks_table.table().items.len()); // URLs with letter 't'
     }
 
     struct TestCase {
@@ -599,14 +551,17 @@ mod test {
         for test in &test_cases {
             println!("Running test case: {}", test.description);
 
-            let mut interface = Interface::new(fix_url_records());
+            let (mut interface, _) = init!(fix_url_records());
 
             for i in 0..test.events.len() {
                 let quit = interface
                     .handle_input(test.events[i].clone())
                     .expect("Failed to handle event");
                 assert!(!quit);
-                assert_eq!(test.selected[i], interface.table.state.selected())
+                assert_eq!(
+                    test.selected[i],
+                    interface.bookmarks_table.table().state.selected()
+                )
             }
         }
     }

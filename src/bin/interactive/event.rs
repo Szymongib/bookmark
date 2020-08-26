@@ -8,9 +8,16 @@ use termion::input::TermRead;
 #[derive(Clone)]
 pub enum Event<I> {
     Input(I),
+    Signal(Signal),
+}
+
+#[derive(Clone)]
+pub enum Signal {
+    Quit,
 }
 
 pub struct Events {
+    pub tx: mpsc::Sender<Event<Key>>,
     rx: mpsc::Receiver<Event<Key>>,
     input_handle: thread::JoinHandle<()>,
 }
@@ -29,7 +36,7 @@ impl Events {
         Events::with_config(Config::default())
     }
 
-    pub fn with_config(config: Config) -> Events {
+    pub fn with_config(_config: Config) -> Events {
         let (tx, rx) = mpsc::channel();
         let input_handle = {
             let tx = tx.clone();
@@ -45,7 +52,11 @@ impl Events {
                 }
             })
         };
-        Events { rx, input_handle }
+        Events {
+            tx,
+            rx,
+            input_handle,
+        }
     }
 
     pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {
