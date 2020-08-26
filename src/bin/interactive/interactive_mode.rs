@@ -23,7 +23,7 @@ pub fn enter_interactive_mode<T: Registry + 'static>(registry: T) -> Result<(), 
 
     let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None)?);
     let table = StatefulTable::with_items(items);
-    let bookmarks_table = BookmarksTable::new(&events.tx, Box::new(registry), table);
+    let bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry), table);
 
     let mut user_interface = Interface::new(bookmarks_table)?;
 

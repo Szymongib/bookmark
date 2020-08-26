@@ -9,8 +9,8 @@ use crate::interactive::event::Event;
 use termion::event::Key;
 use crate::interactive::event::Signal;
 
-pub struct BookmarksTable<'a> {
-    signal_sender: &'a mpsc::Sender<Event<Key>>,
+pub struct BookmarksTable {
+    signal_sender: mpsc::Sender<Event<Key>>,
     registry: Box<dyn Registry>,
     table: StatefulTable<URLItem>,
     filter: Option<Box<dyn Filter>>,
@@ -123,9 +123,8 @@ impl BookmarksTable {
 
 }
 
-impl<'a> BookmarksTable<'a> {
-
-    pub fn new(sender:  &'a mpsc::Sender<Event<Key>>, registry: Box<dyn Registry>, table: StatefulTable<URLItem>) -> BookmarksTable {
+impl BookmarksTable {
+    pub fn new(sender: mpsc::Sender<Event<Key>>, registry: Box<dyn Registry>, table: StatefulTable<URLItem>) -> BookmarksTable {
         BookmarksTable{
             signal_sender: sender,
             registry,
@@ -133,7 +132,6 @@ impl<'a> BookmarksTable<'a> {
             filter: None,
         }
     }
-
 }
 
 fn unwrap_id(id: Option<String>) -> Result<String, Box<dyn std::error::Error>> {

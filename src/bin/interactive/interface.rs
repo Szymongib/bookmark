@@ -44,8 +44,8 @@ pub enum SuppressedAction {
     Delete,
 }
 
-pub struct Interface<'a, B: tui::backend::Backend> {
-    bookmarks_table: BookmarksTable<'a>,
+pub struct Interface<B: tui::backend::Backend> {
+    bookmarks_table: BookmarksTable,
 
     /// Interface modules
     modules: HashMap<InputMode, Box<dyn Module<B>>>,
@@ -64,7 +64,7 @@ struct Styles {
 }
 
 impl<B: tui::backend::Backend> Interface<B> {
-    pub(crate) fn new<'a>(bookmarks_table: BookmarksTable<'a>) -> Result<Interface<B>, Box<dyn std::error::Error>> {
+    pub(crate) fn new(bookmarks_table: BookmarksTable) -> Result<Interface<B>, Box<dyn std::error::Error>> {
         let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
         let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
         let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
