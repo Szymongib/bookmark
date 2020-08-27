@@ -17,13 +17,20 @@ const GROUP_LIST_CMD: &str = "list";
 const ADD_SUB_CMD: &str = "add";
 const LIST_SUB_CMD: &str = "list";
 const DELETE_SUB_CMD: &str = "delete";
+const IMPORT_SUB_CMD: &str = "import";
 
-// const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
+const URLS_V0_0_X_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
 
 // TODO: change to that after modifying data model
 const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls_v0.1.json";
 
+const VERSION_V0_0_X: &str = " v0.0.x";
+
 fn main() {
+
+    let urls_v0_0_x_default_full_path = &path_with_homedir(URLS_V0_0_X_DEFAULT_FILE_PATH)
+        .expect("Faield to get default v0_0_x path");
+
     let matches = App::new("Bookmark CLI")
         .version("0.0.1")
         .author("Szymon Gibała <szumongib@gmail.com>")
@@ -101,6 +108,23 @@ fn main() {
                 .index(1)
             )
         )
+        .subcommand(SubCommand::with_name(IMPORT_SUB_CMD)
+            .about("Imports bookmarks from the previous versions")
+            .arg(Arg::with_name("version")
+                .help(format!("Version from which URLs should be imported. One of: {}", VERSION_V0_0_X).as_str())
+                .required(false)
+                .takes_value(true)
+                .short("v")
+                .long("version")
+                .default_value(VERSION_V0_0_X))
+            .arg(Arg::with_name("old-file")
+                .help("Path to the file storing URLs from previous version")
+                .required(false)
+                .takes_value(true)
+                .long("old-file")
+                .default_value(urls_v0_0_x_default_full_path)
+            )
+        )
         // TODO: Add import subcommand to import from v1
         .get_matches();
 
@@ -127,9 +151,12 @@ fn main() {
         (DELETE_SUB_CMD, Some(delete_matches)) => {
             application.delete_sub_cmd(delete_matches);
         }
+        (IMPORT_SUB_CMD, Some(import_matches)) => {
+            application.import_sub_cmd(import_matches);
+        }
         ("", None) => {
             match enter_interactive_mode(application.registry) {
-                Err(err) => panic!("Failed to enter interactive mode: {}", err.to_string()),
+                Err(err) => println!("Failed to enter interactive mode: {}", err.to_string()),
                 _ => {}
             };
         }
@@ -138,9 +165,13 @@ fn main() {
 }
 
 fn get_default_registry_file_path() -> Option<String> {
+    path_with_homedir(URLS_DEFAULT_FILE_PATH)
+}
+
+fn path_with_homedir(path: &str) -> Option<String> {
     match dirs::home_dir() {
         Some(home_dir) => home_dir
-            .join(URLS_DEFAULT_FILE_PATH)
+            .join(path)
             .to_str()
             .map(|s: &str| s.to_string()),
         None => None,
@@ -238,6 +269,25 @@ impl<T: Registry> Application<T> {
                 "Error deleting {} url from {} group: {}",
                 url_name, group_name, why
             ),
+        }
+    }
+
+    pub fn import_sub_cmd(&self, matches: &ArgMatches) {
+        let version = matches
+            .value_of("version")
+            .expect("Version from which to import not provided");
+        let old_file = matches
+            .value_of("old-file")
+            .expect("Old version file path not provided");
+
+        match version {
+            VERSION_V0_0_X => match self.registry.import_from_v_0_0_x(old_file) {
+                Ok(_imported) => println!("Successfully imported bookmarks!"),
+                Err(why) => println!("Error importing bookmarks from file {}: {} ", old_file, why),
+            },
+            v => {
+                println!("Error importing bookmarks, version {} not recognized. Version have to be one of {}", v, VERSION_V0_0_X);
+            }
         }
     }
 }

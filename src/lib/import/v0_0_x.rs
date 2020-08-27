@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
 pub struct URLRegistry {
@@ -31,7 +30,6 @@ pub struct URLs {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct URLRecord {
-    pub id: String,
     pub url: String,
     pub name: String,
     pub group: String,
@@ -46,17 +44,11 @@ impl URLRecord {
         }
 
         URLRecord {
-            id: Uuid::new_v4().to_string(),
             url: url.to_string(),
             name: name.to_string(),
             group: group.to_string(),
             tags,
         }
-    }
-
-    pub fn tags_as_string(&self) -> String {
-        let tags: Vec<&str> = self.tags.keys().map(|k| k.as_str()).collect();
-        tags.join(", ")
     }
 }
 

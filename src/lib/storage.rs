@@ -1,6 +1,7 @@
 use super::types::{URLRecord, URLRegistry};
+use crate::import::v0_0_x;
 use crate::types::URLs;
-use crate::Repository;
+use crate::{Repository, RepositoryOld};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::error::Error;
@@ -45,11 +46,7 @@ impl Repository for FileStorage {
         let mut registry = read_urls(&mut file)?;
 
         if !is_unique(&registry.urls.items, &record) {
-            return Err(From::from(format!(
-                "URL with name {} already exists in {} group",
-                record.name.clone(),
-                record.group.clone()
-            )));
+            return Err(not_unique_error(&record));
         }
 
         registry.urls.items.push(record.clone());
@@ -57,6 +54,24 @@ impl Repository for FileStorage {
         write_urls(&mut file, registry)?;
 
         return Ok(record);
+    }
+
+    /// Adds all records to the registry as long as all of them are unique
+    /// If at least one name-group pair is not unique, none of the URLs is saved
+    fn add_batch(&self, records: Vec<URLRecord>) -> Result<Vec<URLRecord>, Box<dyn Error>> {
+        let mut file = open_urls_file(self.file_path.as_str())?;
+        let mut registry = read_urls(&mut file)?;
+
+        for r in &records {
+            if !is_unique(&registry.urls.items, &r) {
+                return Err(not_unique_error(&r));
+            }
+            registry.urls.items.push(r.clone());
+        }
+
+        let registry = write_urls(&mut file, registry)?;
+
+        return Ok(registry.urls.items);
     }
 
     fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn Error>> {
@@ -123,6 +138,22 @@ impl Repository for FileStorage {
     }
 }
 
+impl RepositoryOld for FileStorage {
+    fn list_v_0_0_x(&self, path: &str) -> Result<Vec<v0_0_x::URLRecord>, Box<dyn Error>> {
+        let mut file = open_urls_file(path)?;
+        let content: String = read_file(&mut file)?;
+
+        let mut urls: v0_0_x::URLRegistry = v0_0_x::URLRegistry {
+            urls: v0_0_x::URLs { items: vec![] },
+        };
+        if content != "" {
+            urls = serde_json::from_str(content.as_str())?;
+        }
+
+        return Ok(urls.urls.items);
+    }
+}
+
 fn is_unique(urls: &Vec<URLRecord>, record: &URLRecord) -> bool {
     for u in urls {
         if u.name == record.name && u.group == record.group {
@@ -162,13 +193,17 @@ fn open_urls_file(path: &str) -> Result<File, Box<dyn std::error::Error>> {
     };
 }
 
-fn read_urls(file: &mut File) -> Result<URLRegistry, Box<dyn std::error::Error>> {
+fn read_file(file: &mut File) -> Result<String, Box<dyn std::error::Error>> {
     let mut content: String = String::new();
 
-    match file.read_to_string(&mut content) {
-        Err(why) => return Err(From::from(why)),
-        _ => {}
+    return match file.read_to_string(&mut content) {
+        Err(why) => Err(From::from(why)),
+        _ => Ok(content),
     };
+}
+
+fn read_urls(file: &mut File) -> Result<URLRegistry, Box<dyn std::error::Error>> {
+    let content: String = read_file(file)?;
 
     let mut urls: URLRegistry = URLRegistry {
         urls: URLs { items: vec![] },
@@ -193,4 +228,12 @@ fn write_urls(
     file.set_len(desired_length)?;
 
     return Ok(urls);
+}
+
+fn not_unique_error(record: &URLRecord) -> Box<dyn std::error::Error> {
+    From::from(format!(
+        "URL with name '{}' already exists in '{}' group",
+        record.name.clone(),
+        record.group.clone()
+    ))
 }

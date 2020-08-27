@@ -1,6 +1,7 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
 use crate::interactive::modules::{Draw, HandleInput, Module};
+use crate::interactive::widgets::rect::centered_fixed_rect;
 use std::error::Error;
 use termion::event::Key;
 use tui::backend::Backend;
@@ -9,7 +10,6 @@ use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Clear, Paragraph};
 use tui::Frame;
-use crate::interactive::widgets::rect::centered_fixed_rect;
 
 pub(crate) struct HelpPanel {}
 
@@ -72,9 +72,7 @@ impl HelpPanel {
             "':q'               - quit",
         ];
         let max_width = text.iter().map(|t| t.len()).max().unwrap_or_default() as u16;
-        let spans: Vec<Spans> = text.iter().map(|t| {
-            Spans::from(t.to_owned())
-        }).collect();
+        let spans: Vec<Spans> = text.iter().map(|t| Spans::from(t.to_owned())).collect();
 
         let block = Block::default()
             .borders(Borders::ALL)
@@ -84,7 +82,7 @@ impl HelpPanel {
                 Style::default().add_modifier(Modifier::BOLD),
             ));
 
-        let area = centered_fixed_rect(max_width+4, text.len() as u16 + 2, f.size());
+        let area = centered_fixed_rect(max_width + 4, text.len() as u16 + 2, f.size());
         let paragraph = Paragraph::new(spans)
             .style(Style::default().bg(Color::Black).fg(Color::White))
             .block(block)

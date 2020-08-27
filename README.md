@@ -9,6 +9,7 @@ Bookmark CLI allows you to save your favourite URLs without leaving the terminal
 
 ## Installation 
 
+> **CAUTION:** It is recommended to use released version. Use master version on your own risk. There might be breaking changes or experimental features.
 
 ### Released version
 
@@ -43,6 +44,8 @@ cargo install --path .
 
 
 ## Usage
+
+> **NOTE:** For correct usage documentation, check README from tag for corresponding version.
 
 Add URL:
 ```bash

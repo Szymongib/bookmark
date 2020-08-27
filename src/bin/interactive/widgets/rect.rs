@@ -1,5 +1,5 @@
+use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use tui::layout::{Constraint, Direction, Layout, Rect};
-use crate::interactive::helpers::{vertical_layout, horizontal_layout};
 
 /// helper function to create a centered rect using up
 /// certain percentage of the available rect `r`
@@ -36,20 +36,18 @@ pub(crate) fn centered_fixed_rect(size_x: u16, size_y: u16, r: Rect) -> Rect {
     let popup_layout = vertical_layout(vec![
         (r.height - size_y) / 2,
         size_y,
-        (r.height - size_y) / 2
-    ]).split(r);
+        (r.height - size_y) / 2,
+    ])
+    .split(r);
 
-    horizontal_layout(vec![
-        (r.width - size_x) / 2,
-        size_x,
-        (r.width - size_x) / 2,
-    ]).split(popup_layout[1])[1]
+    horizontal_layout(vec![(r.width - size_x) / 2, size_x, (r.width - size_x) / 2])
+        .split(popup_layout[1])[1]
 }
 
 #[cfg(test)]
 mod test {
-    use tui::layout::Rect;
     use crate::interactive::widgets::rect::{centered_fixed_rect, centered_rect};
+    use tui::layout::Rect;
 
     #[test]
     fn test_create_centered_fixed_rect() {
@@ -86,5 +84,4 @@ mod test {
         assert_eq!(rect.x, 1);
         assert_eq!(rect.y, 3);
     }
-
 }

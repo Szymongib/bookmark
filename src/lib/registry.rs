@@ -2,7 +2,7 @@ use crate::filters::{Filter, NoopFilter};
 use crate::storage::FileStorage;
 use crate::types::URLRecord;
 use crate::util::create_temp_file;
-use crate::{Registry, RegistryReader, Repository};
+use crate::{Importer, Registry, RegistryReader, Repository};
 use std::error::Error;
 use std::path::PathBuf;
 
@@ -89,7 +89,6 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
         Ok(urls
             .iter()
             .filter(|url| {
-                // self.filter.matches(*url)
                 filter.matches(*url) // TODO: do not unwrap
             })
             .map(|u| u.to_owned())
@@ -101,16 +100,37 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
     }
 }
 
+impl<T: Repository> Importer for URLRegistry<T> {
+    // TODO: opts for overriding dups, opt for migrating only unique
+    fn import_from_v_0_0_x(&self, path: &str) -> Result<Vec<URLRecord>, Box<dyn Error>> {
+        let old_urls = self.storage.list_v_0_0_x(path)?;
+        let urls: Vec<URLRecord> = old_urls
+            .iter()
+            .map(|u| {
+                let tags = u.tags.iter().map(|(t, _)| t.as_str()).collect();
+                URLRecord::new(&u.url, &u.name, &u.group, tags)
+            })
+            .collect();
+
+        // If at least one items fails, nothing will be saved
+        self.storage.add_batch(urls)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::filters::Filter;
     use crate::filters::{GroupFilter, TagsFilter};
     use crate::registry::URLRegistry;
     use crate::storage::FileStorage;
-    use crate::types::{calculate_hash, URLRecord};
-    use crate::{Registry, RegistryReader};
+    use crate::types::URLRecord;
+    use crate::util::create_temp_file;
+    use crate::{Importer, Registry, RegistryReader};
     use std::collections::HashMap;
     use std::fs;
+    use std::fs::OpenOptions;
+    use std::io::{Seek, SeekFrom, Write};
+    use std::path::PathBuf;
 
     struct TestUrl {
         name: &'static str,
@@ -173,7 +193,7 @@ mod test {
         println!("List groups...");
         let urls = registry.list_urls(None).expect("Failed to list urls");
 
-        assert_urls_match(&all_urls, urls);
+        assert_urls_match(&all_urls, &urls);
 
         println!("List URLs from specific group...");
         let group_to_filter = "test";
@@ -195,7 +215,7 @@ mod test {
             })
             .collect();
 
-        assert_urls_match(&filtered_test_cases, urls);
+        assert_urls_match(&filtered_test_cases, &urls);
 
         println!("List tagged URLs...");
         let tags_to_filter = vec!["tagged", "tag2"];
@@ -207,10 +227,10 @@ mod test {
         assert_eq!(2, urls.len());
 
         let filtered_test_cases: Vec<&TestUrl> = vec![&test_urls[1], &test_urls[2]];
-        assert_urls_match(&filtered_test_cases, urls);
+        assert_urls_match(&filtered_test_cases, &urls);
 
         println!("Delete existing URL...");
-        let url_0_id = calculate_hash("test1", "default");
+        let url_0_id = urls[0].id.clone();
 
         let deleted = registry
             .delete_by_id(&url_0_id)
@@ -228,7 +248,7 @@ mod test {
         assert_eq!(2, urls.len());
 
         println!("Get url by ID...");
-        let id = calculate_hash("test_tagged", "default");
+        let id = urls[0].id.clone();
         let url_record = registry.get_url(&id).expect("Failed to get URL");
 
         assert_eq!(url_record.expect("URL is None").id, urls[0].id);
@@ -237,7 +257,7 @@ mod test {
         fs::remove_file(file_path).expect("Failed to remove file");
     }
 
-    fn assert_urls_match(test_urls: &Vec<&TestUrl>, actual: Vec<URLRecord>) {
+    fn assert_urls_match(test_urls: &Vec<&TestUrl>, actual: &Vec<URLRecord>) {
         for tu in test_urls {
             let exists = actual.iter().any(|rec| {
                 rec.name == tu.name.clone()
@@ -267,4 +287,127 @@ mod test {
 
         true
     }
+
+    #[test]
+    fn import_from_v0_0_x_test() {
+        let (registry, file_path) =
+            URLRegistry::<FileStorage>::with_temp_file("registry_tests2.json")
+                .expect("Failed to initialize registry");
+
+        let expected_urls = vec![
+            URLRecord::new(
+                "https://github.com/Szymongib/bookmark-cli",
+                "Bookmark-CLI",
+                "projects",
+                vec!["rust", "repo"],
+            ),
+            URLRecord::new("https://github.com", "GitHub.com", "websites", vec![]),
+            URLRecord::new(
+                "https://youtube.com",
+                "YouTube",
+                "entertainment",
+                vec!["video"],
+            ),
+            URLRecord::new(
+                "https://stackoverflow.com",
+                "Stack Overflow",
+                "dev",
+                vec!["help", "dev"],
+            ),
+            URLRecord::new("https://reddit.com", "Reddit", "entertainment", vec![]),
+        ];
+
+        let old_path = setup_old_urls_file();
+
+        println!("Should import URLs...");
+        let imported = registry
+            .import_from_v_0_0_x(old_path.as_os_str().to_str().expect("Failed to get path"))
+            .expect("Failed to import bookmarks");
+
+        assert_eq!(imported.len(), 5);
+        for i in 0..imported.len() {
+            assert_eq!(imported[i].id.len(), 36);
+            assert_eq!(imported[i].name, expected_urls[i].name);
+            assert_eq!(imported[i].url, expected_urls[i].url);
+            assert_eq!(imported[i].group, expected_urls[i].group);
+            assert_eq!(imported[i].tags, expected_urls[i].tags);
+        }
+
+        println!("Should fail if URLs not unique...");
+        let imported = registry
+            .import_from_v_0_0_x(old_path.as_os_str().to_str().expect("Failed to get path"));
+        assert!(imported.is_err());
+
+        println!("Cleanup...");
+        fs::remove_file(file_path).expect("Failed to remove file");
+        fs::remove_file(old_path).expect("Failed to remove file");
+    }
+
+    fn setup_old_urls_file() -> PathBuf {
+        let old_file_content = OLD_BOOKMARKS_FILE_CONTENT;
+        let path =
+            create_temp_file("registry_tests_old_file.json").expect("Failed to create temp file");
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .create(true)
+            .append(false)
+            .write(true)
+            .open(path.clone())
+            .expect("Failed to open old URLs file");
+
+        file.seek(SeekFrom::Start(0))
+            .expect("Failed to seek to file start");
+        file.write_all(old_file_content.as_bytes())
+            .expect("Failed to write od URLs");
+
+        return path;
+    }
+
+    const OLD_BOOKMARKS_FILE_CONTENT: &str = r###"
+    {
+  "urls": {
+    "items": [
+      {
+        "url": "https://github.com/Szymongib/bookmark-cli",
+        "name": "Bookmark-CLI",
+        "group": "projects",
+        "tags": {
+          "rust": true,
+          "repo": true
+        }
+      },
+      {
+        "url": "https://github.com",
+        "name": "GitHub.com",
+        "group": "websites",
+        "tags": {}
+      },
+      {
+        "url": "https://youtube.com",
+        "name": "YouTube",
+        "group": "entertainment",
+        "tags": {
+          "video": true
+        }
+      },
+      {
+        "url": "https://stackoverflow.com",
+        "name": "Stack Overflow",
+        "group": "dev",
+        "tags": {
+          "help": true,
+          "dev": true
+        }
+      },
+      {
+        "url": "https://reddit.com",
+        "name": "Reddit",
+        "group": "entertainment",
+        "tags": {}
+      }
+    ]
+  }
+}
+"###;
 }
