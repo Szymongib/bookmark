@@ -71,8 +71,9 @@ impl BookmarksTable {
         let id = self.get_selected_id();
 
         match command {
-            "tag" => self.tag(id, args)?,
-            "q" => self.signal_sender.send(Event::Signal(Signal::Quit))?,
+            "tag" | "t" | "tag+" | "t+" => self.tag(id, args)?,
+            "untag" | "t-" => self.untag(id, args)?,
+            "q" | "quit" => self.signal_sender.send(Event::Signal(Signal::Quit))?,
             _ => return Err(From::from(format!("error: command {} not found", command))),
         };
 
@@ -81,7 +82,6 @@ impl BookmarksTable {
         Ok(())
     }
 
-    // TODO: some command wrapper? The same functions will be used in CLI version
     pub fn tag(
         &mut self,
         id: Option<String>,
@@ -91,18 +91,35 @@ impl BookmarksTable {
 
         if args.len() < 1 {
             return Err(From::from(
-                "Tag requires exactly one argument. Usage: tag [TAG_1]",
+                "tag requires exactly one argument. Usage: tag [TAG_1]",
             )); // TODO: support multiple tags at once
         }
 
-        self.registry.tag_url(&id, args[0])?;
+        self.registry.tag(&id, args[0])?;
+        Ok(())
+    }
+
+    pub fn untag(
+        &mut self,
+        id: Option<String>,
+        args: Vec<&str>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let id = unwrap_id(id)?;
+
+        if args.len() < 1 {
+            return Err(From::from(
+                "untag requires exactly one argument. Usage: untag [TAG_1]",
+            )); // TODO: support multiple tags at once
+        }
+
+        self.registry.untag(&id, args[0])?;
         Ok(())
     }
 
     pub fn delete(&mut self) -> Result<bool, Box<dyn std::error::Error>> {
         match self.get_selected_id() {
             Some(id) => {
-                if self.registry.delete_by_id(&id)? {
+                if self.registry.delete(&id)? {
                     self.refresh_items()?;
                     return Ok(true);
                 }

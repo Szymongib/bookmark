@@ -20,14 +20,15 @@ pub trait Registry: RegistryReader + Importer {
         tags: Vec<&str>,
     ) -> Result<URLRecord, Box<dyn std::error::Error>>;
 
-    fn add_url(&self, record: URLRecord) -> Result<URLRecord, Box<dyn std::error::Error>>;
+    fn add(&self, record: URLRecord) -> Result<URLRecord, Box<dyn std::error::Error>>;
 
-    fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn std::error::Error>>;
+    fn delete(&self, id: &str) -> Result<bool, Box<dyn std::error::Error>>;
 
     fn list_groups(&self) -> Result<Vec<String>, Box<dyn std::error::Error>>;
 
-    fn tag_url(&self, id: &str, tag: &str)
-        -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
+    fn tag(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
+
+    fn untag(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 }
 
 pub trait RegistryReader {

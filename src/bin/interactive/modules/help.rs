@@ -62,14 +62,18 @@ impl HelpPanel {
 
     fn show_help_popup<'a, B: Backend>(&self, f: &mut Frame<B>) {
         let text = vec![
-            "'ENTER'            - open bookmarked URL",
-            "'/' or 'CTRL + F'  - search for URLs",
-            "'d'                - delete URL",
-            "':'                - go to command mode",
+            "Action               Description",
+            "'ENTER'            | open bookmarked URL",
+            "'/' or 'CTRL + F'  | search for URLs",
+            "'d'                | delete URL",
+            "':'                | go to command mode",
             "",
-            "'Commands",
-            "':tag [TAG_NAME]'  - add tag to selected bookmark",
-            "':q'               - quit",
+            "",
+            "Command            Alias     Description",
+            "':t+ [TAG_NAME]' | tag     | add tag [TAG_NAME] to selected bookmark",
+            "':t- [TAG_NAME]' | untag   | remove tag [TAG_NAME] from selected bookmark",
+            "':q'             | quit    | quit application",
+            "",
         ];
         let max_width = text.iter().map(|t| t.len()).max().unwrap_or_default() as u16;
         let spans: Vec<Spans> = text.iter().map(|t| Spans::from(t.to_owned())).collect();

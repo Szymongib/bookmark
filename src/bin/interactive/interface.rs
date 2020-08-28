@@ -235,7 +235,7 @@ mod test {
             let cleaner = Cleaner::new(file_path); // makes sure that temp file is deleted even in case of panic
             $(
                 for u in $urls {
-                    registry.add_url(u).expect("Failed to add url");
+                    registry.add(u).expect("Failed to add url");
                 }
             )*
 

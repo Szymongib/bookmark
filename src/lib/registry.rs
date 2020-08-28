@@ -50,11 +50,11 @@ impl<T: Repository> Registry for URLRegistry<T> {
         self.storage.add(record)
     }
 
-    fn add_url(&self, record: URLRecord) -> Result<URLRecord, Box<dyn Error>> {
+    fn add(&self, record: URLRecord) -> Result<URLRecord, Box<dyn Error>> {
         self.storage.add(record)
     }
 
-    fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn Error>> {
+    fn delete(&self, id: &str) -> Result<bool, Box<dyn Error>> {
         self.storage.delete_by_id(id)
     }
 
@@ -62,7 +62,7 @@ impl<T: Repository> Registry for URLRegistry<T> {
         self.storage.list_groups()
     }
 
-    fn tag_url(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
+    fn tag(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
         if tag == "" {
             return Err(From::from("Tag cannot be an empty string"));
         }
@@ -71,6 +71,18 @@ impl<T: Repository> Registry for URLRegistry<T> {
 
         record.map_or(Ok(None), |mut record| {
             record.tags.entry(tag.to_string()).or_insert(true);
+            self.storage.update(id, record)
+        })
+    }
+
+    fn untag(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        if tag == "" {
+            return Err(From::from("Tag cannot be an empty string"));
+        }
+        let record = self.storage.get(id)?;
+
+        record.map_or(Ok(None), |mut record| {
+            record.tags.remove(tag);
             self.storage.update(id, record)
         })
     }
@@ -232,26 +244,40 @@ mod test {
         println!("Delete existing URL...");
         let url_0_id = urls[0].id.clone();
 
-        let deleted = registry
-            .delete_by_id(&url_0_id)
-            .expect("Failed to delete URL");
+        let deleted = registry.delete(&url_0_id).expect("Failed to delete URL");
         assert!(deleted);
         let urls = registry.list_urls(None).expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
         println!("Not delete if URL does not exist...");
-        let deleted = registry
-            .delete_by_id(&url_0_id)
-            .expect("Failed to delete URL");
+        let deleted = registry.delete(&url_0_id).expect("Failed to delete URL");
         assert!(!deleted);
         let urls = registry.list_urls(None).expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
-        println!("Get url by ID...");
+        println!("Tag URL...");
         let id = urls[0].id.clone();
-        let url_record = registry.get_url(&id).expect("Failed to get URL");
 
-        assert_eq!(url_record.expect("URL is None").id, urls[0].id);
+        let url_record = registry
+            .tag(&id, "some-awesome-tag")
+            .expect("Failed to tag URL")
+            .expect("URL record is None");
+        assert!(url_record.tags.contains_key("some-awesome-tag"));
+
+        println!("Get url by ID...");
+        let url_record = registry
+            .get_url(&id)
+            .expect("Failed to get URL")
+            .expect("URL record is None");
+        assert_eq!(url_record.id, urls[0].id);
+        assert!(url_record.tags.contains_key("some-awesome-tag"));
+
+        println!("Untag URL...");
+        let url_record = registry
+            .untag(&id, "some-awesome-tag")
+            .expect("Failed to tag URL")
+            .expect("URL record is None");
+        assert!(!url_record.tags.contains_key("some-awesome-tag"));
 
         println!("Cleanup...");
         fs::remove_file(file_path).expect("Failed to remove file");
