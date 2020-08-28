@@ -1,7 +1,7 @@
 use crate::interactive::event::Event;
 use crate::interactive::event::Signal;
 use crate::interactive::table::{StatefulTable, TableItem};
-use crate::interactive::url_table_item::URLItem;
+use crate::interactive::url_table_item::{default_columns, Columns, URLItem};
 use bookmark_lib::filters::Filter;
 use bookmark_lib::filters::FilterSet;
 use bookmark_lib::types::URLRecord;
@@ -13,6 +13,7 @@ pub struct BookmarksTable {
     signal_sender: mpsc::Sender<Event<Key>>,
     registry: Box<dyn Registry>,
     table: StatefulTable<URLItem>,
+    columns: Vec<String>,
     filter: Option<Box<dyn Filter>>,
 }
 
@@ -31,6 +32,10 @@ impl BookmarksTable {
 
     pub fn table(&mut self) -> &mut StatefulTable<URLItem> {
         &mut self.table
+    }
+
+    pub fn columns(&self) -> &Columns {
+        &self.columns
     }
 
     pub fn get_selected(&self) -> Result<Option<URLRecord>, Box<dyn std::error::Error>> {
@@ -59,6 +64,11 @@ impl BookmarksTable {
 
     pub fn search(&mut self, phrase: &str) -> Result<(), Box<dyn std::error::Error>> {
         self.filter = Some(Box::new(FilterSet::new_combined_for_phrase(phrase)));
+        self.refresh_items()
+    }
+
+    pub fn set_columns(&mut self, columns: Columns) -> Result<(), Box<dyn std::error::Error>> {
+        self.columns = columns;
         self.refresh_items()
     }
 
@@ -135,7 +145,8 @@ impl BookmarksTable {
             None => self.registry.list_urls(None)?,
         };
 
-        self.table.override_items(URLItem::from_vec(urls));
+        self.table
+            .override_items(URLItem::from_vec(urls, Some(&self.columns)));
         Ok(())
     }
 
@@ -152,7 +163,10 @@ impl BookmarksTable {
         sender: mpsc::Sender<Event<Key>>,
         registry: Box<dyn Registry>,
     ) -> Result<BookmarksTable, Box<dyn std::error::Error>> {
-        let items: Vec<URLItem> = URLItem::from_vec(registry.list_urls(None)?);
+        let default_columns = default_columns();
+
+        let items: Vec<URLItem> =
+            URLItem::from_vec(registry.list_urls(None)?, Some(&default_columns));
         let table = StatefulTable::with_items(items);
 
         Ok(BookmarksTable {
@@ -160,6 +174,7 @@ impl BookmarksTable {
             registry,
             table,
             filter: None,
+            columns: default_columns,
         })
     }
 }

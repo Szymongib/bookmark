@@ -33,3 +33,7 @@ fn to_constraints(vals: Vec<u16>) -> Vec<Constraint> {
 pub fn to_key_events(text: &str) -> Vec<Key> {
     text.chars().map(|c| Key::Char(c)).collect()
 }
+
+pub fn to_string(vec: Vec<&str>) -> Vec<String> {
+    vec.iter().map(|s| s.to_string()).collect()
+}

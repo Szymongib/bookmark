@@ -66,6 +66,7 @@ impl HelpPanel {
             "'ENTER'            | open bookmarked URL",
             "'/' or 'CTRL + F'  | search for URLs",
             "'d'                | delete URL",
+            "'i'                | show/hide ids",
             "':'                | go to command mode",
             "",
             "",

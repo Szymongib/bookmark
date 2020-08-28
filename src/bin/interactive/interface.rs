@@ -1,11 +1,13 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::event::{Event, Signal};
+use crate::interactive::helpers::to_string;
 use crate::interactive::modules::command::Command;
 use crate::interactive::modules::delete::Delete;
 use crate::interactive::modules::help::HelpPanel;
 use crate::interactive::modules::search::Search;
 use crate::interactive::modules::Module;
 use crate::interactive::table::TableItem;
+use crate::interactive::url_table_item::default_columns;
 use std::collections::HashMap;
 use std::error::Error;
 use termion::event::Key;
@@ -39,6 +41,10 @@ pub struct Interface<B: tui::backend::Backend> {
 
     /// Styles used for displaying user interface
     styles: Styles,
+
+    cols_constraints: Vec<Constraint>,
+
+    display_ids: bool,
 }
 
 struct Styles {
@@ -74,6 +80,10 @@ impl<B: tui::backend::Backend> Interface<B> {
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             },
+
+            cols_constraints: default_columns_constraints(),
+
+            display_ids: false,
         })
     }
 
@@ -95,6 +105,9 @@ impl<B: tui::backend::Backend> Interface<B> {
                     }
                     Key::Char('\n') => {
                         self.bookmarks_table.open()?;
+                    }
+                    Key::Char('i') => {
+                        self.toggle_ids_display()?;
                     }
                     // Activate first module that can handle the key - if none just skip
                     _ => {
@@ -142,14 +155,14 @@ impl<B: tui::backend::Backend> Interface<B> {
             )
             .split(f.size());
 
+        let columns = self.bookmarks_table.columns().clone();
         let table = self.bookmarks_table.table();
 
-        let header = ["  Name", "URL", "Group", "Tags"];
         let rows = table
             .items
             .iter()
             .map(|i| Row::StyledData(i.row().iter(), normal_style));
-        let t = Table::new(header.iter(), rows)
+        let t = Table::new(columns.iter(), rows)
             .header_style(self.styles.header)
             .block(
                 Block::default()
@@ -158,12 +171,7 @@ impl<B: tui::backend::Backend> Interface<B> {
             )
             .highlight_style(self.styles.selected)
             .highlight_symbol("> ")
-            .widths(&[
-                Constraint::Percentage(20),
-                Constraint::Percentage(40),
-                Constraint::Percentage(15),
-                Constraint::Percentage(15),
-            ]);
+            .widths(&self.cols_constraints);
 
         f.render_stateful_widget(t, chunks[0], &mut table.state);
 
@@ -172,6 +180,42 @@ impl<B: tui::backend::Backend> Interface<B> {
             module.draw(self.input_mode.clone(), f)
         }
     }
+
+    fn toggle_ids_display(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.display_ids = !self.display_ids;
+
+        let (cols, constraints) = if self.display_ids {
+            (
+                to_string(vec!["  Id", "Name", "URL", "Group", "Tags"]),
+                columns_with_id_constraints(),
+            )
+        } else {
+            (default_columns(), default_columns_constraints())
+        };
+
+        self.cols_constraints = constraints;
+        self.bookmarks_table.set_columns(cols)?;
+        Ok(())
+    }
+}
+
+fn default_columns_constraints() -> Vec<Constraint> {
+    vec![
+        Constraint::Percentage(20),
+        Constraint::Percentage(40),
+        Constraint::Percentage(15),
+        Constraint::Percentage(15),
+    ]
+}
+
+fn columns_with_id_constraints() -> Vec<Constraint> {
+    vec![
+        Constraint::Percentage(20),
+        Constraint::Percentage(15),
+        Constraint::Percentage(35),
+        Constraint::Percentage(10),
+        Constraint::Percentage(20),
+    ]
 }
 
 #[cfg(test)]
@@ -180,6 +224,7 @@ mod test {
     use crate::interactive::event::{Event, Events, Signal};
     use crate::interactive::fake::MockBackend;
     use crate::interactive::interface::{InputMode, Interface, SuppressedAction};
+    use crate::interactive::table::TableItem;
     use bookmark_lib::registry::URLRegistry;
     use bookmark_lib::types::URLRecord;
     use bookmark_lib::Registry;
@@ -564,5 +609,45 @@ mod test {
                 )
             }
         }
+    }
+
+    #[test]
+    fn test_toggle_ids() {
+        let (mut interface, _cleaner) = init!(fix_url_records());
+
+        println!("Should be hidden at start...");
+        let row = interface.bookmarks_table.table().items[0].row();
+        assert_eq!(row.len(), 4);
+        let row = interface.bookmarks_table.table().items[0].row();
+        assert_eq!(row.len(), 4);
+
+        println!("Should show ids...");
+        let event = Event::Input(Key::Char('i'));
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert_eq!(interface.cols_constraints.len(), 5);
+        let row = interface.bookmarks_table.table().items[0].row();
+        assert_eq!(row.len(), 5);
+        assert_eq!(row[0].len(), 36); // is uuid
+        assert_eq!(row[1], "one");
+        assert_eq!(row[2], "one");
+        assert_eq!(row[3], "one");
+        assert_eq!(row[4], "tag");
+
+        println!("Should hide ids...");
+        let event = Event::Input(Key::Char('i'));
+        let quit = interface
+            .handle_input(event)
+            .expect("Failed to handle event");
+        assert!(!quit);
+        assert_eq!(interface.cols_constraints.len(), 4);
+        let row = interface.bookmarks_table.table().items[0].row();
+        assert_eq!(row.len(), 4);
+        assert_eq!(row[0], "one");
+        assert_eq!(row[1], "one");
+        assert_eq!(row[2], "one");
+        assert_eq!(row[3], "tag");
     }
 }

@@ -110,8 +110,8 @@ impl Repository for FileStorage {
 
         let mut distinct: HashMap<&str, bool> = HashMap::new();
 
-        for g in &groups {
-            distinct.insert(g.clone(), false);
+        for g in groups {
+            distinct.insert(g, false);
         }
 
         Ok(distinct.keys().map(|k| k.to_string()).collect())
@@ -123,7 +123,7 @@ impl Repository for FileStorage {
 
         let mut found = false;
         for i in 0..registry.urls.items.len() {
-            if registry.urls.items[i].id.clone() == id.clone() {
+            if registry.urls.items[i].id.clone() == id {
                 registry.urls.items[i] = record.clone();
                 found = true
             }

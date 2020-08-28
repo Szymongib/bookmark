@@ -187,11 +187,14 @@ fn main() {
         }
         ("", None) => {
             match enter_interactive_mode(application.registry) {
-                Err(err) => println!("Error: failed to enter interactive mode: {}", err.to_string()),
+                Err(err) => println!(
+                    "Error: failed to enter interactive mode: {}",
+                    err.to_string()
+                ),
                 _ => {}
             };
         }
-        _ => println!("Error: subcommand not found")
+        _ => println!("Error: subcommand not found"),
     }
 }
 
@@ -246,7 +249,10 @@ impl<T: Registry> Application<T> {
                 "Added url '{}': '{}' to {}' group",
                 url_record.name, url_record.url, url_record.group
             ),
-            Err(why) => println!("Error adding url '{}' with name '{}': {}", url, url_name, why),
+            Err(why) => println!(
+                "Error adding url '{}' with name '{}': {}",
+                url, url_name, why
+            ),
         }
     }
 
@@ -311,7 +317,10 @@ impl<T: Registry> Application<T> {
         match version {
             VERSION_V0_0_X => match self.registry.import_from_v_0_0_x(old_file) {
                 Ok(_imported) => println!("Successfully imported bookmarks!"),
-                Err(why) => println!("Error importing bookmarks from file '{}': {} ", old_file, why),
+                Err(why) => println!(
+                    "Error importing bookmarks from file '{}': {} ",
+                    old_file, why
+                ),
             },
             v => {
                 println!("Error importing bookmarks, version '{}' not recognized. Version have to be one of '{}'", v, VERSION_V0_0_X);
@@ -320,31 +329,34 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn tag_sub_cmd(&self, matches: &ArgMatches) {
-        let id = matches.value_of("id").expect("Error: bookmark id not provided");
+        let id = matches
+            .value_of("id")
+            .expect("Error: bookmark id not provided");
         let tag = matches.value_of("tag").expect("Error: tag not provided");
 
         match self.registry.tag(id.clone(), tag.clone()) {
             Ok(record) => match record {
                 Some(r) => println!("Bookmark '{}' tagged with '{}'", r.id, tag),
-                None => println!("Error: bookmark with id '{}' not found", id)
+                None => println!("Error: bookmark with id '{}' not found", id),
             },
             Err(why) => println!("Error: failed to tag bookmark '{}': {} ", id, why),
         }
     }
 
     pub fn untag_sub_cmd(&self, matches: &ArgMatches) {
-        let id = matches.value_of("id").expect("Error: bookmark id not provided");
+        let id = matches
+            .value_of("id")
+            .expect("Error: bookmark id not provided");
         let tag = matches.value_of("tag").expect("Error: tag not provided");
 
         match self.registry.untag(id.clone(), tag.clone()) {
             Ok(record) => match record {
                 Some(r) => println!("Tag '{}' removed from bookmark '{}'", tag, r.id),
-                None => println!("Error: bookmark with id '{}' not found", id)
+                None => println!("Error: bookmark with id '{}' not found", id),
             },
             Err(why) => println!("Error: failed to untag bookmark '{}': {} ", id, why),
         }
     }
-
 }
 
 fn get_multiple_values<'a>(matches: &'a ArgMatches, name: &str) -> Option<Vec<&'a str>> {
