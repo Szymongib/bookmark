@@ -22,11 +22,59 @@ impl Filter for NoopFilter {
     }
 }
 
+/// UnorderedWordSetFilter searches for individual words in the search phrase
+/// Only records containing all words will match the filter
+pub struct UnorderedWordSetFilter {
+    phrase: String,
+}
+
+impl Filter for UnorderedWordSetFilter {
+    fn matches(&self, record: &URLRecord) -> bool {
+        if self.phrase == "" {
+            return true
+        }
+
+        for p in self.phrase.split(' ').filter(|p| p.len() > 0) {
+            let word = p.to_lowercase();
+
+            // Check if any part matches the word
+            let matches = record.name.to_lowercase().contains(&word) || record.url.to_lowercase().contains(&word)
+                || record.group.to_lowercase().contains(&word) || self.tag_matches(record, &word);
+
+            if !matches {
+                return false
+            }
+        }
+
+        true
+    }
+
+    fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
+        Box::new(FilterSet::new_combined(vec![Box::new(self), filter]))
+    }
+}
+
+impl UnorderedWordSetFilter {
+    pub fn new(phrase: &str) -> UnorderedWordSetFilter {
+        return UnorderedWordSetFilter {
+            phrase: phrase.to_string()
+        };
+    }
+
+    fn tag_matches(&self, record: &URLRecord, word: &str) -> bool {
+        for (t, _) in &record.tags {
+            if t.to_lowercase().contains(word) {
+                return true
+            }
+        }
+        false
+    }
+}
+
 pub struct FilterSet {
     filters: Vec<Box<dyn Filter>>,
 }
 
-// TODO: consider refactoring to use only as a function
 // TODO: add builder for combined filters?
 
 impl FilterSet {
@@ -60,8 +108,6 @@ impl Filter for FilterSet {
         Box::new(FilterSet::new_combined(vec![Box::new(self), filter]))
     }
 }
-
-// TODO: combine filters
 
 pub struct GroupFilter {
     group: String,
@@ -117,6 +163,8 @@ enum SearchElement {
     Tag,
 }
 
+/// Phrase filter filters Bookmarks by specific element
+/// To match, the element needs to contain the the phrase (case insensitive)
 pub struct PhraseFilter {
     phrase: String,
     element: SearchElement,
@@ -138,6 +186,7 @@ impl Filter for PhraseFilter {
             }
         };
     }
+
     fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
         Box::new(FilterSet::new_combined(vec![Box::new(self), filter]))
     }
@@ -173,12 +222,69 @@ impl PhraseFilter {
     }
 }
 
-// TODO: more complex tests with only some types of filters
-
 #[cfg(test)]
 mod test {
-    use crate::filters::{Filter, FilterSet};
+    use crate::filters::{Filter, FilterSet, UnorderedWordSetFilter};
     use crate::types::URLRecord;
+
+    #[test]
+    fn test_unordered_word_ser_filter() {
+
+        let test_set = vec![
+            URLRecord::new(
+                "http://urlAbcd.com",
+                "first url",
+                "default",
+                vec!["pop", "with space"],
+            ),
+            URLRecord::new(
+                "http://test123.com",
+                "catchy name",
+                "super group",
+                vec!["pop", "with-dash"],
+            ),
+            URLRecord::new(
+                "http://another.com",
+                "poppy",
+                "group",
+                vec![],
+            ),
+        ];
+
+        struct TestCase {
+            phrase: String,
+            matches: Vec<bool>,
+        }
+
+        let test_cases = vec![
+            TestCase {
+                phrase: "abcd url default pop".to_string(),
+                matches: vec![true, false, false],
+            },
+            TestCase {
+                phrase: "pop http com".to_string(),
+                matches: vec![true, true, true],
+            },
+            TestCase {
+                phrase: "http complicated".to_string(),
+                matches: vec![false, false, false],
+            },
+        ];
+
+        for test in test_cases {
+            println!("Phrase: {}", test.phrase);
+
+            let filter: UnorderedWordSetFilter =
+                UnorderedWordSetFilter::new(test.phrase.as_str());
+
+            for i in 0..test_set.len() {
+                println!("URL: {}", &test_set[i]);
+                assert_eq!(filter.matches(&test_set[i]), test.matches[i])
+            }
+        }
+
+    }
+
 
     #[test]
     fn test_combined_phrase_filters() {

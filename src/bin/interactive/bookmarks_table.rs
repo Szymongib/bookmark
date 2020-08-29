@@ -2,8 +2,7 @@ use crate::interactive::event::Event;
 use crate::interactive::event::Signal;
 use crate::interactive::table::{StatefulTable, TableItem};
 use crate::interactive::url_table_item::{default_columns, Columns, URLItem};
-use bookmark_lib::filters::Filter;
-use bookmark_lib::filters::FilterSet;
+use bookmark_lib::filters::{Filter, UnorderedWordSetFilter};
 use bookmark_lib::types::URLRecord;
 use bookmark_lib::Registry;
 use std::sync::mpsc;
@@ -63,7 +62,7 @@ impl BookmarksTable {
     }
 
     pub fn search(&mut self, phrase: &str) -> Result<(), Box<dyn std::error::Error>> {
-        self.filter = Some(Box::new(FilterSet::new_combined_for_phrase(phrase)));
+        self.filter = Some(Box::new(UnorderedWordSetFilter::new(phrase)));
         self.refresh_items()
     }
 
