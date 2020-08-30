@@ -20,6 +20,7 @@ const DELETE_SUB_CMD: &str = "delete";
 const TAG_SUB_CMD: &str = "tag";
 const UNTAG_SUB_CMD: &str = "untag";
 const IMPORT_SUB_CMD: &str = "import";
+const CHANGE_GROUP_SUB_CMD: &str = "chg";
 
 const URLS_V0_0_X_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
 
@@ -134,6 +135,19 @@ fn main() {
                 .index(2)
             )
         )
+        .subcommand(SubCommand::with_name(CHANGE_GROUP_SUB_CMD)
+            .about("Change group of the bookmark")
+            .usage("bookmark chg [ID] [GROUP]")
+            .arg(Arg::with_name("id") // If not specified use default or global
+                .help("Bookmark id to change the group")
+                .required(true)
+                .index(1))
+            .arg(Arg::with_name("group")
+                .help("New group")
+                .required(true)
+                .index(2)
+            )
+        )
         .subcommand(SubCommand::with_name(IMPORT_SUB_CMD)
             .about("Imports bookmarks from the previous versions")
             .arg(Arg::with_name("version")
@@ -184,6 +198,9 @@ fn main() {
         }
         (UNTAG_SUB_CMD, Some(untag_matches)) => {
             application.untag_sub_cmd(untag_matches);
+        }
+        (CHANGE_GROUP_SUB_CMD, Some(chg_matches)) => {
+            application.change_group_sub_cmd(chg_matches);
         }
         ("", None) => {
             match enter_interactive_mode(application.registry) {
@@ -355,6 +372,21 @@ impl<T: Registry> Application<T> {
                 None => println!("Error: bookmark with id '{}' not found", id),
             },
             Err(why) => println!("Error: failed to untag bookmark '{}': {} ", id, why),
+        }
+    }
+
+    pub fn change_group_sub_cmd(&self, matches: &ArgMatches) {
+        let id = matches
+            .value_of("id")
+            .expect("Error: bookmark id not provided");
+        let group = matches.value_of("group").expect("Error: group not provided");
+
+        match self.registry.change_group(id.clone(), group.clone()) {
+            Ok(record) => match record {
+                Some(r) => println!("Bookmark '{}' group change to '{}'", r.id, group),
+                None => println!("Error: bookmark with id '{}' not found", id),
+            },
+            Err(why) => println!("Error: failed change group of bookmark '{}': {} ", id, why),
         }
     }
 }

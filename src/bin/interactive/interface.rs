@@ -233,6 +233,7 @@ mod test {
     use std::fs;
     use std::path::{Path, PathBuf};
     use termion::event::Key;
+    use crate::interactive::helpers::to_key_events;
 
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
@@ -649,5 +650,48 @@ mod test {
         assert_eq!(row[1], "one");
         assert_eq!(row[2], "one");
         assert_eq!(row[3], "tag");
+    }
+
+    #[test]
+    fn test_commands() {
+        let (mut interface, _cleaner) = init!(fix_url_records());
+
+        println!("Select first URL...");
+        interface.handle_input(Event::Input(Key::Down))
+            .expect("Failed to handle event");
+
+        println!("Get URL...");
+        let original_url = interface.bookmarks_table.get_selected()
+            .expect("Failed to get URL")
+            .expect("URL is None");
+        assert_eq!(original_url.group, "one");
+        assert!(original_url.tags.contains_key("tag"));
+        assert!(!original_url.tags.contains_key("abcd"));
+
+        println!("Should tag URL...");
+        let events = to_key_events(":tag abcd\n");
+        for e in events {
+            interface.handle_input(e).expect("Failed to handle event");
+        }
+
+        println!("Should change group...");
+        let events = to_key_events(":chg puorg\n");
+        for e in events {
+            interface.handle_input(e).expect("Failed to handle event");
+        }
+
+        println!("Should remove tag...");
+        let events = to_key_events(":t- tag\n");
+        for e in events {
+            interface.handle_input(e).expect("Failed to handle event");
+        }
+
+        println!("Verify URL record...");
+        let original_url = interface.bookmarks_table.get_selected()
+            .expect("Failed to get URL")
+            .expect("URL is None");
+        assert!(original_url.tags.contains_key("abcd"));
+        assert!(!original_url.tags.contains_key("tag"));
+        assert_eq!(original_url.group, "puorg");
     }
 }

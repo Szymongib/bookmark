@@ -73,6 +73,7 @@ impl HelpPanel {
             "Command            Alias     Description",
             "':t+ [TAG_NAME]' | tag     | add tag [TAG_NAME] to selected bookmark",
             "':t- [TAG_NAME]' | untag   | remove tag [TAG_NAME] from selected bookmark",
+            "':chg [GROUP]'   |         | change group to [GROUP] for selected bookmark",
             "':q'             | quit    | quit application",
             "",
         ];

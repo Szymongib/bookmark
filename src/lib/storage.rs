@@ -123,6 +123,10 @@ impl Repository for FileStorage {
 
         let mut found = false;
         for i in 0..registry.urls.items.len() {
+            if is_same(&registry.urls.items[i], &record) {
+                return Err(not_unique_error(&record));
+            }
+
             if registry.urls.items[i].id.clone() == id {
                 registry.urls.items[i] = record.clone();
                 found = true
@@ -156,12 +160,16 @@ impl RepositoryOld for FileStorage {
 
 fn is_unique(urls: &Vec<URLRecord>, record: &URLRecord) -> bool {
     for u in urls {
-        if u.name == record.name && u.group == record.group {
+        if is_same(u, record) {
             return false;
         }
     }
 
     return true;
+}
+
+fn is_same(a: &URLRecord, b: &URLRecord) -> bool {
+    a.name == b.name && a.group == b.group && a.id != b.id
 }
 
 fn open_urls_file(path: &str) -> Result<File, Box<dyn std::error::Error>> {

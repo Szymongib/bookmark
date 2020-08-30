@@ -29,6 +29,12 @@ pub trait Registry: RegistryReader + Importer {
     fn tag(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 
     fn untag(&self, id: &str, tag: &str) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
+
+    fn change_group(
+        &self,
+        id: &str,
+        group: &str,
+    ) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 }
 
 pub trait RegistryReader {

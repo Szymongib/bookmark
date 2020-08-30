@@ -86,6 +86,19 @@ impl<T: Repository> Registry for URLRegistry<T> {
             self.storage.update(id, record)
         })
     }
+
+    fn change_group(&self, id: &str, group: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        if group == "" {
+            return Err(From::from("Group cannot be an empty string"));
+        }
+
+        let record = self.storage.get(id)?;
+
+        record.map_or(Ok(None), |mut record| {
+            record.group = group.to_string();
+            self.storage.update(id, record)
+        })
+    }
 }
 
 impl<T: Repository> RegistryReader for URLRegistry<T> {
@@ -101,7 +114,7 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
         Ok(urls
             .iter()
             .filter(|url| {
-                filter.matches(*url) // TODO: do not unwrap
+                filter.matches(*url)
             })
             .map(|u| u.to_owned())
             .collect())
@@ -278,6 +291,19 @@ mod test {
             .expect("Failed to tag URL")
             .expect("URL record is None");
         assert!(!url_record.tags.contains_key("some-awesome-tag"));
+
+        println!("Change group...");
+        let id = urls[0].id.clone();
+
+        let url_record = registry
+            .change_group(&id, "different-group")
+            .expect("Failed to tag URL")
+            .expect("URL record is None");
+        assert_eq!(url_record.group, "different-group");
+        let record = registry.get_url(&id)
+            .expect("Failed to get URL")
+            .expect("URL record is None");
+        assert_eq!(record.group, "different-group");
 
         println!("Cleanup...");
         fs::remove_file(file_path).expect("Failed to remove file");

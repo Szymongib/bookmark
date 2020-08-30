@@ -31,18 +31,20 @@ pub struct UnorderedWordSetFilter {
 impl Filter for UnorderedWordSetFilter {
     fn matches(&self, record: &URLRecord) -> bool {
         if self.phrase == "" {
-            return true
+            return true;
         }
 
         for p in self.phrase.split(' ').filter(|p| p.len() > 0) {
             let word = p.to_lowercase();
 
             // Check if any part matches the word
-            let matches = record.name.to_lowercase().contains(&word) || record.url.to_lowercase().contains(&word)
-                || record.group.to_lowercase().contains(&word) || self.tag_matches(record, &word);
+            let matches = record.name.to_lowercase().contains(&word)
+                || record.url.to_lowercase().contains(&word)
+                || record.group.to_lowercase().contains(&word)
+                || self.tag_matches(record, &word);
 
             if !matches {
-                return false
+                return false;
             }
         }
 
@@ -57,14 +59,14 @@ impl Filter for UnorderedWordSetFilter {
 impl UnorderedWordSetFilter {
     pub fn new(phrase: &str) -> UnorderedWordSetFilter {
         return UnorderedWordSetFilter {
-            phrase: phrase.to_string()
+            phrase: phrase.to_string(),
         };
     }
 
     fn tag_matches(&self, record: &URLRecord, word: &str) -> bool {
         for (t, _) in &record.tags {
             if t.to_lowercase().contains(word) {
-                return true
+                return true;
             }
         }
         false
@@ -229,7 +231,6 @@ mod test {
 
     #[test]
     fn test_unordered_word_ser_filter() {
-
         let test_set = vec![
             URLRecord::new(
                 "http://urlAbcd.com",
@@ -243,12 +244,7 @@ mod test {
                 "super group",
                 vec!["pop", "with-dash"],
             ),
-            URLRecord::new(
-                "http://another.com",
-                "poppy",
-                "group",
-                vec![],
-            ),
+            URLRecord::new("http://another.com", "poppy", "group", vec![]),
         ];
 
         struct TestCase {
@@ -274,17 +270,14 @@ mod test {
         for test in test_cases {
             println!("Phrase: {}", test.phrase);
 
-            let filter: UnorderedWordSetFilter =
-                UnorderedWordSetFilter::new(test.phrase.as_str());
+            let filter: UnorderedWordSetFilter = UnorderedWordSetFilter::new(test.phrase.as_str());
 
             for i in 0..test_set.len() {
                 println!("URL: {}", &test_set[i]);
                 assert_eq!(filter.matches(&test_set[i]), test.matches[i])
             }
         }
-
     }
-
 
     #[test]
     fn test_combined_phrase_filters() {

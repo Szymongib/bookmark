@@ -168,7 +168,7 @@ impl Command {
 mod test {
     use crate::interactive::bookmarks_table::BookmarksTable;
     use crate::interactive::event::Events;
-    use crate::interactive::helpers::to_key_events;
+    use crate::interactive::helpers::to_keys;
     use crate::interactive::interface::InputMode;
     use crate::interactive::modules::command::{Command, DEFAULT_INFO_MESSAGE};
     use crate::interactive::modules::HandleInput;
@@ -190,7 +190,7 @@ mod test {
             .expect("Failed to initialized Bookmarks table");
 
         println!("Should input command phrase...");
-        let key_events = to_key_events("tag test");
+        let key_events = to_keys("tag test");
 
         for key in key_events {
             let mode = command_module
@@ -221,7 +221,7 @@ mod test {
             .expect("Failed to initialized Bookmarks table");
 
         println!("Should input command phrase...");
-        let key_events = to_key_events("tag test");
+        let key_events = to_keys("tag test");
 
         for key in key_events {
             let mode = command_module
@@ -271,7 +271,7 @@ mod test {
             .expect("Failed to initialized Bookmarks table");
 
         println!("Should input command phrase...");
-        let key_events = to_key_events("tag test");
+        let key_events = to_keys("tag test");
 
         for key in key_events {
             let mode = command_module

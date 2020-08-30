@@ -8,6 +8,8 @@ use bookmark_lib::Registry;
 use std::sync::mpsc;
 use termion::event::Key;
 
+type CommandResult = Result<(), Box<dyn std::error::Error>>;
+
 pub struct BookmarksTable {
     signal_sender: mpsc::Sender<Event<Key>>,
     registry: Box<dyn Registry>,
@@ -82,6 +84,7 @@ impl BookmarksTable {
         match command {
             "tag" | "t" | "tag+" | "t+" => self.tag(id, args)?,
             "untag" | "t-" => self.untag(id, args)?,
+            "chg" | "change-group" => self.change_group(id, args)?,
             "q" | "quit" => self.signal_sender.send(Event::Signal(Signal::Quit))?,
             _ => return Err(From::from(format!("error: command {} not found", command))),
         };
@@ -91,11 +94,7 @@ impl BookmarksTable {
         Ok(())
     }
 
-    pub fn tag(
-        &mut self,
-        id: Option<String>,
-        args: Vec<&str>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn tag(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
         let id = unwrap_id(id)?;
 
         if args.len() < 1 {
@@ -108,11 +107,7 @@ impl BookmarksTable {
         Ok(())
     }
 
-    pub fn untag(
-        &mut self,
-        id: Option<String>,
-        args: Vec<&str>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn untag(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
         let id = unwrap_id(id)?;
 
         if args.len() < 1 {
@@ -122,6 +117,19 @@ impl BookmarksTable {
         }
 
         self.registry.untag(&id, args[0])?;
+        Ok(())
+    }
+
+    pub fn change_group(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
+        let id = unwrap_id(id)?;
+
+        if args.len() < 1 {
+            return Err(From::from(
+                "change group requires exactly one argument. Usage: chg [GROUP]",
+            ));
+        }
+
+        self.registry.change_group(&id, args[0])?;
         Ok(())
     }
 

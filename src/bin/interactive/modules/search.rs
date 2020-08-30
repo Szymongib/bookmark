@@ -110,7 +110,7 @@ impl Search {
 mod test {
     use crate::interactive::bookmarks_table::BookmarksTable;
     use crate::interactive::event::Events;
-    use crate::interactive::helpers::to_key_events;
+    use crate::interactive::helpers::to_keys;
     use crate::interactive::modules::search::Search;
     use crate::interactive::modules::HandleInput;
     use bookmark_lib::registry::URLRegistry;
@@ -127,7 +127,7 @@ mod test {
             .expect("Failed to initialized Bookmarks table");
 
         println!("Should input search phrase...");
-        let key_events = to_key_events("test 1");
+        let key_events = to_keys("test 1");
 
         for key in key_events {
             let mode = search_module

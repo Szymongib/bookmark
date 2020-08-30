@@ -1,5 +1,6 @@
 use termion::event::Key;
 use tui::layout::{Constraint, Direction, Layout};
+use crate::interactive::event::Event;
 
 // TODO: consider moving to some lib
 macro_rules! hashmap {
@@ -30,8 +31,12 @@ fn to_constraints(vals: Vec<u16>) -> Vec<Constraint> {
     vals.iter().map(|h| Constraint::Length(h.clone())).collect()
 }
 
-pub fn to_key_events(text: &str) -> Vec<Key> {
+pub fn to_keys(text: &str) -> Vec<Key> {
     text.chars().map(|c| Key::Char(c)).collect()
+}
+
+pub fn to_key_events(text: &str) -> Vec<Event<Key>> {
+    text.chars().map(|c| Event::Input(Key::Char(c))).collect()
 }
 
 pub fn to_string(vec: Vec<&str>) -> Vec<String> {
