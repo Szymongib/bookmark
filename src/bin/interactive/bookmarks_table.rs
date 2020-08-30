@@ -85,6 +85,7 @@ impl BookmarksTable {
             "tag" | "t" | "tag+" | "t+" => self.tag(id, args)?,
             "untag" | "t-" => self.untag(id, args)?,
             "chg" | "change-group" => self.change_group(id, args)?,
+            "chn" | "change-name" => self.change_name(id, args)?,
             "q" | "quit" => self.signal_sender.send(Event::Signal(Signal::Quit))?,
             _ => return Err(From::from(format!("error: command {} not found", command))),
         };
@@ -130,6 +131,19 @@ impl BookmarksTable {
         }
 
         self.registry.change_group(&id, args[0])?;
+        Ok(())
+    }
+
+    pub fn change_name(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
+        let id = unwrap_id(id)?;
+
+        if args.len() < 1 {
+            return Err(From::from(
+                "change name requires exactly one argument. Usage: chn [NAME]",
+            ));
+        }
+
+        self.registry.change_name(&id, args[0])?;
         Ok(())
     }
 

@@ -21,6 +21,7 @@ const TAG_SUB_CMD: &str = "tag";
 const UNTAG_SUB_CMD: &str = "untag";
 const IMPORT_SUB_CMD: &str = "import";
 const CHANGE_GROUP_SUB_CMD: &str = "chg";
+const CHANGE_NAME_SUB_CMD: &str = "chn";
 
 const URLS_V0_0_X_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
 
@@ -125,7 +126,7 @@ fn main() {
         .subcommand(SubCommand::with_name(UNTAG_SUB_CMD)
             .about("Remove tag from bookmark")
             .usage("bookmark untag [ID] [TAG]")
-            .arg(Arg::with_name("id") // If not specified use default or global
+            .arg(Arg::with_name("id")
                 .help("Bookmark id to untag")
                 .required(true)
                 .index(1))
@@ -138,12 +139,25 @@ fn main() {
         .subcommand(SubCommand::with_name(CHANGE_GROUP_SUB_CMD)
             .about("Change group of the bookmark")
             .usage("bookmark chg [ID] [GROUP]")
-            .arg(Arg::with_name("id") // If not specified use default or global
+            .arg(Arg::with_name("id")
                 .help("Bookmark id to change the group")
                 .required(true)
                 .index(1))
             .arg(Arg::with_name("group")
                 .help("New group")
+                .required(true)
+                .index(2)
+            )
+        )
+        .subcommand(SubCommand::with_name(CHANGE_NAME_SUB_CMD)
+            .about("Change name of the bookmark")
+            .usage("bookmark chn [ID] [NAME]")
+            .arg(Arg::with_name("id")
+                .help("Bookmark id to change the name")
+                .required(true)
+                .index(1))
+            .arg(Arg::with_name("name")
+                .help("New name")
                 .required(true)
                 .index(2)
             )
@@ -201,6 +215,9 @@ fn main() {
         }
         (CHANGE_GROUP_SUB_CMD, Some(chg_matches)) => {
             application.change_group_sub_cmd(chg_matches);
+        }
+        (CHANGE_NAME_SUB_CMD, Some(chn_matches)) => {
+            application.change_name_sub_cmd(chn_matches);
         }
         ("", None) => {
             match enter_interactive_mode(application.registry) {
@@ -379,14 +396,37 @@ impl<T: Registry> Application<T> {
         let id = matches
             .value_of("id")
             .expect("Error: bookmark id not provided");
-        let group = matches.value_of("group").expect("Error: group not provided");
+        let group = matches
+            .value_of("group")
+            .expect("Error: group not provided");
 
         match self.registry.change_group(id.clone(), group.clone()) {
             Ok(record) => match record {
                 Some(r) => println!("Bookmark '{}' group change to '{}'", r.id, group),
                 None => println!("Error: bookmark with id '{}' not found", id),
             },
-            Err(why) => println!("Error: failed change group of bookmark '{}': {} ", id, why),
+            Err(why) => println!(
+                "Error: failed to change group of bookmark '{}': {} ",
+                id, why
+            ),
+        }
+    }
+
+    pub fn change_name_sub_cmd(&self, matches: &ArgMatches) {
+        let id = matches
+            .value_of("id")
+            .expect("Error: bookmark id not provided");
+        let name = matches.value_of("name").expect("Error: name not provided");
+
+        match self.registry.change_name(id.clone(), name.clone()) {
+            Ok(record) => match record {
+                Some(r) => println!("Bookmark '{}' name change to '{}'", r.id, name),
+                None => println!("Error: bookmark with id '{}' not found", id),
+            },
+            Err(why) => println!(
+                "Error: failed to change name of bookmark '{}': {} ",
+                id, why
+            ),
         }
     }
 }

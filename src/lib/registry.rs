@@ -99,6 +99,19 @@ impl<T: Repository> Registry for URLRegistry<T> {
             self.storage.update(id, record)
         })
     }
+
+    fn change_name(&self, id: &str, name: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        if name == "" {
+            return Err(From::from("Name cannot be an empty string"));
+        }
+
+        let record = self.storage.get(id)?;
+
+        record.map_or(Ok(None), |mut record| {
+            record.name = name.to_string();
+            self.storage.update(id, record)
+        })
+    }
 }
 
 impl<T: Repository> RegistryReader for URLRegistry<T> {
@@ -113,9 +126,7 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
 
         Ok(urls
             .iter()
-            .filter(|url| {
-                filter.matches(*url)
-            })
+            .filter(|url| filter.matches(*url))
             .map(|u| u.to_owned())
             .collect())
     }
@@ -268,14 +279,7 @@ mod test {
         let urls = registry.list_urls(None).expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
-        println!("Tag URL...");
         let id = urls[0].id.clone();
-
-        let url_record = registry
-            .tag(&id, "some-awesome-tag")
-            .expect("Failed to tag URL")
-            .expect("URL record is None");
-        assert!(url_record.tags.contains_key("some-awesome-tag"));
 
         println!("Get url by ID...");
         let url_record = registry
@@ -283,27 +287,44 @@ mod test {
             .expect("Failed to get URL")
             .expect("URL record is None");
         assert_eq!(url_record.id, urls[0].id);
+
+        println!("Tag URL...");
+        let url_record = registry
+            .tag(&id, "some-awesome-tag")
+            .expect("Failed to tag URL")
+            .expect("URL record is None");
         assert!(url_record.tags.contains_key("some-awesome-tag"));
 
         println!("Untag URL...");
         let url_record = registry
-            .untag(&id, "some-awesome-tag")
-            .expect("Failed to tag URL")
+            .untag(&id, "tagged")
+            .expect("Failed to untag URL")
             .expect("URL record is None");
-        assert!(!url_record.tags.contains_key("some-awesome-tag"));
+        assert!(!url_record.tags.contains_key("tagged"));
 
         println!("Change group...");
-        let id = urls[0].id.clone();
-
         let url_record = registry
             .change_group(&id, "different-group")
-            .expect("Failed to tag URL")
+            .expect("Failed to change URL group")
             .expect("URL record is None");
         assert_eq!(url_record.group, "different-group");
-        let record = registry.get_url(&id)
+
+        println!("Change name...");
+        let url_record = registry
+            .change_name(&id, "different-name")
+            .expect("Failed to change URL name")
+            .expect("URL record is None");
+        assert_eq!(url_record.name, "different-name");
+
+        println!("Verify changes...");
+        let record = registry
+            .get_url(&id)
             .expect("Failed to get URL")
             .expect("URL record is None");
+        assert_eq!(record.name, "different-name");
         assert_eq!(record.group, "different-group");
+        assert!(record.tags.contains_key("some-awesome-tag"));
+        assert!(!record.tags.contains_key("tagged"));
 
         println!("Cleanup...");
         fs::remove_file(file_path).expect("Failed to remove file");

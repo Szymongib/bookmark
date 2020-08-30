@@ -223,6 +223,7 @@ mod test {
     use crate::interactive::bookmarks_table::BookmarksTable;
     use crate::interactive::event::{Event, Events, Signal};
     use crate::interactive::fake::MockBackend;
+    use crate::interactive::helpers::to_key_events;
     use crate::interactive::interface::{InputMode, Interface, SuppressedAction};
     use crate::interactive::table::TableItem;
     use bookmark_lib::registry::URLRegistry;
@@ -233,7 +234,6 @@ mod test {
     use std::fs;
     use std::path::{Path, PathBuf};
     use termion::event::Key;
-    use crate::interactive::helpers::to_key_events;
 
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
@@ -657,13 +657,17 @@ mod test {
         let (mut interface, _cleaner) = init!(fix_url_records());
 
         println!("Select first URL...");
-        interface.handle_input(Event::Input(Key::Down))
+        interface
+            .handle_input(Event::Input(Key::Down))
             .expect("Failed to handle event");
 
         println!("Get URL...");
-        let original_url = interface.bookmarks_table.get_selected()
+        let original_url = interface
+            .bookmarks_table
+            .get_selected()
             .expect("Failed to get URL")
             .expect("URL is None");
+        assert_eq!(original_url.name, "one");
         assert_eq!(original_url.group, "one");
         assert!(original_url.tags.contains_key("tag"));
         assert!(!original_url.tags.contains_key("abcd"));
@@ -686,12 +690,21 @@ mod test {
             interface.handle_input(e).expect("Failed to handle event");
         }
 
+        println!("Should change name...");
+        let events = to_key_events(":chn new-name-123\n");
+        for e in events {
+            interface.handle_input(e).expect("Failed to handle event");
+        }
+
         println!("Verify URL record...");
-        let original_url = interface.bookmarks_table.get_selected()
+        let modified_url = interface
+            .bookmarks_table
+            .get_selected()
             .expect("Failed to get URL")
             .expect("URL is None");
-        assert!(original_url.tags.contains_key("abcd"));
-        assert!(!original_url.tags.contains_key("tag"));
-        assert_eq!(original_url.group, "puorg");
+        assert_eq!(modified_url.name, "new-name-123");
+        assert_eq!(modified_url.group, "puorg");
+        assert!(modified_url.tags.contains_key("abcd"));
+        assert!(!modified_url.tags.contains_key("tag"));
     }
 }

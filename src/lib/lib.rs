@@ -35,6 +35,12 @@ pub trait Registry: RegistryReader + Importer {
         id: &str,
         group: &str,
     ) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
+
+    fn change_name(
+        &self,
+        id: &str,
+        name: &str,
+    ) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;
 }
 
 pub trait RegistryReader {
