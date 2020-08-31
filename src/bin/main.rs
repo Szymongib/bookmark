@@ -80,6 +80,7 @@ fn main() {
                 .long("group"))
         )
         .subcommand(SubCommand::with_name(LIST_SUB_CMD)
+            .alias("ls")
             .about("List bookmark URLs")
             .arg(Arg::with_name("group") // If not specified use default or global
                 .help("Group from which URLs should be listed")

@@ -6,19 +6,21 @@ use crate::{Importer, Registry, RegistryReader, Repository};
 use std::error::Error;
 use std::path::PathBuf;
 
-// TODO: introduce custom errors
-
-// TODO: pass filter to list function?
+// TODO: consider introducing custom errors
 
 pub struct URLRegistry<T: Repository> {
     storage: T,
+    default_filter: Box<dyn Filter>,
 }
 
 impl URLRegistry<FileStorage> {
     pub fn new_file_based(file_path: String) -> URLRegistry<FileStorage> {
         let storage = FileStorage::new_urls_repository(file_path);
 
-        URLRegistry { storage }
+        URLRegistry {
+            storage,
+            default_filter: Box::new(NoopFilter::new()),
+        }
     }
 
     pub fn with_temp_file(
@@ -120,9 +122,8 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
         filter: Option<&Box<dyn Filter>>,
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
         let urls = self.storage.list()?;
-        let noop: Box<dyn Filter> = Box::new(NoopFilter::new()); // TODO: move as struct member
 
-        let filter = filter.unwrap_or(&noop);
+        let filter = filter.unwrap_or(&self.default_filter);
 
         Ok(urls
             .iter()
