@@ -114,6 +114,19 @@ impl<T: Repository> Registry for URLRegistry<T> {
             self.storage.update(id, record)
         })
     }
+
+    fn change_url(&self, id: &str, url: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
+        if url == "" {
+            return Err(From::from("URL cannot be an empty string"));
+        }
+
+        let record = self.storage.get(id)?;
+
+        record.map_or(Ok(None), |mut record| {
+            record.url = url.to_string();
+            self.storage.update(id, record)
+        })
+    }
 }
 
 impl<T: Repository> RegistryReader for URLRegistry<T> {
@@ -317,6 +330,13 @@ mod test {
             .expect("URL record is None");
         assert_eq!(url_record.name, "different-name");
 
+        println!("Change URL...");
+        let url_record = registry
+            .change_url(&id, "https://new-url")
+            .expect("Failed to change URL")
+            .expect("URL record is None");
+        assert_eq!(url_record.url, "https://new-url");
+
         println!("Verify changes...");
         let record = registry
             .get_url(&id)
@@ -324,6 +344,7 @@ mod test {
             .expect("URL record is None");
         assert_eq!(record.name, "different-name");
         assert_eq!(record.group, "different-group");
+        assert_eq!(url_record.url, "https://new-url");
         assert!(record.tags.contains_key("some-awesome-tag"));
         assert!(!record.tags.contains_key("tagged"));
 

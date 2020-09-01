@@ -75,6 +75,7 @@ impl HelpPanel {
             "':t- [TAG_NAME]' | untag   | remove tag [TAG_NAME] from selected bookmark",
             "':chg [GROUP]'   |         | change group to [GROUP] for selected bookmark",
             "':chn [NAME]'    |         | change name to [NAME] for selected bookmark",
+            "':chu [URL]'     |         | change url to [URL] for selected bookmark",
             "':q'             | quit    | quit application",
             "",
         ];

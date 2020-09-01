@@ -696,6 +696,12 @@ mod test {
             interface.handle_input(e).expect("Failed to handle event");
         }
 
+        println!("Should change URL...");
+        let events = to_key_events(":chu https://new-url.com\n");
+        for e in events {
+            interface.handle_input(e).expect("Failed to handle event");
+        }
+
         println!("Verify URL record...");
         let modified_url = interface
             .bookmarks_table
@@ -703,6 +709,7 @@ mod test {
             .expect("Failed to get URL")
             .expect("URL is None");
         assert_eq!(modified_url.name, "new-name-123");
+        assert_eq!(modified_url.url, "https://new-url.com");
         assert_eq!(modified_url.group, "puorg");
         assert!(modified_url.tags.contains_key("abcd"));
         assert!(!modified_url.tags.contains_key("tag"));
