@@ -54,7 +54,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bookmark-cli"
+name = "bookmark"
 version = "0.1.0"
 dependencies = [
  "clap 2.33.1 (registry+https://github.com/rust-lang/crates.io-index)",

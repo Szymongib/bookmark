@@ -25,18 +25,18 @@ const CHANGE_NAME_SUB_CMD: &str = "chn";
 
 const URLS_V0_0_X_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
 
-const URLS_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls_v0.1.json";
+const URLS_DEFAULT_FILE_PATH: &str = ".bookmark/urls_v0.1.json";
 
 const VERSION_V0_0_X: &str = " v0.0.x";
 
 fn main() {
     let urls_v0_0_x_default_full_path = &path_with_homedir(URLS_V0_0_X_DEFAULT_FILE_PATH)
-        .expect("Faield to get default v0_0_x path");
+        .expect("Failed to get default v0_0_x path");
 
-    let matches = App::new("Bookmark CLI")
+    let matches = App::new("Bookmark")
         .version("0.0.1")
         .author("Szymon Gibała <szumongib@gmail.com>")
-        .about("Group and quickly access your URLs from terminal")
+        .about("Group, tag and quickly access your URLs from terminal")
         .arg(Arg::with_name("file")
             .short("f")
             .long("file")
@@ -81,7 +81,7 @@ fn main() {
         )
         .subcommand(SubCommand::with_name(LIST_SUB_CMD)
             .alias("ls")
-            .about("List bookmark URLs")
+            .about("List bookmarks ")
             .arg(Arg::with_name("group") // If not specified use default or global
                 .help("Group from which URLs should be listed")
                 .required(false)
@@ -98,9 +98,9 @@ fn main() {
                 .number_of_values(1))
         )
         .subcommand(SubCommand::with_name(DELETE_SUB_CMD)
-            .about("List bookmark URLs")
+            .about("Delete bookmark")
             .arg(Arg::with_name("group") // If not specified use default or global
-                .help("Group from which URL should be deleted")
+                .help("Group from which bookmark should be deleted")
                 .required(false)
                 .takes_value(true)
                 .short("g")
@@ -321,23 +321,17 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn delete_sub_cmd(&self, matches: &ArgMatches) {
-        let url_name = matches.value_of("name").expect("Error getting URL name");
-        let group: Option<&str> = matches.value_of("group");
+        let id = matches.value_of("id").expect("Error: id not provided");
 
-        let group_name = group.unwrap_or("default");
-
-        match self.registry.delete("TODO: id") {
+        match self.registry.delete(id) {
             Ok(deleted) => {
                 if deleted {
-                    println!("URL '{}' removed from '{}' group", url_name, group_name,)
+                    println!("URL '{}' removed", id)
                 } else {
-                    println!("URL '{}' not found in '{}' group", url_name, group_name,)
+                    println!("URL '{}' not found", id)
                 }
             }
-            Err(why) => println!(
-                "Error deleting '{}' url from '{}' group: {}",
-                url_name, group_name, why
-            ),
+            Err(why) => println!("Error deleting '{}' URL: {}", id, why),
         }
     }
 
@@ -369,7 +363,7 @@ impl<T: Registry> Application<T> {
             .expect("Error: bookmark id not provided");
         let tag = matches.value_of("tag").expect("Error: tag not provided");
 
-        match self.registry.tag(id.clone(), tag.clone()) {
+        match self.registry.tag(id, tag) {
             Ok(record) => match record {
                 Some(r) => println!("Bookmark '{}' tagged with '{}'", r.id, tag),
                 None => println!("Error: bookmark with id '{}' not found", id),
@@ -384,7 +378,7 @@ impl<T: Registry> Application<T> {
             .expect("Error: bookmark id not provided");
         let tag = matches.value_of("tag").expect("Error: tag not provided");
 
-        match self.registry.untag(id.clone(), tag.clone()) {
+        match self.registry.untag(id, tag) {
             Ok(record) => match record {
                 Some(r) => println!("Tag '{}' removed from bookmark '{}'", tag, r.id),
                 None => println!("Error: bookmark with id '{}' not found", id),
@@ -401,7 +395,7 @@ impl<T: Registry> Application<T> {
             .value_of("group")
             .expect("Error: group not provided");
 
-        match self.registry.change_group(id.clone(), group.clone()) {
+        match self.registry.change_group(id, group) {
             Ok(record) => match record {
                 Some(r) => println!("Bookmark '{}' group change to '{}'", r.id, group),
                 None => println!("Error: bookmark with id '{}' not found", id),
@@ -419,7 +413,7 @@ impl<T: Registry> Application<T> {
             .expect("Error: bookmark id not provided");
         let name = matches.value_of("name").expect("Error: name not provided");
 
-        match self.registry.change_name(id.clone(), name.clone()) {
+        match self.registry.change_name(id, name) {
             Ok(record) => match record {
                 Some(r) => println!("Bookmark '{}' name change to '{}'", r.id, name),
                 None => println!("Error: bookmark with id '{}' not found", id),

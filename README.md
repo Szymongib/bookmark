@@ -1,10 +1,10 @@
-# Bookmark CLI
+# Bookmark
 
-![Build and test workflow](https://github.com/Szymongib/bookmark-cli/workflows/Build%20And%20Test/badge.svg?branch=master)
+![Build and test workflow](https://github.com/Szymongib/bookmark/workflows/Build%20And%20Test/badge.svg?branch=master)
 
-Bookmark CLI allows you to save your favourite URLs without leaving the terminal and then quickly open them in the browser.
+Bookmark allows you to save your favourite URLs without leaving the terminal and then quickly open them in the browser.
 
-![Bookmark CLI - Demo](./assets/bookmark-cli-demo.gif)
+![Bookmark - Demo](./assets/bookmark-demo.gif)
 
 
 ## Installation 
@@ -15,7 +15,7 @@ Bookmark CLI allows you to save your favourite URLs without leaving the terminal
 
 Download for Linux:
 ```bash
-wget https://github.com/Szymongib/bookmark-cli/releases/download/v0.0.3/bookmark-linux-amd64
+wget https://github.com/Szymongib/bookmark/releases/download/v0.0.3/bookmark-linux-amd64
 
 chmod +x bookmark-linux-amd64
 sudo mv bookmark-linux-amd64 /usr/local/bin/bookmark
@@ -23,7 +23,7 @@ sudo mv bookmark-linux-amd64 /usr/local/bin/bookmark
 
 Download for Mac OS:
 ```bash
-wget https://github.com/Szymongib/bookmark-cli/releases/download/v0.0.3/bookmark-darwin-amd64
+wget https://github.com/Szymongib/bookmark/releases/download/v0.0.3/bookmark-darwin-amd64
 
 chmod +x bookmark-darwin-amd64
 sudo mv bookmark-darwin-amd64 /usr/local/bin/bookmark
@@ -33,10 +33,10 @@ sudo mv bookmark-darwin-amd64 /usr/local/bin/bookmark
 ### Using git and Cargo
 
 ```bash
-git clone git@github.com:Szymongib/bookmark-cli.git
+git clone git@github.com:Szymongib/bookmark.git
 ```
 ```bash
-cd bookmark-cli
+cd bookmark
 ```
 ```bash
 cargo install --path .
