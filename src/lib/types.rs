@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 use uuid::Uuid;
 
@@ -35,12 +35,12 @@ pub struct URLRecord {
     pub url: String,
     pub name: String,
     pub group: String,
-    pub tags: HashMap<String, bool>,
+    pub tags: BTreeMap<String, bool>,
 }
 
 impl URLRecord {
     pub fn new(url: &str, name: &str, group: &str, tags_vec: Vec<&str>) -> URLRecord {
-        let mut tags: HashMap<String, bool> = HashMap::new();
+        let mut tags: BTreeMap<String, bool> = BTreeMap::new();
         for t in tags_vec {
             tags.insert(t.to_string(), true);
         }

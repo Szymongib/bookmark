@@ -176,7 +176,7 @@ mod test {
     use crate::types::URLRecord;
     use crate::util::create_temp_file;
     use crate::{Importer, Registry, RegistryReader};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
     use std::fs;
     use std::fs::OpenOptions;
     use std::io::{Seek, SeekFrom, Write};
@@ -372,7 +372,7 @@ mod test {
         }
     }
 
-    fn tags_match(expected: &Vec<&str>, actual: &HashMap<String, bool>) -> bool {
+    fn tags_match(expected: &Vec<&str>, actual: &BTreeMap<String, bool>) -> bool {
         for t in expected {
             let tag = actual.get(*t).expect("Tag not present");
             if !tag {

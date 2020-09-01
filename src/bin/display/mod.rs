@@ -101,7 +101,12 @@ mod test {
                 vec![],
             ),
             URLRecord::new("three", "three", "three", vec![]),
-            URLRecord::new("four.com", "four mid len", "4", vec!["tag"]),
+            URLRecord::new(
+                "four.com",
+                "four mid len",
+                "4",
+                vec!["tag", "other-tag", "yet-one-more"],
+            ),
             URLRecord::new(
                 "five",
                 "five",
@@ -127,7 +132,7 @@ mod test {
                     format!("{}   one_name                      https://one_long_url.com   one              tag                           ", records[0].id),
                     format!("{}   two long name wow such name   two                        two_long_group                                 ", records[1].id),
                     format!("{}   three                         three                      three                                          ", records[2].id),
-                    format!("{}   four mid len                  four.com                   4                tag                           ", records[3].id),
+                    format!("{}   four mid len                  four.com                   4                other-tag, tag, yet-one-more  ", records[3].id),
                     format!("{}   five                          five                       five             just_one_but_long_tag_much_wow", records[4].id),
                 ],
             },
