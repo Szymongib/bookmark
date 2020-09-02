@@ -141,7 +141,7 @@ impl<B: tui::backend::Backend> Interface<B> {
 
     pub(crate) fn draw(&mut self, f: &mut Frame<B>) {
         let size = f.size();
-        let normal_style = self.styles.normal.clone();
+        let normal_style = self.styles.normal;
 
         let chunks = Layout::default()
             .direction(Direction::Vertical)

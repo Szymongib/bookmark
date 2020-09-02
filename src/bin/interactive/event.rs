@@ -19,7 +19,7 @@ pub enum Signal {
 pub struct Events {
     pub tx: mpsc::Sender<Event<Key>>,
     rx: mpsc::Receiver<Event<Key>>,
-    input_handle: thread::JoinHandle<()>,
+    _input_handle: thread::JoinHandle<()>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -55,7 +55,7 @@ impl Events {
         Events {
             tx,
             rx,
-            input_handle,
+            _input_handle: input_handle,
         }
     }
 

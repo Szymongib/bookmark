@@ -31,7 +31,7 @@ impl HandleInput for Command {
             return Ok(None);
         }
 
-        return Ok(Some(InputMode::Command));
+        Ok(Some(InputMode::Command))
     }
 
     fn handle_input(
@@ -52,7 +52,7 @@ impl HandleInput for Command {
                 let action_index = self
                     .command_input
                     .find(' ')
-                    .unwrap_or(self.command_input.len());
+                    .unwrap_or_else(|| self.command_input.len());
 
                 let action = &self.command_input.as_str()[0..action_index];
                 let args: Vec<&str> = (self.command_input.as_str())[action_index..]
@@ -85,7 +85,7 @@ impl HandleInput for Command {
 
 impl<B: Backend> Draw<B> for Command {
     fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
-        return match mode {
+        match mode {
             InputMode::Command => {
                 self.render_command_input(f);
                 // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
@@ -102,7 +102,7 @@ impl<B: Backend> Draw<B> for Command {
                     self.render_command_input(f);
                 }
             }
-        };
+        }
     }
 }
 
@@ -155,7 +155,7 @@ impl Command {
         let horizontal_layout = horizontal_layout(vec![1, r.width - 2, r.width - 1]);
 
         let split_info = vertical_layout(vec![r.height - 7, 2, r.height - 5]).split(r);
-        let info = horizontal_layout.clone().split(split_info[1])[1];
+        let info = horizontal_layout.split(split_info[1])[1];
 
         let split_input = vertical_layout(vec![r.height - 5, 2, r.height - 3]).split(r);
         let input = horizontal_layout.split(split_input[1])[1];
@@ -182,7 +182,7 @@ mod test {
         let (dummy_registry, _) = URLRegistry::with_temp_file("command_test1.json")
             .expect("Failed to initialize Registry");
         dummy_registry
-            .new("abcd", "url", None, vec![])
+            .create("abcd", "url", None, vec![])
             .expect("Failed to create Bookmark");
         let events = Events::new();
 

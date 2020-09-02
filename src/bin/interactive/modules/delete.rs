@@ -35,7 +35,7 @@ impl HandleInput for Delete {
             return Ok(Some(InputMode::Normal));
         }
 
-        return Ok(Some(InputMode::Suppressed(SuppressedAction::Delete)));
+        Ok(Some(InputMode::Suppressed(SuppressedAction::Delete)))
     }
 
     fn handle_input(
@@ -54,22 +54,21 @@ impl HandleInput for Delete {
             _ => {}
         }
 
-        return Ok(None);
+        Ok(None)
     }
 }
 
 impl<B: Backend> Draw<B> for Delete {
     fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
-        match mode {
-            InputMode::Suppressed(SuppressedAction::Delete) => self.confirm_delete_popup(f),
-            _ => {}
+        if let InputMode::Suppressed(SuppressedAction::Delete) = mode {
+            self.confirm_delete_popup(f)
         }
     }
 }
 
 impl Delete {
     pub fn new() -> Delete {
-        return Delete { record: None };
+        Delete { record: None }
     }
 
     fn confirm_delete_popup<B: Backend>(&self, f: &mut Frame<B>) {
@@ -78,8 +77,7 @@ impl Delete {
         let record = self
             .record
             .clone()
-            .expect("Error displaying delete confirmation")
-            .clone();
+            .expect("Error displaying delete confirmation");
 
         let text = vec![
             Spans::from(""),

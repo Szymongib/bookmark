@@ -44,7 +44,7 @@ impl URLItem {
     }
 
     pub fn url(&self) -> String {
-        return self.url.url.clone();
+        self.url.url.clone()
     }
 }
 

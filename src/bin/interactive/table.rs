@@ -11,15 +11,6 @@ pub struct StatefulTable<T> {
 }
 
 impl<T> StatefulTable<T> {
-    pub fn new() -> StatefulTable<T> {
-        let vec: Vec<T> = vec![];
-
-        StatefulTable {
-            state: TableState::default(),
-            items: vec,
-        }
-    }
-
     pub fn with_items(items: Vec<T>) -> StatefulTable<T> {
         StatefulTable {
             state: TableState::default(),

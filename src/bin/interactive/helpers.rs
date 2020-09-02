@@ -28,11 +28,11 @@ pub fn horizontal_layout(widths: Vec<u16>) -> Layout {
 }
 
 fn to_constraints(vals: Vec<u16>) -> Vec<Constraint> {
-    vals.iter().map(|h| Constraint::Length(h.clone())).collect()
+    vals.iter().map(|h| Constraint::Length(*h)).collect()
 }
 
 pub fn to_keys(text: &str) -> Vec<Key> {
-    text.chars().map(|c| Key::Char(c)).collect()
+    text.chars().map(Key::Char).collect()
 }
 
 pub fn to_key_events(text: &str) -> Vec<Event<Key>> {

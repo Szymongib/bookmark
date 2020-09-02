@@ -26,17 +26,15 @@ impl FileStorage {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let mut registry = read_urls(&mut file)?;
 
-        let mut index: usize = 0;
-        for u in &registry.urls.items {
+        for (index, u) in registry.urls.items.iter().enumerate() {
             if match_first(u) {
                 registry.urls.items.remove(index);
                 write_urls(&mut file, registry)?;
                 return Ok(true);
             }
-            index += 1;
         }
 
-        return Ok(false);
+        Ok(false)
     }
 }
 
@@ -53,7 +51,7 @@ impl Repository for FileStorage {
 
         write_urls(&mut file, registry)?;
 
-        return Ok(record);
+        Ok(record)
     }
 
     /// Adds all records to the registry as long as all of them are unique
@@ -71,17 +69,17 @@ impl Repository for FileStorage {
 
         let registry = write_urls(&mut file, registry)?;
 
-        return Ok(registry.urls.items);
+        Ok(registry.urls.items)
     }
 
     fn delete_by_id(&self, id: &str) -> Result<bool, Box<dyn Error>> {
-        return self.delete_url(|u| u.id == id.to_string());
+        self.delete_url(|u| u.id == id)
     }
 
     fn list(&self) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
         let mut file = open_urls_file(self.file_path.as_str())?;
         let registry = read_urls(&mut file)?;
-        return Ok(registry.urls.items);
+        Ok(registry.urls.items)
     }
 
     fn get(&self, id: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
@@ -138,7 +136,7 @@ impl Repository for FileStorage {
 
         write_urls(&mut file, registry)?;
 
-        return Ok(Some(record));
+        Ok(Some(record))
     }
 }
 
@@ -147,25 +145,26 @@ impl RepositoryOld for FileStorage {
         let mut file = open_urls_file(path)?;
         let content: String = read_file(&mut file)?;
 
-        let mut urls: v0_0_x::URLRegistry = v0_0_x::URLRegistry {
-            urls: v0_0_x::URLs { items: vec![] },
+        let urls: v0_0_x::URLRegistry = if content != "" {
+            serde_json::from_str(content.as_str())?
+        } else {
+            v0_0_x::URLRegistry {
+                urls: v0_0_x::URLs { items: vec![] },
+            }
         };
-        if content != "" {
-            urls = serde_json::from_str(content.as_str())?;
-        }
 
-        return Ok(urls.urls.items);
+        Ok(urls.urls.items)
     }
 }
 
-fn is_unique(urls: &Vec<URLRecord>, record: &URLRecord) -> bool {
+fn is_unique(urls: &[URLRecord], record: &URLRecord) -> bool {
     for u in urls {
         if is_same(u, record) {
             return false;
         }
     }
 
-    return true;
+    true
 }
 
 fn is_same(a: &URLRecord, b: &URLRecord) -> bool {
@@ -176,17 +175,14 @@ fn open_urls_file(path: &str) -> Result<File, Box<dyn std::error::Error>> {
     let path = Path::new(path);
 
     if !path.exists() {
-        match path.parent() {
-            Some(dir_path) => {
-                if !dir_path.exists() {
-                    fs::create_dir_all(dir_path)?;
-                }
+        if let Some(dir_path) = path.parent() {
+            if !dir_path.exists() {
+                fs::create_dir_all(dir_path)?;
             }
-            None => {}
         };
     }
 
-    return match OpenOptions::new()
+    match OpenOptions::new()
         .read(true)
         .create(true)
         .append(false)
@@ -198,29 +194,30 @@ fn open_urls_file(path: &str) -> Result<File, Box<dyn std::error::Error>> {
             why
         ))),
         Ok(file) => Ok(file),
-    };
+    }
 }
 
 fn read_file(file: &mut File) -> Result<String, Box<dyn std::error::Error>> {
     let mut content: String = String::new();
 
-    return match file.read_to_string(&mut content) {
+    match file.read_to_string(&mut content) {
         Err(why) => Err(From::from(why)),
         _ => Ok(content),
-    };
+    }
 }
 
 fn read_urls(file: &mut File) -> Result<URLRegistry, Box<dyn std::error::Error>> {
     let content: String = read_file(file)?;
 
-    let mut urls: URLRegistry = URLRegistry {
-        urls: URLs { items: vec![] },
+    let urls: URLRegistry = if content != "" {
+        serde_json::from_str(content.as_str())?
+    } else {
+        URLRegistry {
+            urls: URLs { items: vec![] },
+        }
     };
-    if content != "" {
-        urls = serde_json::from_str(content.as_str())?;
-    }
 
-    return Ok(urls);
+    Ok(urls)
 }
 
 fn write_urls(
@@ -235,7 +232,7 @@ fn write_urls(
     let desired_length: u64 = urls_json.len().try_into()?;
     file.set_len(desired_length)?;
 
-    return Ok(urls);
+    Ok(urls)
 }
 
 fn not_unique_error(record: &URLRecord) -> Box<dyn std::error::Error> {

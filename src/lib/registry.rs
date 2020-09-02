@@ -19,7 +19,7 @@ impl URLRegistry<FileStorage> {
 
         URLRegistry {
             storage,
-            default_filter: Box::new(NoopFilter::new()),
+            default_filter: Box::new(NoopFilter::default()),
         }
     }
 
@@ -28,17 +28,17 @@ impl URLRegistry<FileStorage> {
     ) -> Result<(URLRegistry<FileStorage>, PathBuf), Box<dyn std::error::Error>> {
         let file_path = create_temp_file(suffix)?;
 
-        return match file_path.to_str() {
+        match file_path.to_str() {
             Some(path) => Ok((URLRegistry::new_file_based(path.to_string()), file_path)),
             None => Err(From::from(
                 "failed to initialized registry with temp file, path is None",
             )),
-        };
+        }
     }
 }
 
 impl<T: Repository> Registry for URLRegistry<T> {
-    fn new(
+    fn create(
         &self,
         name: &str,
         url: &str,
@@ -132,11 +132,11 @@ impl<T: Repository> Registry for URLRegistry<T> {
 impl<T: Repository> RegistryReader for URLRegistry<T> {
     fn list_urls(
         &self,
-        filter: Option<&Box<dyn Filter>>,
+        filter: Option<&dyn Filter>,
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
         let urls = self.storage.list()?;
 
-        let filter = filter.unwrap_or(&self.default_filter);
+        let filter = filter.unwrap_or_else(|| self.default_filter.as_ref());
 
         Ok(urls
             .iter()
@@ -221,7 +221,7 @@ mod test {
         println!("Add URLs...");
         for tu in &all_urls {
             let result = registry
-                .new(
+                .create(
                     tu.name.clone(),
                     tu.url.clone(),
                     tu.group.clone(),
@@ -250,7 +250,7 @@ mod test {
         let group_filter: Box<dyn Filter> = Box::new(GroupFilter::new(group_to_filter.clone()));
 
         let urls = registry
-            .list_urls(Some(&group_filter))
+            .list_urls(Some(group_filter.as_ref()))
             .expect("Failed to list urls");
         assert_eq!(1, urls.len());
 
@@ -272,7 +272,7 @@ mod test {
         let tags_filter: Box<dyn Filter> = Box::new(TagsFilter::new(tags_to_filter.clone()));
 
         let urls = registry
-            .list_urls(Some(&tags_filter))
+            .list_urls(Some(tags_filter.as_ref()))
             .expect("Failed to list urls");
         assert_eq!(2, urls.len());
 

@@ -10,9 +10,18 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            TOOLCHAIN: stable-x86_64-apple-darwin
+          - os: ubuntu-latest
+            TOOLCHAIN: stable-x86_64-unknown-linux-gnu
     steps:
       - uses: actions/checkout@v1
       - name: Run Tests
         run: cargo test --verbose
+      - name: Add Clippy
+        run: rustup component add clippy --toolchain ${{matrix.TOOLCHAIN}}
+      - name: Run Clippy
+        run: cargo clippy --verbose
       - name: Build
         run: cargo build --verbose --release

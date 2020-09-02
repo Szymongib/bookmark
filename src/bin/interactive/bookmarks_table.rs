@@ -47,7 +47,7 @@ impl BookmarksTable {
 
         let url_record = self.registry.get_url(&selected_id.unwrap())?;
 
-        return Ok(url_record);
+        Ok(url_record)
     }
 
     pub fn open(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -99,7 +99,7 @@ impl BookmarksTable {
     pub fn tag(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
         let id = unwrap_id(id)?;
 
-        if args.len() < 1 {
+        if args.is_empty() {
             return Err(From::from(
                 "tag requires exactly one argument. Usage: tag [TAG_1]",
             )); // TODO: support multiple tags at once
@@ -112,7 +112,7 @@ impl BookmarksTable {
     pub fn untag(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
         let id = unwrap_id(id)?;
 
-        if args.len() < 1 {
+        if args.is_empty() {
             return Err(From::from(
                 "untag requires exactly one argument. Usage: untag [TAG_1]",
             )); // TODO: support multiple tags at once
@@ -125,7 +125,7 @@ impl BookmarksTable {
     pub fn change_group(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
         let id = unwrap_id(id)?;
 
-        if args.len() < 1 {
+        if args.is_empty() {
             return Err(From::from(
                 "change group requires exactly one argument. Usage: chg [GROUP]",
             ));
@@ -138,7 +138,7 @@ impl BookmarksTable {
     pub fn change_name(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
         let id = unwrap_id(id)?;
 
-        if args.len() < 1 {
+        if args.is_empty() {
             return Err(From::from(
                 "change name requires exactly one argument. Usage: chn [NAME]",
             ));
@@ -151,7 +151,7 @@ impl BookmarksTable {
     pub fn change_url(&mut self, id: Option<String>, args: Vec<&str>) -> CommandResult {
         let id = unwrap_id(id)?;
 
-        if args.len() < 1 {
+        if args.is_empty() {
             return Err(From::from(
                 "change url requires exactly one argument. Usage: chu [URL]",
             ));
@@ -176,7 +176,7 @@ impl BookmarksTable {
 
     fn refresh_items(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let urls = match &self.filter {
-            Some(f) => self.registry.list_urls(Some(&f))?,
+            Some(f) => self.registry.list_urls(Some(f.as_ref()))?,
             None => self.registry.list_urls(None)?,
         };
 
@@ -217,6 +217,6 @@ impl BookmarksTable {
 fn unwrap_id(id: Option<String>) -> Result<String, Box<dyn std::error::Error>> {
     match id {
         Some(id) => Ok(id),
-        None => Err(From::from(format!("error: item not selected"))),
+        None => Err(From::from("error: item not selected".to_string())),
     }
 }

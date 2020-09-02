@@ -25,7 +25,7 @@ impl HandleInput for HelpPanel {
             return Ok(None);
         }
 
-        return Ok(Some(InputMode::Suppressed(SuppressedAction::ShowHelp)));
+        Ok(Some(InputMode::Suppressed(SuppressedAction::ShowHelp)))
     }
 
     fn handle_input(
@@ -43,7 +43,7 @@ impl HandleInput for HelpPanel {
             _ => {}
         }
 
-        return Ok(None);
+        Ok(None)
     }
 }
 
@@ -57,10 +57,10 @@ impl<B: Backend> Draw<B> for HelpPanel {
 
 impl HelpPanel {
     pub fn new() -> HelpPanel {
-        return HelpPanel {};
+        HelpPanel {}
     }
 
-    fn show_help_popup<'a, B: Backend>(&self, f: &mut Frame<B>) {
+    fn show_help_popup<B: Backend>(&self, f: &mut Frame<B>) {
         let text = vec![
             "Action               Description",
             "'ENTER'            | open bookmarked URL",

@@ -5,13 +5,8 @@ pub trait Filter {
     fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter>;
 }
 
+#[derive(Default)]
 pub struct NoopFilter {}
-
-impl NoopFilter {
-    pub fn new() -> NoopFilter {
-        NoopFilter {}
-    }
-}
 
 impl Filter for NoopFilter {
     fn matches(&self, _record: &URLRecord) -> bool {
@@ -34,14 +29,14 @@ impl Filter for UnorderedWordSetFilter {
             return true;
         }
 
-        for p in self.phrase.split(' ').filter(|p| p.len() > 0) {
+        for p in self.phrase.split(' ').filter(|p| !p.is_empty()) {
             let word = p.to_lowercase();
 
             // Check if any part matches the word
             let matches = record.name.to_lowercase().contains(&word)
                 || record.url.to_lowercase().contains(&word)
                 || record.group.to_lowercase().contains(&word)
-                || self.tag_matches(record, &word);
+                || tag_matches(record, &word);
 
             if !matches {
                 return false;
@@ -58,18 +53,9 @@ impl Filter for UnorderedWordSetFilter {
 
 impl UnorderedWordSetFilter {
     pub fn new(phrase: &str) -> UnorderedWordSetFilter {
-        return UnorderedWordSetFilter {
+        UnorderedWordSetFilter {
             phrase: phrase.to_string(),
-        };
-    }
-
-    fn tag_matches(&self, record: &URLRecord, word: &str) -> bool {
-        for (t, _) in &record.tags {
-            if t.to_lowercase().contains(word) {
-                return true;
-            }
         }
-        false
     }
 }
 
@@ -81,18 +67,18 @@ pub struct FilterSet {
 
 impl FilterSet {
     pub fn new_combined_for_phrase(phrase: &str) -> FilterSet {
-        return FilterSet {
+        FilterSet {
             filters: vec![
                 Box::new(PhraseFilter::new_name_filter(phrase)),
                 Box::new(PhraseFilter::new_url_filter(phrase)),
                 Box::new(PhraseFilter::new_group_filter(phrase)),
                 Box::new(PhraseFilter::new_tag_filter(phrase)),
             ],
-        };
+        }
     }
 
     pub fn new_combined(filters: Vec<Box<dyn Filter>>) -> FilterSet {
-        return FilterSet { filters };
+        FilterSet { filters }
     }
 }
 
@@ -103,7 +89,7 @@ impl Filter for FilterSet {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
@@ -143,7 +129,7 @@ impl Filter for TagsFilter {
                 return true;
             }
         }
-        return false;
+        false
     }
     fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
         Box::new(FilterSet::new_combined(vec![Box::new(self), filter]))
@@ -174,19 +160,12 @@ pub struct PhraseFilter {
 
 impl Filter for PhraseFilter {
     fn matches(&self, record: &URLRecord) -> bool {
-        return match &self.element {
+        match &self.element {
             SearchElement::Name => record.name.to_lowercase().contains(&self.phrase),
             SearchElement::URL => record.url.to_lowercase().contains(&self.phrase),
             SearchElement::Group => record.group.to_lowercase().contains(&self.phrase),
-            SearchElement::Tag => {
-                for (t, _) in &record.tags {
-                    if t.to_lowercase().contains(&self.phrase) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        };
+            SearchElement::Tag => tag_matches(record, &self.phrase),
+        }
     }
 
     fn chain(self, filter: Box<dyn Filter>) -> Box<dyn Filter> {
@@ -222,6 +201,15 @@ impl PhraseFilter {
             element: SearchElement::Tag,
         }
     }
+}
+
+fn tag_matches(record: &URLRecord, word: &str) -> bool {
+    for t in record.tags.keys() {
+        if t.to_lowercase().contains(word) {
+            return true;
+        }
+    }
+    false
 }
 
 #[cfg(test)]

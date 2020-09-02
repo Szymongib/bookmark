@@ -193,7 +193,7 @@ fn main() {
     let file_path = match matches.value_of("file") {
         Some(t) => t.to_string(),
         None => match get_default_registry_file_path() {
-            Some(path) => path.to_string(),
+            Some(path) => path,
             None => panic!("Failed to get default file path"),
         },
     };
@@ -232,12 +232,11 @@ fn main() {
             application.change_url_sub_cmd(chu_matches);
         }
         ("", None) => {
-            match enter_interactive_mode(application.registry) {
-                Err(err) => println!(
+            if let Err(err) = enter_interactive_mode(application.registry) {
+                println!(
                     "Error: failed to enter interactive mode: {}",
                     err.to_string()
-                ),
-                _ => {}
+                )
             };
         }
         _ => println!("Error: subcommand not found"),
@@ -288,9 +287,9 @@ impl<T: Registry> Application<T> {
         let url = matches.value_of("url").expect("Error getting URL");
         let group: Option<&str> = matches.value_of("group");
 
-        let tags = get_multiple_values(matches, "tag").unwrap_or(vec![]);
+        let tags = get_multiple_values(matches, "tag").unwrap_or_default();
 
-        match self.registry.new(url_name, url, group, tags) {
+        match self.registry.create(url_name, url, group, tags) {
             Ok(url_record) => println!(
                 "Added url '{}': '{}' to {}' group",
                 url_record.name, url_record.url, url_record.group
@@ -303,7 +302,7 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn list_sub_cmd(&self, matches: &ArgMatches) {
-        let noop_filter: Box<dyn Filter> = Box::new(NoopFilter::new());
+        let noop_filter: Box<dyn Filter> = Box::new(NoopFilter::default());
 
         let group_filter: Box<dyn Filter> = matches
             .value_of("group")
@@ -321,14 +320,14 @@ impl<T: Registry> Application<T> {
             .unwrap_or(group_filter);
 
         // TODO: support output as json?
-        return match self.registry.list_urls(Some(&tags_filter)) {
+        match self.registry.list_urls(Some(tags_filter.as_ref())) {
             Ok(urls) => {
                 display::display_urls(urls);
             }
             Err(why) => {
                 println!("Error getting URLs: {}", why);
             }
-        };
+        }
     }
 
     pub fn delete_sub_cmd(&self, matches: &ArgMatches) {

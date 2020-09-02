@@ -12,7 +12,7 @@ pub mod import;
 mod util;
 
 pub trait Registry: RegistryReader + Importer {
-    fn new(
+    fn create(
         &self,
         name: &str,
         url: &str,
@@ -52,7 +52,7 @@ pub trait Registry: RegistryReader + Importer {
 pub trait RegistryReader {
     fn list_urls(
         &self,
-        filter: Option<&Box<dyn Filter>>,
+        filter: Option<&dyn Filter>,
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>;
 
     fn get_url(&self, id: &str) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;

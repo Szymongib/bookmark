@@ -6,7 +6,7 @@ pub(crate) fn display_urls(urls: Vec<URLRecord>) {
 
 fn display_str(urls: Vec<URLRecord>) -> String {
     let (name_len, url_len, group_len, tags_len) = get_max_lengths(&urls);
-    let id_len = if urls.len() > 0 {
+    let id_len = if !urls.is_empty() {
         urls[0].id.len() // Ids have uniform length
     } else {
         0
@@ -26,7 +26,7 @@ fn display_str(urls: Vec<URLRecord>) -> String {
         ))
     }
 
-    return out;
+    out
 }
 
 fn header(
@@ -46,18 +46,18 @@ fn header(
 }
 
 fn pad(s: String, len: usize) -> String {
-    let mut s = s.clone();
+    let mut s = s;
 
     let pad_count = if len >= s.len() { len - s.len() } else { 0 };
 
     for _ in 0..pad_count {
         s.push(' ');
     }
-    return s;
+    s
 }
 
 /// Returns max length of Name, URL, Group, Tags
-fn get_max_lengths(urls: &Vec<URLRecord>) -> (usize, usize, usize, usize) {
+fn get_max_lengths(urls: &[URLRecord]) -> (usize, usize, usize, usize) {
     let mut max_len: [usize; 4] = [4, 3, 5, 0];
 
     for u in urls {
@@ -76,7 +76,7 @@ fn get_max_lengths(urls: &Vec<URLRecord>) -> (usize, usize, usize, usize) {
         }
     }
 
-    return (max_len[0], max_len[1], max_len[2], max_len[3]);
+    (max_len[0], max_len[1], max_len[2], max_len[3])
 }
 
 #[cfg(test)]

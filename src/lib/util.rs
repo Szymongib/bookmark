@@ -11,5 +11,5 @@ pub(crate) fn create_temp_file(suffix: &str) -> Result<PathBuf, Box<dyn std::err
 
     File::create(temp_path.clone())?;
 
-    return Ok(temp_path);
+    Ok(temp_path)
 }

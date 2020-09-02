@@ -27,7 +27,7 @@ impl HandleInput for Search {
         }
 
         table.unselect();
-        return Ok(Some(InputMode::Search));
+        Ok(Some(InputMode::Search))
     }
 
     fn handle_input(
@@ -56,7 +56,7 @@ impl HandleInput for Search {
 
 impl<B: Backend> Draw<B> for Search {
     fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
-        return match mode {
+        match mode {
             InputMode::Search => {
                 self.render_search_input(f);
                 // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
@@ -73,7 +73,7 @@ impl<B: Backend> Draw<B> for Search {
                     self.render_search_input(f);
                 }
             }
-        };
+        }
     }
 }
 
