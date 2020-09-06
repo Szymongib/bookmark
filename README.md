@@ -45,7 +45,9 @@ cargo install --path .
 
 ## Usage
 
-> **NOTE:** For correct usage documentation, check README from tag for corresponding version.
+> **NOTE:** For correct usage documentation, check documentation from tag for corresponding version.
+
+Example commands:
 
 Add URL:
 ```bash
@@ -61,18 +63,10 @@ Use `enter` to open URL in the browser, `q` to quite the interactive mode and `h
 
 List URLs:
 ```bash
-bookmark list
+bookmark ls
 ```
 
-Delete URL:
-```bash
-bookmark delete GitHub
-```
-
-List groups:
-```bash
-bookmark group list
-```
+For complete usage of both the Interactive mode and the Standard mode, checkout [the usage documentation.](./docs/usage.md)
 
 
 ## Groups and tags

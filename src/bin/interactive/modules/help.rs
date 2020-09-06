@@ -67,6 +67,7 @@ impl HelpPanel {
             "'/' or 'CTRL + F'  | search for URLs",
             "'d'                | delete URL",
             "'i'                | show/hide ids",
+            "'q'                | exit interactive mode",
             "':'                | go to command mode",
             "",
             "",
@@ -76,7 +77,7 @@ impl HelpPanel {
             "':chg [GROUP]'   |         | change group to [GROUP] for selected bookmark",
             "':chn [NAME]'    |         | change name to [NAME] for selected bookmark",
             "':chu [URL]'     |         | change url to [URL] for selected bookmark",
-            "':q'             | quit    | quit application",
+            "':q'             | quit    | exit interactive mode",
             "",
         ];
         let max_width = text.iter().map(|t| t.len()).max().unwrap_or_default() as u16;
