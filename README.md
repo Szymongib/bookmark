@@ -69,6 +69,11 @@ bookmark ls
 For complete usage of both the Interactive mode and the Standard mode, checkout [the usage documentation.](./docs/usage.md)
 
 
+## Migrate to new version
+
+If you used Bookmark in version `v0.0.x` you can import your bookmarks to `v0.1.x`. 
+To see how to do it, checkout [the documentation.](./docs/import-from-previous-version.md)
+
 ## Groups and tags
 
 URLs can be added to groups and labeled with tag. Some groups and tags principles include:
