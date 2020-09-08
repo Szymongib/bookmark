@@ -38,8 +38,8 @@ The commands names are similar to those in the Standard mode:
 
 | Command | Arguments | Action |
 |:-------:|:---------:|:------:|
-| `tag` or `t+` | [TAG_NAME] | Adds tag to the bookmark |
-| `untag` or `t-` | [TAG_NAME] | Removes tag from the bookmark |
+| `tag` | [TAG_NAME] | Adds tag to the bookmark |
+| `untag` | [TAG_NAME] | Removes tag from the bookmark |
 | `chg` | [NEW_GROUP] | Changes group of the bookmark |
 | `chn` | [NEW_NAME] | Changes name of the bookmark |
 | `chu` | [NEW_URL] | Changes URL of the bookmark |

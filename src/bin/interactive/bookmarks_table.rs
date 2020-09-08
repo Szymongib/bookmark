@@ -8,6 +8,8 @@ use bookmark_lib::Registry;
 use std::sync::mpsc;
 use termion::event::Key;
 
+use crate::cmd;
+
 type CommandResult = Result<(), Box<dyn std::error::Error>>;
 
 pub struct BookmarksTable {
@@ -82,11 +84,15 @@ impl BookmarksTable {
         let id = self.get_selected_id();
 
         match command {
-            "tag" | "t" | "tag+" | "t+" => self.tag(id, args)?,
-            "untag" | "t-" => self.untag(id, args)?,
-            "chg" | "change-group" => self.change_group(id, args)?,
-            "chn" | "change-name" => self.change_name(id, args)?,
-            "chu" | "change-url" => self.change_url(id, args)?,
+            cmd::TAG_SUB_CMD => self.tag(id, args)?,
+            cmd::UNTAG_SUB_CMD => self.untag(id, args)?,
+            cmd::CHANGE_GROUP_SUB_CMD | cmd::CHANGE_GROUP_SUB_CMD_ALIAS => {
+                self.change_group(id, args)?
+            }
+            cmd::CHANGE_NAME_SUB_CMD | cmd::CHANGE_NAME_SUB_CMD_ALIAS => {
+                self.change_name(id, args)?
+            }
+            cmd::CHANGE_URL_SUB_CMD | cmd::CHANGE_URL_SUB_CMD_ALIAS => self.change_url(id, args)?,
             "q" | "quit" => self.signal_sender.send(Event::Signal(Signal::Quit))?,
             _ => return Err(From::from(format!("error: command {} not found", command))),
         };

@@ -8,21 +8,9 @@ use bookmark_lib::Registry;
 
 use bookmark_lib::filters::{Filter, GroupFilter, NoopFilter, TagsFilter};
 
+mod cmd;
 mod display;
 mod interactive;
-
-const GROUP_SUB_CMD: &str = "group";
-const GROUP_LIST_CMD: &str = "list";
-
-const ADD_SUB_CMD: &str = "add";
-const LIST_SUB_CMD: &str = "list";
-const DELETE_SUB_CMD: &str = "delete";
-const TAG_SUB_CMD: &str = "tag";
-const UNTAG_SUB_CMD: &str = "untag";
-const IMPORT_SUB_CMD: &str = "import";
-const CHANGE_GROUP_SUB_CMD: &str = "chg";
-const CHANGE_NAME_SUB_CMD: &str = "chn";
-const CHANGE_URL_SUB_CMD: &str = "chu";
 
 const URLS_V0_0_X_DEFAULT_FILE_PATH: &str = ".bookmark-cli/urls.json";
 
@@ -46,13 +34,13 @@ fn main() {
             .help("Path to file storing the URLs")
             .takes_value(true)
         )
-        .subcommand(SubCommand::with_name(GROUP_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::GROUP_SUB_CMD)
             .about("Manage URL groups")
-            .subcommand(SubCommand::with_name(GROUP_LIST_CMD)
+            .subcommand(SubCommand::with_name(cmd::GROUP_LIST_CMD)
                 .about("List groups")
             )
         )
-        .subcommand(SubCommand::with_name(ADD_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::ADD_SUB_CMD)
             .about("Add bookmark URL")
             .arg(Arg::with_name("name")
                 .help("Bookmark name")
@@ -80,7 +68,7 @@ fn main() {
                 .short("g")
                 .long("group"))
         )
-        .subcommand(SubCommand::with_name(LIST_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::LIST_SUB_CMD)
             .alias("ls")
             .about("List bookmarks ")
             .arg(Arg::with_name("group") // If not specified use default or global
@@ -98,7 +86,7 @@ fn main() {
                 .multiple(true)
                 .number_of_values(1))
         )
-        .subcommand(SubCommand::with_name(DELETE_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::DELETE_SUB_CMD)
             .about("Delete bookmark")
             .arg(Arg::with_name("id")
                 .help("Bookmark id to delete")
@@ -106,7 +94,7 @@ fn main() {
                 .index(1)
             )
         )
-        .subcommand(SubCommand::with_name(TAG_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::TAG_SUB_CMD)
             .about("Add tag to bookmark")
             .usage("bookmark tag [ID] [TAG]")
             .arg(Arg::with_name("id")
@@ -119,7 +107,7 @@ fn main() {
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(UNTAG_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::UNTAG_SUB_CMD)
             .about("Remove tag from bookmark")
             .usage("bookmark untag [ID] [TAG]")
             .arg(Arg::with_name("id")
@@ -132,9 +120,10 @@ fn main() {
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(CHANGE_GROUP_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::CHANGE_GROUP_SUB_CMD)
             .about("Change group of the bookmark")
             .usage("bookmark chg [ID] [GROUP]")
+            .alias(cmd::CHANGE_GROUP_SUB_CMD_ALIAS)
             .arg(Arg::with_name("id")
                 .help("Bookmark id to change the group")
                 .required(true)
@@ -145,9 +134,10 @@ fn main() {
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(CHANGE_NAME_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::CHANGE_NAME_SUB_CMD)
             .about("Change name of the bookmark")
             .usage("bookmark chn [ID] [NAME]")
+            .alias(cmd::CHANGE_NAME_SUB_CMD_ALIAS)
             .arg(Arg::with_name("id")
                 .help("Bookmark id to change the name")
                 .required(true)
@@ -158,9 +148,10 @@ fn main() {
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(CHANGE_URL_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::CHANGE_URL_SUB_CMD)
             .about("Change URL of the bookmark")
             .usage("bookmark chu [ID] [URL]")
+            .alias(cmd::CHANGE_URL_SUB_CMD_ALIAS)
             .arg(Arg::with_name("id")
                 .help("Bookmark id to change the URL")
                 .required(true)
@@ -171,7 +162,7 @@ fn main() {
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(IMPORT_SUB_CMD)
+        .subcommand(SubCommand::with_name(cmd::IMPORT_SUB_CMD)
             .about("Imports bookmarks from the previous versions")
             .arg(Arg::with_name("version")
                 .help(format!("Version from which URLs should be imported. One of: {}", VERSION_V0_0_X).as_str())
@@ -201,34 +192,34 @@ fn main() {
     let application = Application::new_file_based_registry(file_path);
 
     match matches.subcommand() {
-        (GROUP_SUB_CMD, Some(group_matches)) => {
+        (cmd::GROUP_SUB_CMD, Some(group_matches)) => {
             application.group_sub_cmd(group_matches);
         }
-        (ADD_SUB_CMD, Some(add_matches)) => {
+        (cmd::ADD_SUB_CMD, Some(add_matches)) => {
             application.add_sub_cmd(add_matches);
         }
-        (LIST_SUB_CMD, Some(list_matches)) => {
+        (cmd::LIST_SUB_CMD, Some(list_matches)) => {
             application.list_sub_cmd(list_matches);
         }
-        (DELETE_SUB_CMD, Some(delete_matches)) => {
+        (cmd::DELETE_SUB_CMD, Some(delete_matches)) => {
             application.delete_sub_cmd(delete_matches);
         }
-        (IMPORT_SUB_CMD, Some(import_matches)) => {
+        (cmd::IMPORT_SUB_CMD, Some(import_matches)) => {
             application.import_sub_cmd(import_matches);
         }
-        (TAG_SUB_CMD, Some(tag_matches)) => {
+        (cmd::TAG_SUB_CMD, Some(tag_matches)) => {
             application.tag_sub_cmd(tag_matches);
         }
-        (UNTAG_SUB_CMD, Some(untag_matches)) => {
+        (cmd::UNTAG_SUB_CMD, Some(untag_matches)) => {
             application.untag_sub_cmd(untag_matches);
         }
-        (CHANGE_GROUP_SUB_CMD, Some(chg_matches)) => {
+        (cmd::CHANGE_GROUP_SUB_CMD, Some(chg_matches)) => {
             application.change_group_sub_cmd(chg_matches);
         }
-        (CHANGE_NAME_SUB_CMD, Some(chn_matches)) => {
+        (cmd::CHANGE_NAME_SUB_CMD, Some(chn_matches)) => {
             application.change_name_sub_cmd(chn_matches);
         }
-        (CHANGE_URL_SUB_CMD, Some(chu_matches)) => {
+        (cmd::CHANGE_URL_SUB_CMD, Some(chu_matches)) => {
             application.change_url_sub_cmd(chu_matches);
         }
         ("", None) => {

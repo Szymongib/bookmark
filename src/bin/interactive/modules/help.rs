@@ -60,6 +60,7 @@ impl HelpPanel {
         HelpPanel {}
     }
 
+    // TODO: consider using consts from cmd - or embedding docs?
     fn show_help_popup<B: Backend>(&self, f: &mut Frame<B>) {
         let text = vec![
             "Action               Description",
@@ -71,13 +72,13 @@ impl HelpPanel {
             "':'                | go to command mode",
             "",
             "",
-            "Command            Alias     Description",
-            "':t+ [TAG_NAME]' | tag     | add tag [TAG_NAME] to selected bookmark",
-            "':t- [TAG_NAME]' | untag   | remove tag [TAG_NAME] from selected bookmark",
-            "':chg [GROUP]'   |         | change group to [GROUP] for selected bookmark",
-            "':chn [NAME]'    |         | change name to [NAME] for selected bookmark",
-            "':chu [URL]'     |         | change url to [URL] for selected bookmark",
-            "':q'             | quit    | exit interactive mode",
+            "Command                Alias     Description",
+            "':tag [TAG_NAME]'    |         | add tag [TAG_NAME] to selected bookmark",
+            "':untag [TAG_NAME]'  |         | remove tag [TAG_NAME] from selected bookmark",
+            "':chgroup [GROUP]'   | chg     | change group to [GROUP] for selected bookmark",
+            "':chname [NAME]'     | chn     | change name to [NAME] for selected bookmark",
+            "':churl [URL]'       | chu     | change url to [URL] for selected bookmark",
+            "':q'                 | quit    | exit interactive mode",
             "",
         ];
         let max_width = text.iter().map(|t| t.len()).max().unwrap_or_default() as u16;

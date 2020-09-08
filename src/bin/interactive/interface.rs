@@ -204,7 +204,7 @@ fn default_columns_constraints() -> Vec<Constraint> {
         Constraint::Percentage(20),
         Constraint::Percentage(40),
         Constraint::Percentage(15),
-        Constraint::Percentage(15),
+        Constraint::Percentage(25),
     ]
 }
 
@@ -652,66 +652,94 @@ mod test {
         assert_eq!(row[3], "tag");
     }
 
+    struct TestCaseCommands {
+        commands_chain: Vec<&'static str>,
+    }
+
     #[test]
     fn test_commands() {
-        let (mut interface, _cleaner) = init!(fix_url_records());
+        // Run for full names and aliases
+        let test_cases = vec![
+            TestCaseCommands {
+                commands_chain: vec![
+                    ":tag abcd\n",
+                    ":chgroup puorg\n",
+                    ":untag tag\n",
+                    ":chname new-name-123\n",
+                    ":churl https://new-url.com\n",
+                ],
+            },
+            TestCaseCommands {
+                commands_chain: vec![
+                    ":tag abcd\n",
+                    ":chg puorg\n",
+                    ":untag tag\n",
+                    ":chn new-name-123\n",
+                    ":chu https://new-url.com\n",
+                ],
+            },
+        ];
 
-        println!("Select first URL...");
-        interface
-            .handle_input(Event::Input(Key::Down))
-            .expect("Failed to handle event");
+        for test_case in test_cases {
+            let (mut interface, _cleaner) = init!(fix_url_records());
 
-        println!("Get URL...");
-        let original_url = interface
-            .bookmarks_table
-            .get_selected()
-            .expect("Failed to get URL")
-            .expect("URL is None");
-        assert_eq!(original_url.name, "one");
-        assert_eq!(original_url.group, "one");
-        assert!(original_url.tags.contains_key("tag"));
-        assert!(!original_url.tags.contains_key("abcd"));
+            println!("Select first URL...");
+            interface
+                .handle_input(Event::Input(Key::Down))
+                .expect("Failed to handle event");
 
-        println!("Should tag URL...");
-        let events = to_key_events(":tag abcd\n");
-        for e in events {
-            interface.handle_input(e).expect("Failed to handle event");
+            println!("Get URL...");
+            let original_url = interface
+                .bookmarks_table
+                .get_selected()
+                .expect("Failed to get URL")
+                .expect("URL is None");
+            assert_eq!(original_url.name, "one");
+            assert_eq!(original_url.group, "one");
+            assert!(original_url.tags.contains_key("tag"));
+            assert!(!original_url.tags.contains_key("abcd"));
+
+            println!("Should tag URL...");
+            let events = to_key_events(test_case.commands_chain[0]);
+            for e in events {
+                interface.handle_input(e).expect("Failed to handle event");
+            }
+
+            println!("Should change group...");
+            let events = to_key_events(test_case.commands_chain[1]);
+            for e in events {
+                interface.handle_input(e).expect("Failed to handle event");
+            }
+
+            println!("Should remove tag...");
+            let events = to_key_events(test_case.commands_chain[2]);
+            for e in events {
+                interface.handle_input(e).expect("Failed to handle event");
+            }
+
+            println!("Should change name...");
+            let events = to_key_events(test_case.commands_chain[3]);
+            for e in events {
+                interface.handle_input(e).expect("Failed to handle event");
+            }
+
+            println!("Should change URL...");
+            let events = to_key_events(test_case.commands_chain[4]);
+            for e in events {
+                interface.handle_input(e).expect("Failed to handle event");
+            }
+
+            println!("Verify URL record...");
+            let modified_url = interface
+                .bookmarks_table
+                .get_selected()
+                .expect("Failed to get URL")
+                .expect("URL is None");
+            assert_eq!(modified_url.name, "new-name-123");
+            assert_eq!(modified_url.url, "https://new-url.com");
+            assert_eq!(modified_url.group, "puorg");
+            assert!(modified_url.tags.contains_key("abcd"));
+            assert!(!modified_url.tags.contains_key("tag"));
         }
-
-        println!("Should change group...");
-        let events = to_key_events(":chg puorg\n");
-        for e in events {
-            interface.handle_input(e).expect("Failed to handle event");
-        }
-
-        println!("Should remove tag...");
-        let events = to_key_events(":t- tag\n");
-        for e in events {
-            interface.handle_input(e).expect("Failed to handle event");
-        }
-
-        println!("Should change name...");
-        let events = to_key_events(":chn new-name-123\n");
-        for e in events {
-            interface.handle_input(e).expect("Failed to handle event");
-        }
-
-        println!("Should change URL...");
-        let events = to_key_events(":chu https://new-url.com\n");
-        for e in events {
-            interface.handle_input(e).expect("Failed to handle event");
-        }
-
-        println!("Verify URL record...");
-        let modified_url = interface
-            .bookmarks_table
-            .get_selected()
-            .expect("Failed to get URL")
-            .expect("URL is None");
-        assert_eq!(modified_url.name, "new-name-123");
-        assert_eq!(modified_url.url, "https://new-url.com");
-        assert_eq!(modified_url.group, "puorg");
-        assert!(modified_url.tags.contains_key("abcd"));
-        assert!(!modified_url.tags.contains_key("tag"));
     }
 }
