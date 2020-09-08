@@ -1,7 +1,7 @@
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
-use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
 pub struct URLRegistry {
@@ -45,8 +45,10 @@ impl URLRecord {
             tags.insert(t.to_string(), true);
         }
 
+        let random_bytes = rand::thread_rng().gen::<[u8; 8]>();
+
         URLRecord {
-            id: Uuid::new_v4().to_string(),
+            id: hex::encode(random_bytes),
             url: url.to_string(),
             name: name.to_string(),
             group: group.to_string(),

@@ -210,10 +210,10 @@ fn default_columns_constraints() -> Vec<Constraint> {
 
 fn columns_with_id_constraints() -> Vec<Constraint> {
     vec![
+        Constraint::Percentage(13),
         Constraint::Percentage(20),
-        Constraint::Percentage(15),
         Constraint::Percentage(35),
-        Constraint::Percentage(10),
+        Constraint::Percentage(12),
         Constraint::Percentage(20),
     ]
 }
@@ -631,7 +631,7 @@ mod test {
         assert_eq!(interface.cols_constraints.len(), 5);
         let row = interface.bookmarks_table.table().items[0].row();
         assert_eq!(row.len(), 5);
-        assert_eq!(row[0].len(), 36); // is uuid
+        assert_eq!(row[0].len(), 16); // is 8 byte (16 chars) id
         assert_eq!(row[1], "one");
         assert_eq!(row[2], "one");
         assert_eq!(row[3], "one");

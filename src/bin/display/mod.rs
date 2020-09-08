@@ -127,7 +127,7 @@ mod test {
                 description: "Several URL records".to_string(),
                 records: records.clone(),
                 expected_lines: vec![
-                    "Id                                     Name                          URL                        Group            Tags                          ".to_string(),
+                    "Id                 Name                          URL                        Group            Tags                          ".to_string(),
                     "".to_string(),
                     format!("{}   one_name                      https://one_long_url.com   one              tag                           ", records[0].id),
                     format!("{}   two long name wow such name   two                        two_long_group                                 ", records[1].id),
@@ -140,7 +140,7 @@ mod test {
                 description: "Single URL record".to_string(),
                 records: vec![single_record.clone()],
                 expected_lines: vec![
-                    "Id                                     Name       URL                   Group     Tags   ".to_string(),
+                    "Id                 Name       URL                   Group     Tags   ".to_string(),
                     "".to_string(),
                     format!("{}   HTTP Bin   https://httpbin.org   default   testing", single_record.id),
                 ],

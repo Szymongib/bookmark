@@ -421,7 +421,7 @@ mod test {
 
         assert_eq!(imported.len(), 5);
         for i in 0..imported.len() {
-            assert_eq!(imported[i].id.len(), 36);
+            assert_eq!(imported[i].id.len(), 16);
             assert_eq!(imported[i].name, expected_urls[i].name);
             assert_eq!(imported[i].url, expected_urls[i].url);
             assert_eq!(imported[i].group, expected_urls[i].group);

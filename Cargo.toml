@@ -22,7 +22,6 @@ dirs = "2.0.0"
 tui = "0.10"
 termion = "1.5.5"
 open = "1"
-uuid = { version = "0.8", features = ["v4"] }
-
-[dev-dependencies]
+hex = "0.4"
 rand = "0.7.3"
+
