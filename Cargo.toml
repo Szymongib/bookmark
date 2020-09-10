@@ -24,4 +24,5 @@ termion = "1.5.5"
 open = "1"
 hex = "0.4"
 rand = "0.7.3"
+regex = "1"
 

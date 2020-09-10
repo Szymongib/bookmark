@@ -92,7 +92,7 @@ mod test {
 
     #[test]
     fn test_url_item() {
-        let record = URLRecord::new("url1", "name1", "group1", vec!["tag1, tag1.2"]);
+        let record = URLRecord::new("url1", "name1", "group1", vec!["tag1", "tag1.2"]);
         let cols = to_string(vec!["  ID", "Name", "  Tags   "]);
 
         let items = vec![
@@ -107,18 +107,23 @@ mod test {
                 columns: Some(&cols),
             },
             TestCase {
-                url_record: URLRecord::new("url2", "name2", "group2", vec!["tag2, tag2.2"]),
+                url_record: URLRecord::new("url2", "name2", "group2", vec!["tag2", "tag2.2"]),
                 expected_row: to_string(vec!["name2", "url2", "group2", "tag2, tag2.2"]),
                 columns: None,
             },
             TestCase {
-                url_record: URLRecord::new("url3", "name3", "group3", vec!["tag3, tag3.2"]),
+                url_record: URLRecord::new("url3", "name3", "group3", vec!["tag3", "tag3.2"]),
                 expected_row: to_string(vec!["name3", "url3", "group3", "tag3, tag3.2"]),
                 columns: None,
             },
             TestCase {
                 url_record: URLRecord::new("url4", "name4", "group4", vec![]),
                 expected_row: to_string(vec!["name4", "url4", "group4", ""]),
+                columns: None,
+            },
+            TestCase {
+                url_record: URLRecord::new("url5", "name5", "group5", vec!["tag", "with space"]),
+                expected_row: to_string(vec!["name5", "url5", "group5", "tag, \"with space\""]),
                 columns: None,
             },
         ];

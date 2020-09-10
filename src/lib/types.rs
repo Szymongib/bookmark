@@ -57,7 +57,17 @@ impl URLRecord {
     }
 
     pub fn tags_as_string(&self) -> String {
-        let tags: Vec<&str> = self.tags.keys().map(|k| k.as_str()).collect();
+        let tags: Vec<String> = self
+            .tags
+            .keys()
+            .map(|k| {
+                if k.contains(|c| c == ' ' || c == ',') {
+                    format!("\"{}\"", k)
+                } else {
+                    k.to_owned()
+                }
+            })
+            .collect();
         tags.join(", ")
     }
 }

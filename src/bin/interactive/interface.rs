@@ -60,7 +60,7 @@ impl<B: tui::backend::Backend> Interface<B> {
         let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
         let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
         let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
-        let command_mod: Box<dyn Module<B>> = Box::new(Command::new());
+        let command_mod: Box<dyn Module<B>> = Box::new(Command::new()?);
 
         Ok(Interface {
             bookmarks_table,
@@ -237,7 +237,7 @@ mod test {
 
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
-            URLRecord::new("one", "one", "one", vec!["tag"]),
+            URLRecord::new("one", "one", "one", vec!["tag", "with space"]),
             URLRecord::new("two", "two", "two", vec![]),
             URLRecord::new("three", "three", "three", vec![]),
             URLRecord::new("four", "four", "four", vec!["tag"]),
@@ -635,7 +635,7 @@ mod test {
         assert_eq!(row[1], "one");
         assert_eq!(row[2], "one");
         assert_eq!(row[3], "one");
-        assert_eq!(row[4], "tag");
+        assert_eq!(row[4], "tag, \"with space\"");
 
         println!("Should hide ids...");
         let event = Event::Input(Key::Char('i'));
@@ -649,11 +649,11 @@ mod test {
         assert_eq!(row[0], "one");
         assert_eq!(row[1], "one");
         assert_eq!(row[2], "one");
-        assert_eq!(row[3], "tag");
+        assert_eq!(row[3], "tag, \"with space\"");
     }
 
     struct TestCaseCommands {
-        commands_chain: Vec<&'static str>,
+        commands_chain: Vec<(&'static str, &'static str)>,
     }
 
     #[test]
@@ -662,20 +662,29 @@ mod test {
         let test_cases = vec![
             TestCaseCommands {
                 commands_chain: vec![
-                    ":tag abcd\n",
-                    ":chgroup puorg\n",
-                    ":untag tag\n",
-                    ":chname new-name-123\n",
-                    ":churl https://new-url.com\n",
+                    (":tag", "abcd"),
+                    (":chgroup", "puorg"),
+                    (":untag", "tag"),
+                    (":chname", "new-name-123"),
+                    (":churl", "https://new-url.com"),
                 ],
             },
             TestCaseCommands {
                 commands_chain: vec![
-                    ":tag abcd\n",
-                    ":chg puorg\n",
-                    ":untag tag\n",
-                    ":chn new-name-123\n",
-                    ":chu https://new-url.com\n",
+                    (":tag", "abcd"),
+                    (":chg", "puorg"),
+                    (":untag", "tag"),
+                    (":chn", "new-name-123"),
+                    (":chu", "https://new-url.com"),
+                ],
+            },
+            TestCaseCommands {
+                commands_chain: vec![
+                    (":tag", r#""ab cd""#),
+                    (":chg", r#""wen puorg""#),
+                    (":untag", r#""with space""#),
+                    (":chn", r#""new name 123""#),
+                    (":chu", r#""https://new-url.com""#),
                 ],
             },
         ];
@@ -700,31 +709,31 @@ mod test {
             assert!(!original_url.tags.contains_key("abcd"));
 
             println!("Should tag URL...");
-            let events = to_key_events(test_case.commands_chain[0]);
+            let events = to_key_events(&join_command(test_case.commands_chain[0]));
             for e in events {
                 interface.handle_input(e).expect("Failed to handle event");
             }
 
             println!("Should change group...");
-            let events = to_key_events(test_case.commands_chain[1]);
+            let events = to_key_events(&join_command(test_case.commands_chain[1]));
             for e in events {
                 interface.handle_input(e).expect("Failed to handle event");
             }
 
             println!("Should remove tag...");
-            let events = to_key_events(test_case.commands_chain[2]);
+            let events = to_key_events(&join_command(test_case.commands_chain[2]));
             for e in events {
                 interface.handle_input(e).expect("Failed to handle event");
             }
 
             println!("Should change name...");
-            let events = to_key_events(test_case.commands_chain[3]);
+            let events = to_key_events(&join_command(test_case.commands_chain[3]));
             for e in events {
                 interface.handle_input(e).expect("Failed to handle event");
             }
 
             println!("Should change URL...");
-            let events = to_key_events(test_case.commands_chain[4]);
+            let events = to_key_events(&join_command(test_case.commands_chain[4]));
             for e in events {
                 interface.handle_input(e).expect("Failed to handle event");
             }
@@ -735,11 +744,23 @@ mod test {
                 .get_selected()
                 .expect("Failed to get URL")
                 .expect("URL is None");
-            assert_eq!(modified_url.name, "new-name-123");
-            assert_eq!(modified_url.url, "https://new-url.com");
-            assert_eq!(modified_url.group, "puorg");
-            assert!(modified_url.tags.contains_key("abcd"));
-            assert!(!modified_url.tags.contains_key("tag"));
+            assert_eq!(modified_url.name, unquote(test_case.commands_chain[3].1));
+            assert_eq!(modified_url.url, unquote(test_case.commands_chain[4].1));
+            assert_eq!(modified_url.group, unquote(test_case.commands_chain[1].1));
+            assert!(modified_url
+                .tags
+                .contains_key(unquote(test_case.commands_chain[0].1)));
+            assert!(!modified_url
+                .tags
+                .contains_key(unquote(test_case.commands_chain[2].1)));
         }
+    }
+
+    fn join_command(cmd: (&str, &str)) -> String {
+        format!("{} {}\n", cmd.0, cmd.1)
+    }
+
+    fn unquote(str: &str) -> &str {
+        str.trim_start_matches('"').trim_end_matches('"')
     }
 }

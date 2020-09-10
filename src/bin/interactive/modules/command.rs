@@ -2,6 +2,7 @@ use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use crate::interactive::interface::InputMode;
 use crate::interactive::modules::{Draw, HandleInput, Module};
+use regex::Regex;
 use std::error::Error;
 use termion::event::Key;
 use tui::backend::Backend;
@@ -17,6 +18,7 @@ pub(crate) struct Command {
     info_display: String,
     command_input: String,
     command_display: String,
+    args_regex: Regex,
 }
 
 impl<B: Backend> Module<B> for Command {}
@@ -55,8 +57,10 @@ impl HandleInput for Command {
                     .unwrap_or_else(|| self.command_input.len());
 
                 let action = &self.command_input.as_str()[0..action_index];
-                let args: Vec<&str> = (self.command_input.as_str())[action_index..]
-                    .split(' ')
+                let args: Vec<&str> = self
+                    .parse_args(&(self.command_input.as_str())[action_index + 1..])?
+                    .iter()
+                    .map(|s| s.to_owned())
                     .filter(|s| *s != "")
                     .collect();
 
@@ -107,12 +111,13 @@ impl<B: Backend> Draw<B> for Command {
 }
 
 impl Command {
-    pub fn new() -> Command {
-        Command {
+    pub fn new() -> Result<Command, Box<dyn Error>> {
+        Ok(Command {
             info_display: DEFAULT_INFO_MESSAGE.to_string(),
             command_input: "".to_string(),
             command_display: ":".to_string(),
-        }
+            args_regex: Regex::new(r#"("[^"]*")|(\S+)"#)?, // Match either strings in quotes (with spaces and stuff) or single words
+        })
     }
 
     fn input_push(&mut self, ch: char) {
@@ -132,6 +137,27 @@ impl Command {
         self.info_display = DEFAULT_INFO_MESSAGE.to_string();
         self.command_input = "".to_string();
         self.update_display();
+    }
+
+    fn parse_args<'a>(&self, args: &'a str) -> Result<Vec<&'a str>, Box<dyn Error>> {
+        Ok(self
+            .args_regex
+            .find_iter(args)
+            .map(|m| {
+                let str = m.as_str();
+                // Strip quotes
+                if str.starts_with('"') && str.ends_with('"') {
+                    if str.len() == 1 {
+                        // In case pattern is """
+                        ""
+                    } else {
+                        &str[1..str.len() - 1]
+                    }
+                } else {
+                    str
+                }
+            })
+            .collect())
     }
 
     pub fn render_command_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
@@ -178,7 +204,7 @@ mod test {
 
     #[test]
     fn test_exec_command() {
-        let mut command_module = Command::new();
+        let mut command_module = Command::new().expect("Failed to create command module");
         let (dummy_registry, _) = URLRegistry::with_temp_file("command_test1.json")
             .expect("Failed to initialize Registry");
         dummy_registry
@@ -212,7 +238,7 @@ mod test {
 
     #[test]
     fn test_exec_display_error_message_when_cmd_failed() {
-        let mut command_module = Command::new();
+        let mut command_module = Command::new().expect("Failed to create command module");
         let (dummy_registry, _) = URLRegistry::with_temp_file("command_test2.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
@@ -242,7 +268,7 @@ mod test {
 
     #[test]
     fn test_do_nothing_when_input_empty() {
-        let mut command_module = Command::new();
+        let mut command_module = Command::new().expect("Failed to create command module");
         let (dummy_registry, _) = URLRegistry::with_temp_file("command_test2.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
@@ -262,7 +288,7 @@ mod test {
 
     #[test]
     fn test_handle_input_write_command() {
-        let mut command_module = Command::new();
+        let mut command_module = Command::new().expect("Failed to create command module");
         let (dummy_registry, _) = URLRegistry::with_temp_file("command_test3.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
@@ -295,5 +321,72 @@ mod test {
             assert!(mode == None);
         }
         assert_eq!("tag temp".to_string(), command_module.command_input);
+    }
+
+    struct ParseArgsTest {
+        str: &'static str,
+        expected_args: Vec<&'static str>,
+    }
+
+    #[test]
+    fn test_parse_args() {
+        let command_module = Command::new().expect("Failed to create command module");
+
+        for test in vec![
+            ParseArgsTest {
+                str: r#""tests 1" test2 test3"#,
+                expected_args: vec!["tests 1", "test2", "test3"],
+            },
+            ParseArgsTest {
+                str: r#""tests 1 2 3 4" test2"#,
+                expected_args: vec!["tests 1 2 3 4", "test2"],
+            },
+            ParseArgsTest {
+                str: r#""test" test2"#,
+                expected_args: vec!["test", "test2"],
+            },
+            ParseArgsTest {
+                str: "test",
+                expected_args: vec!["test"],
+            },
+            ParseArgsTest {
+                str: "",
+                expected_args: vec![],
+            },
+            ParseArgsTest {
+                str: r#"""#,
+                expected_args: vec![],
+            },
+            ParseArgsTest {
+                str: r#""abcd def"ghj"#,
+                expected_args: vec!["abcd def", "ghj"],
+            },
+            ParseArgsTest {
+                str: r#""abcd"def"ghj ""#,
+                expected_args: vec!["abcd", "def\"ghj"],
+            },
+            ParseArgsTest {
+                str: r#""https://some.url-with-chars.io and space?""#,
+                expected_args: vec!["https://some.url-with-chars.io and space?"],
+            },
+            ParseArgsTest {
+                str: r#""https://some.url-with-chars.io/no/space?but=args&more" https://some.url-with-chars.io/no/space?but=args&more"#,
+                expected_args: vec![
+                    "https://some.url-with-chars.io/no/space?but=args&more",
+                    "https://some.url-with-chars.io/no/space?but=args&more",
+                ],
+            },
+        ] {
+            let out: Vec<&str> = command_module
+                .parse_args(test.str)
+                .expect("Error parsing args")
+                .iter()
+                .map(|s| s.to_owned())
+                .filter(|s| *s != "")
+                .collect();
+
+            println!("{:?}", out);
+            assert_eq!(out, test.expected_args);
+        }
     }
 }
