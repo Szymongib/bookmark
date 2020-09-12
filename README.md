@@ -1,3 +1,7 @@
+<p align="center">
+ <img src="./assets/bookmark_logo_text.png" height="130">
+</p>
+
 # Bookmark
 
 ![Build and test workflow](https://github.com/Szymongib/bookmark/workflows/Build%20And%20Test/badge.svg?branch=master)
