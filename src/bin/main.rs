@@ -311,7 +311,7 @@ impl<T: Registry> Application<T> {
             .unwrap_or(group_filter);
 
         // TODO: support output as json?
-        match self.registry.list_urls(Some(tags_filter.as_ref())) {
+        match self.registry.list_urls(Some(tags_filter.as_ref()), None) {
             Ok(urls) => {
                 display::display_urls(urls);
             }

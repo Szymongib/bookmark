@@ -57,12 +57,16 @@ impl HandleInput for Command {
                     .unwrap_or_else(|| self.command_input.len());
 
                 let action = &self.command_input.as_str()[0..action_index];
-                let args: Vec<&str> = self
-                    .parse_args(&(self.command_input.as_str())[action_index + 1..])?
-                    .iter()
-                    .map(|s| s.to_owned())
-                    .filter(|s| *s != "")
-                    .collect();
+
+                let args: Vec<&str> = if action_index < self.command_input.len() {
+                    self.parse_args(&(self.command_input.as_str())[action_index + 1..])?
+                        .iter()
+                        .map(|s| s.to_owned())
+                        .filter(|s| *s != "")
+                        .collect()
+                } else {
+                    vec![]
+                };
 
                 return match table.exec(action, args) {
                     // TODO: here I want error, command error and msg
@@ -205,14 +209,14 @@ mod test {
     #[test]
     fn test_exec_command() {
         let mut command_module = Command::new().expect("Failed to create command module");
-        let (dummy_registry, _) = URLRegistry::with_temp_file("command_test1.json")
+        let (registry, _) = URLRegistry::with_temp_file("command_test1.json")
             .expect("Failed to initialize Registry");
-        dummy_registry
+        registry
             .create("abcd", "url", None, vec![])
             .expect("Failed to create Bookmark");
         let events = Events::new();
 
-        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry))
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry))
             .expect("Failed to initialized Bookmarks table");
 
         println!("Should input command phrase...");
@@ -237,13 +241,50 @@ mod test {
     }
 
     #[test]
+    fn test_command_with_no_args() {
+        let mut command_module = Command::new().expect("Failed to create command module");
+        let (registry, _) = URLRegistry::with_temp_file("command_test1.json")
+            .expect("Failed to initialize Registry");
+        registry
+            .create("xyz", "url_xyz", None, vec![])
+            .expect("Failed to create Bookmark");
+        registry
+            .create("abcd", "url_abcd", None, vec![])
+            .expect("Failed to create Bookmark");
+        let events = Events::new();
+
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry))
+            .expect("Failed to initialized Bookmarks table");
+
+        println!("Should input command phrase...");
+        let key_events = to_keys("sort");
+
+        for key in key_events {
+            let mode = command_module
+                .handle_input(key, &mut bookmarks_table)
+                .expect("Failed to handle event");
+            assert!(mode == None);
+        }
+
+        println!("Should execute 'sort' command...");
+        let mode = command_module
+            .handle_input(Key::Char('\n'), &mut bookmarks_table)
+            .expect("Failed to handle event");
+        assert!(mode == Some(InputMode::Normal));
+        assert_eq!(command_module.info_display, DEFAULT_INFO_MESSAGE);
+        assert_eq!(command_module.command_input, "");
+        assert_eq!(command_module.command_display, ":");
+        assert_eq!(bookmarks_table.table().items[0].url(), "url_abcd");
+    }
+
+    #[test]
     fn test_exec_display_error_message_when_cmd_failed() {
         let mut command_module = Command::new().expect("Failed to create command module");
-        let (dummy_registry, _) = URLRegistry::with_temp_file("command_test2.json")
+        let (registry, _) = URLRegistry::with_temp_file("command_test2.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
 
-        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry))
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry))
             .expect("Failed to initialized Bookmarks table");
 
         println!("Should input command phrase...");
@@ -269,11 +310,11 @@ mod test {
     #[test]
     fn test_do_nothing_when_input_empty() {
         let mut command_module = Command::new().expect("Failed to create command module");
-        let (dummy_registry, _) = URLRegistry::with_temp_file("command_test2.json")
+        let (registry, _) = URLRegistry::with_temp_file("command_test2.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
 
-        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry))
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry))
             .expect("Failed to initialized Bookmarks table");
 
         println!("Should do nothing when input is empty...");
@@ -289,11 +330,11 @@ mod test {
     #[test]
     fn test_handle_input_write_command() {
         let mut command_module = Command::new().expect("Failed to create command module");
-        let (dummy_registry, _) = URLRegistry::with_temp_file("command_test3.json")
+        let (registry, _) = URLRegistry::with_temp_file("command_test3.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
 
-        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(dummy_registry))
+        let mut bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry))
             .expect("Failed to initialized Bookmarks table");
 
         println!("Should input command phrase...");
