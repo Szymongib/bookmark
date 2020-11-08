@@ -10,6 +10,7 @@ use termion::event::Key;
 
 use crate::cmd;
 use bookmark_lib::sort::{SortBy, SortConfig};
+use std::str::FromStr;
 
 type CommandResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -174,7 +175,7 @@ impl BookmarksTable {
         let sort_cfg = if args.is_empty() {
             SortConfig::new_by(SortBy::Name)
         } else {
-            let sort_by = SortBy::from_str(args[0])?;
+            let sort_by = SortBy::from_str(&args[0])?;
             SortConfig::new_by(sort_by)
         };
         self.sort_cfg = Some(sort_cfg);

@@ -8,6 +8,7 @@ use bookmark_lib::Registry;
 
 use bookmark_lib::filters::{Filter, GroupFilter, NoopFilter, TagsFilter};
 use bookmark_lib::sort::{SortBy, SortConfig};
+use std::str::FromStr;
 
 mod cmd;
 mod display;
@@ -323,7 +324,10 @@ impl<T: Registry> Application<T> {
         });
 
         // TODO: support output as json?
-        match self.registry.list_urls(Some(tags_filter.as_ref()), sort_cfg) {
+        match self
+            .registry
+            .list_urls(Some(tags_filter.as_ref()), sort_cfg)
+        {
             Ok(urls) => {
                 display::display_urls(urls);
             }

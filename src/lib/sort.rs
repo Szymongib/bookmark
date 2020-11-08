@@ -1,7 +1,5 @@
 use crate::types::URLRecord;
 use std::cmp::Ordering;
-use serde::export::TryFrom;
-use std::error::Error;
 use std::str::FromStr;
 
 // TODO: Consider adding some option to sort without applying `to_lowercase`?
@@ -31,13 +29,17 @@ pub enum SortBy {
     Group,
 }
 
-impl SortBy {
-    pub fn from_str<T: ToString>(value: T) -> Result<SortBy, Box<dyn std::error::Error>> {
-        match value.to_string().to_lowercase().as_str() {
+impl FromStr for SortBy {
+    type Err = Box<dyn std::error::Error>;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value.to_lowercase().as_str() {
             "name" => Ok(SortBy::Name),
             "url" => Ok(SortBy::URL),
             "group" => Ok(SortBy::Group),
-            _ => return Err(From::from("invalid sort column, must be one of: [name, url, group]")),
+            _ => Err(From::from(
+                "invalid sort column, must be one of: [name, url, group]",
+            )),
         }
     }
 }
@@ -85,7 +87,7 @@ fn strip_protocol(url: &str) -> String {
         }
     }
 
-    return url.to_string();
+    url.to_string()
 }
 
 #[cfg(test)]

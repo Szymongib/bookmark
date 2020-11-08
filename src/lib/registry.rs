@@ -146,7 +146,7 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
             return Ok(sort_urls(urls, &sort_cfg));
         }
 
-        return Ok(urls);
+        Ok(urls)
     }
 
     fn get_url(&self, id: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
