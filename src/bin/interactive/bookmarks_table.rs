@@ -9,6 +9,8 @@ use std::sync::mpsc;
 use termion::event::Key;
 
 use crate::cmd;
+use bookmark_lib::sort::{SortBy, SortConfig};
+use std::str::FromStr;
 
 type CommandResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -18,6 +20,7 @@ pub struct BookmarksTable {
     table: StatefulTable<URLItem>,
     columns: Vec<String>,
     filter: Option<Box<dyn Filter>>,
+    sort_cfg: Option<SortConfig>,
 }
 
 impl BookmarksTable {
@@ -93,6 +96,7 @@ impl BookmarksTable {
                 self.change_name(id, args)?
             }
             cmd::CHANGE_URL_SUB_CMD | cmd::CHANGE_URL_SUB_CMD_ALIAS => self.change_url(id, args)?,
+            cmd::SORT_CMD => self.sort_urls(id, args)?,
             "q" | "quit" => self.signal_sender.send(Event::Signal(Signal::Quit))?,
             _ => return Err(From::from(format!("error: command {} not found", command))),
         };
@@ -167,6 +171,18 @@ impl BookmarksTable {
         Ok(())
     }
 
+    pub fn sort_urls(&mut self, _: Option<String>, args: Vec<&str>) -> CommandResult {
+        let sort_cfg = if args.is_empty() {
+            SortConfig::new_by(SortBy::Name)
+        } else {
+            let sort_by = SortBy::from_str(&args[0])?;
+            SortConfig::new_by(sort_by)
+        };
+        self.sort_cfg = Some(sort_cfg);
+
+        self.refresh_items()
+    }
+
     pub fn delete(&mut self) -> Result<bool, Box<dyn std::error::Error>> {
         match self.get_selected_id() {
             Some(id) => {
@@ -182,8 +198,8 @@ impl BookmarksTable {
 
     fn refresh_items(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let urls = match &self.filter {
-            Some(f) => self.registry.list_urls(Some(f.as_ref()))?,
-            None => self.registry.list_urls(None)?,
+            Some(f) => self.registry.list_urls(Some(f.as_ref()), self.sort_cfg)?,
+            None => self.registry.list_urls(None, self.sort_cfg)?,
         };
 
         self.table
@@ -207,7 +223,7 @@ impl BookmarksTable {
         let default_columns = default_columns();
 
         let items: Vec<URLItem> =
-            URLItem::from_vec(registry.list_urls(None)?, Some(&default_columns));
+            URLItem::from_vec(registry.list_urls(None, None)?, Some(&default_columns));
         let table = StatefulTable::with_items(items);
 
         Ok(BookmarksTable {
@@ -215,6 +231,7 @@ impl BookmarksTable {
             registry,
             table,
             filter: None,
+            sort_cfg: None,
             columns: default_columns,
         })
     }

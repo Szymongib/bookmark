@@ -1,5 +1,6 @@
 use crate::filters::Filter;
 use crate::import::v0_0_x;
+use crate::sort::SortConfig;
 use crate::types::URLRecord;
 
 pub mod filters;
@@ -9,6 +10,7 @@ pub mod types;
 
 pub mod import;
 
+pub mod sort;
 mod util;
 
 pub trait Registry: RegistryReader + Importer {
@@ -53,6 +55,7 @@ pub trait RegistryReader {
     fn list_urls(
         &self,
         filter: Option<&dyn Filter>,
+        sort: Option<SortConfig>,
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>>;
 
     fn get_url(&self, id: &str) -> Result<Option<URLRecord>, Box<dyn std::error::Error>>;

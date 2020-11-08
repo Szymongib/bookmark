@@ -7,6 +7,8 @@ use bookmark_lib::storage::FileStorage;
 use bookmark_lib::Registry;
 
 use bookmark_lib::filters::{Filter, GroupFilter, NoopFilter, TagsFilter};
+use bookmark_lib::sort::{SortBy, SortConfig};
+use std::str::FromStr;
 
 mod cmd;
 mod display;
@@ -84,6 +86,12 @@ fn main() {
                 .long("tag")
                 .takes_value(true)
                 .multiple(true)
+                .number_of_values(1))
+            .arg(Arg::with_name("sort")
+                .help("Specifies to sort bookmarks by one of the columns: [name, url, group]")
+                .required(false)
+                .long("sort")
+                .takes_value(true)
                 .number_of_values(1))
         )
         .subcommand(SubCommand::with_name(cmd::DELETE_SUB_CMD)
@@ -310,8 +318,16 @@ impl<T: Registry> Application<T> {
             })
             .unwrap_or(group_filter);
 
+        let sort_cfg = matches.value_of("sort").map(|val| {
+            let sort_by = SortBy::from_str(val).expect("Invalid sort column");
+            SortConfig::new_by(sort_by)
+        });
+
         // TODO: support output as json?
-        match self.registry.list_urls(Some(tags_filter.as_ref())) {
+        match self
+            .registry
+            .list_urls(Some(tags_filter.as_ref()), sort_cfg)
+        {
             Ok(urls) => {
                 display::display_urls(urls);
             }

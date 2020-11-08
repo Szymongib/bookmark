@@ -1,4 +1,5 @@
 use crate::filters::{Filter, NoopFilter};
+use crate::sort::{sort_urls, SortConfig};
 use crate::storage::FileStorage;
 use crate::types::URLRecord;
 use crate::util::create_temp_file;
@@ -133,16 +134,19 @@ impl<T: Repository> RegistryReader for URLRegistry<T> {
     fn list_urls(
         &self,
         filter: Option<&dyn Filter>,
+        sort: Option<SortConfig>,
     ) -> Result<Vec<URLRecord>, Box<dyn std::error::Error>> {
         let urls = self.storage.list()?;
 
         let filter = filter.unwrap_or_else(|| self.default_filter.as_ref());
 
-        Ok(urls
-            .iter()
-            .filter(|url| filter.matches(*url))
-            .map(|u| u.to_owned())
-            .collect())
+        let urls = urls.into_iter().filter(|url| filter.matches(url)).collect();
+
+        if let Some(sort_cfg) = sort {
+            return Ok(sort_urls(urls, &sort_cfg));
+        }
+
+        Ok(urls)
     }
 
     fn get_url(&self, id: &str) -> Result<Option<URLRecord>, Box<dyn Error>> {
@@ -172,6 +176,7 @@ mod test {
     use crate::filters::Filter;
     use crate::filters::{GroupFilter, TagsFilter};
     use crate::registry::URLRegistry;
+    use crate::sort::{SortBy, SortConfig};
     use crate::storage::FileStorage;
     use crate::types::URLRecord;
     use crate::util::create_temp_file;
@@ -240,17 +245,25 @@ mod test {
         assert!(groups.contains(&"test".to_string()));
 
         // List all URLs
-        println!("List groups...");
-        let urls = registry.list_urls(None).expect("Failed to list urls");
-
+        println!("List urls...");
+        let urls = registry.list_urls(None, None).expect("Failed to list urls");
         assert_urls_match(&all_urls, &urls);
+
+        println!("List sorted by name...");
+        let sort_cfg = SortConfig::new_by(SortBy::Name);
+        let urls = registry
+            .list_urls(None, Some(sort_cfg))
+            .expect("Failed to list sorted urls");
+        assert_eq!(urls[0].name, "test1");
+        assert_eq!(urls[1].name, "test_group");
+        assert_eq!(urls[2].name, "test_tagged");
 
         println!("List URLs from specific group...");
         let group_to_filter = "test";
         let group_filter: Box<dyn Filter> = Box::new(GroupFilter::new(group_to_filter.clone()));
 
         let urls = registry
-            .list_urls(Some(group_filter.as_ref()))
+            .list_urls(Some(group_filter.as_ref()), None)
             .expect("Failed to list urls");
         assert_eq!(1, urls.len());
 
@@ -272,7 +285,7 @@ mod test {
         let tags_filter: Box<dyn Filter> = Box::new(TagsFilter::new(tags_to_filter.clone()));
 
         let urls = registry
-            .list_urls(Some(tags_filter.as_ref()))
+            .list_urls(Some(tags_filter.as_ref()), None)
             .expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
@@ -284,13 +297,13 @@ mod test {
 
         let deleted = registry.delete(&url_0_id).expect("Failed to delete URL");
         assert!(deleted);
-        let urls = registry.list_urls(None).expect("Failed to list urls");
+        let urls = registry.list_urls(None, None).expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
         println!("Not delete if URL does not exist...");
         let deleted = registry.delete(&url_0_id).expect("Failed to delete URL");
         assert!(!deleted);
-        let urls = registry.list_urls(None).expect("Failed to list urls");
+        let urls = registry.list_urls(None, None).expect("Failed to list urls");
         assert_eq!(2, urls.len());
 
         let id = urls[0].id.clone();
