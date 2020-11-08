@@ -174,16 +174,8 @@ impl BookmarksTable {
         let sort_cfg = if args.is_empty() {
             SortConfig::new_by(SortBy::Name)
         } else {
-            match args[0].to_lowercase().as_str() {
-                "name" => SortConfig::new_by(SortBy::Name),
-                "url" => SortConfig::new_by(SortBy::URL),
-                "group" => SortConfig::new_by(SortBy::Group),
-                _ => {
-                    return Err(From::from(
-                        "invalid sort column, must be one of: [name, url, group]",
-                    ))
-                }
-            }
+            let sort_by = SortBy::from_str(args[0])?;
+            SortConfig::new_by(sort_by)
         };
         self.sort_cfg = Some(sort_cfg);
 
