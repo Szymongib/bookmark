@@ -1,7 +1,7 @@
 pub mod add;
 
 use std::io;
-use std::io::{stdout, Write};
+use std::io::Write;
 
 pub(crate) fn require_string(
     req: &str,
@@ -26,7 +26,7 @@ pub(crate) fn ask_for_string(
     }
 
     print!("{}: ", input_req);
-    let _ = stdout().flush()?;
+    let _ = io::stdout().flush()?;
 
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer)?;
