@@ -18,3 +18,5 @@ mod fake;
 mod bookmarks_table;
 
 pub mod interactive_mode;
+
+pub mod subcommand;

@@ -243,7 +243,7 @@ mod test {
     #[test]
     fn test_command_with_no_args() {
         let mut command_module = Command::new().expect("Failed to create command module");
-        let (registry, _) = URLRegistry::with_temp_file("command_test1.json")
+        let (registry, _) = URLRegistry::with_temp_file("command_test2.json")
             .expect("Failed to initialize Registry");
         registry
             .create("xyz", "url_xyz", None, vec![])
@@ -280,7 +280,7 @@ mod test {
     #[test]
     fn test_exec_display_error_message_when_cmd_failed() {
         let mut command_module = Command::new().expect("Failed to create command module");
-        let (registry, _) = URLRegistry::with_temp_file("command_test2.json")
+        let (registry, _) = URLRegistry::with_temp_file("command_test3.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
 
@@ -310,7 +310,7 @@ mod test {
     #[test]
     fn test_do_nothing_when_input_empty() {
         let mut command_module = Command::new().expect("Failed to create command module");
-        let (registry, _) = URLRegistry::with_temp_file("command_test2.json")
+        let (registry, _) = URLRegistry::with_temp_file("command_test4.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
 
@@ -330,7 +330,7 @@ mod test {
     #[test]
     fn test_handle_input_write_command() {
         let mut command_module = Command::new().expect("Failed to create command module");
-        let (registry, _) = URLRegistry::with_temp_file("command_test3.json")
+        let (registry, _) = URLRegistry::with_temp_file("command_test5.json")
             .expect("Failed to initialize Registry");
         let events = Events::new();
 

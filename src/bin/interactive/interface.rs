@@ -238,10 +238,10 @@ mod test {
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
             URLRecord::new("one", "one", "one", vec!["tag", "with space"]),
-            URLRecord::new("two", "two", "two", vec![]),
-            URLRecord::new("three", "three", "three", vec![]),
+            URLRecord::new("two", "two", "two", Vec::<String>::new()),
+            URLRecord::new("three", "three", "three", Vec::<String>::new()),
             URLRecord::new("four", "four", "four", vec!["tag"]),
-            URLRecord::new("five", "five", "five", vec![]),
+            URLRecord::new("five", "five", "five", Vec::<String>::new()),
         ]
     }
 
