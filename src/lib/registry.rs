@@ -411,7 +411,12 @@ mod test {
                 "projects",
                 vec!["rust", "repo"],
             ),
-            URLRecord::new("https://github.com", "GitHub.com", "websites", Vec::<String>::new()),
+            URLRecord::new(
+                "https://github.com",
+                "GitHub.com",
+                "websites",
+                Vec::<String>::new(),
+            ),
             URLRecord::new(
                 "https://youtube.com",
                 "YouTube",
@@ -424,7 +429,12 @@ mod test {
                 "dev",
                 vec!["help", "dev"],
             ),
-            URLRecord::new("https://reddit.com", "Reddit", "entertainment", Vec::<String>::new()),
+            URLRecord::new(
+                "https://reddit.com",
+                "Reddit",
+                "entertainment",
+                Vec::<String>::new(),
+            ),
         ];
 
         let old_path = setup_old_urls_file();

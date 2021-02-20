@@ -2,7 +2,7 @@ extern crate clap;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 use crate::interactive::interactive_mode::enter_interactive_mode;
-use crate::interactive::subcommand::{add};
+use crate::interactive::subcommand::add;
 
 use bookmark_lib::registry::{URLRegistry, DEFAULT_GROUP};
 use bookmark_lib::storage::FileStorage;
@@ -297,7 +297,12 @@ impl<T: Registry> Application<T> {
             add_data = add::interactive_add(add_data).expect("err");
         }
 
-        match self.registry.create(&add_data.name, &add_data.url, Some(&add_data.group), add_data.tags) {
+        match self.registry.create(
+            &add_data.name,
+            &add_data.url,
+            Some(&add_data.group),
+            add_data.tags,
+        ) {
             Ok(url_record) => println!(
                 "Added url '{}': '{}' to '{}' group",
                 url_record.name, url_record.url, url_record.group

@@ -103,7 +103,12 @@ mod test {
             URLRecord::new("https://www.cbbc", "FOUR", "abcd", vec!["tag"]),
             URLRecord::new("baobab", "five", "GROUP", Vec::<String>::new()),
             URLRecord::new("http://xyz", "six", "one", Vec::<String>::new()),
-            URLRecord::new("http://YellowSubmarine", "seven", "GROUP", Vec::<String>::new()),
+            URLRecord::new(
+                "http://YellowSubmarine",
+                "seven",
+                "GROUP",
+                Vec::<String>::new(),
+            ),
         ]
     }
 
