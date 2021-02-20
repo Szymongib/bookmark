@@ -9,6 +9,8 @@ use std::path::PathBuf;
 
 // TODO: consider introducing custom errors
 
+pub const DEFAULT_GROUP: &str = "default";
+
 pub struct URLRegistry<T: Repository> {
     storage: T,
     default_filter: Box<dyn Filter>,
@@ -44,9 +46,9 @@ impl<T: Repository> Registry for URLRegistry<T> {
         name: &str,
         url: &str,
         group: Option<&str>,
-        tags: Vec<&str>,
+        tags: Vec<String>,
     ) -> Result<URLRecord, Box<dyn std::error::Error>> {
-        let group = group.unwrap_or("default");
+        let group = group.unwrap_or(DEFAULT_GROUP);
 
         let record = URLRecord::new(url, name, group, tags);
 
@@ -161,7 +163,7 @@ impl<T: Repository> Importer for URLRegistry<T> {
         let urls: Vec<URLRecord> = old_urls
             .iter()
             .map(|u| {
-                let tags = u.tags.iter().map(|(t, _)| t.as_str()).collect();
+                let tags = u.tags.clone().into_iter().map(|(t, _)| t).collect();
                 URLRecord::new(&u.url, &u.name, &u.group, tags)
             })
             .collect();
@@ -230,7 +232,7 @@ mod test {
                     tu.name.clone(),
                     tu.url.clone(),
                     tu.group.clone(),
-                    tu.tags.clone(),
+                    tu.tags.iter().map(|s| s.to_string()).collect(),
                 )
                 .expect("Failed to add URL record");
             assert_eq!(tu.name, result.name);
@@ -409,7 +411,7 @@ mod test {
                 "projects",
                 vec!["rust", "repo"],
             ),
-            URLRecord::new("https://github.com", "GitHub.com", "websites", vec![]),
+            URLRecord::new("https://github.com", "GitHub.com", "websites", Vec::<String>::new()),
             URLRecord::new(
                 "https://youtube.com",
                 "YouTube",
@@ -422,7 +424,7 @@ mod test {
                 "dev",
                 vec!["help", "dev"],
             ),
-            URLRecord::new("https://reddit.com", "Reddit", "entertainment", vec![]),
+            URLRecord::new("https://reddit.com", "Reddit", "entertainment", Vec::<String>::new()),
         ];
 
         let old_path = setup_old_urls_file();

@@ -2,7 +2,9 @@ extern crate clap;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 use crate::interactive::interactive_mode::enter_interactive_mode;
-use bookmark_lib::registry::URLRegistry;
+use crate::interactive::subcommand::{add};
+
+use bookmark_lib::registry::{URLRegistry, DEFAULT_GROUP};
 use bookmark_lib::storage::FileStorage;
 use bookmark_lib::Registry;
 
@@ -46,12 +48,12 @@ fn main() {
             .about("Add bookmark URL")
             .arg(Arg::with_name("name")
                 .help("Bookmark name")
-                .required(true)
+                // .required(true)
                 .index(1)
                 )
             .arg(Arg::with_name("url")
                 .help("URL address")
-                .required(true)
+                // .required(true)
                 .index(2)
             )
             .arg(Arg::with_name("tag")
@@ -62,6 +64,7 @@ fn main() {
                 .takes_value(true)
                 .multiple(true)
                 .number_of_values(1)
+                // TODO: add validator to exclude forbidden chars (like ,)
             )
             .arg(Arg::with_name("group")
                 .help("Group to which URL should be assigned")
@@ -282,20 +285,26 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn add_sub_cmd(&self, matches: &ArgMatches) {
-        let url_name = matches.value_of("name").expect("Error getting URL name");
-        let url = matches.value_of("url").expect("Error getting URL");
-        let group: Option<&str> = matches.value_of("group");
+        let url_name = matches.value_of("name");
+        let url = matches.value_of("url");
+        let group: &str = matches.value_of("group").unwrap_or(DEFAULT_GROUP);
 
         let tags = get_multiple_values(matches, "tag").unwrap_or_default();
 
-        match self.registry.create(url_name, url, group, tags) {
+        let mut add_data = add::AddData::construct(url_name, url, group, &tags);
+
+        if url_name.is_none() || url.is_none() {
+            add_data = add::interactive_add(add_data).expect("err");
+        }
+
+        match self.registry.create(&add_data.name, &add_data.url, Some(&add_data.group), add_data.tags) {
             Ok(url_record) => println!(
-                "Added url '{}': '{}' to {}' group",
+                "Added url '{}': '{}' to '{}' group",
                 url_record.name, url_record.url, url_record.group
             ),
             Err(why) => println!(
                 "Error adding url '{}' with name '{}': {}",
-                url, url_name, why
+                add_data.url, add_data.name, why
             ),
         }
     }

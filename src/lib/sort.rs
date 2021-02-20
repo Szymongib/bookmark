@@ -98,12 +98,12 @@ mod test {
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
             URLRecord::new("http://abcd", "one", "one", vec!["tag", "with space"]),
-            URLRecord::new("https://aaaa", "Two", "two", vec![]),
-            URLRecord::new("http://www.ccc", "three", "one", vec![]),
+            URLRecord::new("https://aaaa", "Two", "two", Vec::<String>::new()),
+            URLRecord::new("http://www.ccc", "three", "one", Vec::<String>::new()),
             URLRecord::new("https://www.cbbc", "FOUR", "abcd", vec!["tag"]),
-            URLRecord::new("baobab", "five", "GROUP", vec![]),
-            URLRecord::new("http://xyz", "six", "one", vec![]),
-            URLRecord::new("http://YellowSubmarine", "seven", "GROUP", vec![]),
+            URLRecord::new("baobab", "five", "GROUP", Vec::<String>::new()),
+            URLRecord::new("http://xyz", "six", "one", Vec::<String>::new()),
+            URLRecord::new("http://YellowSubmarine", "seven", "GROUP", Vec::<String>::new()),
         ]
     }
 

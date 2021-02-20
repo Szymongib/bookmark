@@ -232,7 +232,7 @@ mod test {
                 "super group",
                 vec!["pop", "with-dash"],
             ),
-            URLRecord::new("http://another.com", "poppy", "group", vec![]),
+            URLRecord::new("http://another.com", "poppy", "group", Vec::<String>::new()),
         ];
 
         struct TestCase {

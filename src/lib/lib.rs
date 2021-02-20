@@ -19,7 +19,7 @@ pub trait Registry: RegistryReader + Importer {
         name: &str,
         url: &str,
         group: Option<&str>,
-        tags: Vec<&str>,
+        tags: Vec<String>,
     ) -> Result<URLRecord, Box<dyn std::error::Error>>;
 
     fn add(&self, record: URLRecord) -> Result<URLRecord, Box<dyn std::error::Error>>;

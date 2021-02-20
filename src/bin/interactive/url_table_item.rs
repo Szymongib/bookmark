@@ -117,7 +117,7 @@ mod test {
                 columns: None,
             },
             TestCase {
-                url_record: URLRecord::new("url4", "name4", "group4", vec![]),
+                url_record: URLRecord::new("url4", "name4", "group4", Vec::<String>::new()),
                 expected_row: to_string(vec!["name4", "url4", "group4", ""]),
                 columns: None,
             },

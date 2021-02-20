@@ -98,9 +98,9 @@ mod test {
                 "two",
                 "two long name wow such name",
                 "two_long_group",
-                vec![],
+                Vec::<String>::new(),
             ),
-            URLRecord::new("three", "three", "three", vec![]),
+            URLRecord::new("three", "three", "three", Vec::<String>::new()),
             URLRecord::new(
                 "four.com",
                 "four mid len",

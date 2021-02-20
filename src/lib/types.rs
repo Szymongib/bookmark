@@ -39,10 +39,10 @@ pub struct URLRecord {
 }
 
 impl URLRecord {
-    pub fn new(url: &str, name: &str, group: &str, tags_vec: Vec<&str>) -> URLRecord {
+    pub fn new<S: Into<String>>(url: &str, name: &str, group: &str, tags_vec: Vec<S>) -> URLRecord {
         let mut tags: BTreeMap<String, bool> = BTreeMap::new();
         for t in tags_vec {
-            tags.insert(t.to_string(), true);
+            tags.insert(t.into(), true);
         }
 
         let random_bytes = rand::thread_rng().gen::<[u8; 8]>();
