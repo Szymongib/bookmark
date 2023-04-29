@@ -1,4 +1,4 @@
-use std::{path::PathBuf, collections::HashMap};
+use std::{path::PathBuf, collections::HashMap, io::Write};
 
 use crate::import::{brave::bookmarks::BookmarkEntry, v0_0_x::URLRecord};
 
@@ -21,7 +21,8 @@ pub fn import_from_bookmarks(bookmarks_path: &PathBuf) -> Result<Vec<URLRecord>,
 fn import_from_folder(folder: &str, entries: &[BookmarkEntry]) -> Vec<URLRecord> {
     let mut urls_to_import = vec![];
     
-    println!("Do you want to import bookmarks from folder '{}'? (y/n)" , folder);
+    print!("Do you want to import bookmarks from folder '{}'? (y/n): " , folder);
+    std::io::stdout().flush().unwrap();
     let import_folder = read_confirmation();
     if !import_folder {
         return urls_to_import;
@@ -39,7 +40,8 @@ fn import_from_entry(entry: &BookmarkEntry, parent_folder: &str) -> Vec<URLRecor
     
     match entry {
         BookmarkEntry::URL(url) => {
-            println!("Do you want to import bookmark '{}' ({})? (y/n)" , url.name, url.url);
+            print!("Do you want to import bookmark '{}' ({})? (y/n): " , url.name, url.url);
+            std::io::stdout().flush().unwrap();
             let import_url = read_confirmation();
 
             // TODO: import URL
