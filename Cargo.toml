@@ -25,4 +25,6 @@ open = "1"
 hex = "0.4"
 rand = "0.7.3"
 regex = "1"
+thiserror = "1.0.40"
+home = "0.5.5"
 

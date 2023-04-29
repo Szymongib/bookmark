@@ -1,4 +1,5 @@
 extern crate clap;
+use bookmark_lib::import::brave;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 use crate::interactive::interactive_mode::enter_interactive_mode;
@@ -10,6 +11,7 @@ use bookmark_lib::Registry;
 
 use bookmark_lib::filters::{Filter, GroupFilter, NoopFilter, TagsFilter};
 use bookmark_lib::sort::{SortBy, SortConfig};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 mod cmd;
@@ -25,6 +27,9 @@ const VERSION_V0_0_X: &str = " v0.0.x";
 fn main() {
     let urls_v0_0_x_default_full_path = &path_with_homedir(URLS_V0_0_X_DEFAULT_FILE_PATH)
         .expect("Failed to get default v0_0_x path");
+
+    // TODO: Do it differently, with static strings and home env transformation
+    let default_brave_bookmarks_path = brave::default_brookmarks_file_path();
 
     let matches = App::new("Bookmark")
         .version("0.0.1")
@@ -172,7 +177,21 @@ fn main() {
             )
         )
         .subcommand(SubCommand::with_name(cmd::IMPORT_SUB_CMD)
-            .about("Imports bookmarks from the previous versions")
+            .about("Imports bookmarks from the previous versions or browsers")
+            .subcommand(SubCommand::with_name(cmd::IMPORT_BRAVE_CMD)
+                .about("Import bookmarks from Brave browser")
+                .arg(Arg::with_name("interavtive")
+                    .help("Interactive mode that lets you decide which folders and bookmarks to import as well as changing names, group, tags. This is the only supported way for now.")
+                    .required(true)
+                    .long("interactive")
+                )
+                .arg(Arg::with_name("bookmarks-file")
+                    .help("Path to the file storing bookmarks from Brave browser")
+                    .required(false)
+                    .takes_value(true)
+                    .default_value(&default_brave_bookmarks_path)
+                )
+            )
             .arg(Arg::with_name("version")
                 .help(format!("Version from which URLs should be imported. One of: {}", VERSION_V0_0_X).as_str())
                 .required(false)
@@ -365,6 +384,20 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn import_sub_cmd(&self, matches: &ArgMatches) {
+        match matches.subcommand() {
+            (cmd::IMPORT_BRAVE_CMD, Some(group_matches)) => {
+                let path = group_matches.value_of("bookmarks-file")
+                    .expect("bookmarks path not provided");
+                self.import_from_brave(&PathBuf::from(path));
+                println!("Import from Brave not implemented yet");
+                return 
+            },
+            ("", None) => {
+                // passthrough
+            }
+            _ => println!("Error: subcommand not found"),
+        }
+
         let version = matches
             .value_of("version")
             .expect("Version from which to import not provided");
@@ -384,6 +417,15 @@ impl<T: Registry> Application<T> {
                 println!("Error importing bookmarks, version '{}' not recognized. Version have to be one of '{}'", v, VERSION_V0_0_X);
             }
         }
+    }
+
+    fn import_from_brave(&self, path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        // let bookmarks = brave::import::read_bookmarks(path)?;
+
+        let urls = brave::import::import_from_bookmarks(path)?;
+        println!("Imported {} urls", urls.len());
+
+        Ok(())
     }
 
     pub fn tag_sub_cmd(&self, matches: &ArgMatches) {

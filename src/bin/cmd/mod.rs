@@ -14,3 +14,5 @@ pub const CHANGE_NAME_SUB_CMD_ALIAS: &str = "chname";
 pub const CHANGE_URL_SUB_CMD: &str = "chu";
 pub const CHANGE_URL_SUB_CMD_ALIAS: &str = "churl";
 pub const SORT_CMD: &str = "sort";
+
+pub const IMPORT_BRAVE_CMD: &str = "brave";
