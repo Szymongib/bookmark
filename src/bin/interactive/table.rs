@@ -14,7 +14,7 @@ impl<T> StatefulTable<T> {
     pub fn with_items(items: Vec<T>) -> StatefulTable<T> {
         StatefulTable {
             state: TableState::default(),
-            items,
+            items: items,
         }
     }
 

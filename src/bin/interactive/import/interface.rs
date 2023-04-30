@@ -46,6 +46,8 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
         let columns = self.table.columns().clone();
         let table = self.table.table();
     
+            // TODO: different style for URLs and folders
+            // TODO: Sort folders to the top?
         let rows = table
             .items
             .iter()
@@ -91,6 +93,10 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
                     }
                     Key::Char('\n') => {
                         self.table.open()?;
+                    }
+                    // TODO: how? How would vim do it?
+                    Key::Backspace => {
+                        self.table.exit_folder()?;
                     }
                     // Key::Char('i') => {
                     //     self.toggle_ids_display()?;

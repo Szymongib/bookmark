@@ -32,9 +32,18 @@ impl From<ImportItem> for ImportTableItem {
     }
 }
 
+impl ImportTableItem {
+    pub fn select(&mut self, selected: bool) {
+        match self {
+            Self::URL(url) => url.select(selected),
+            Self::Folder(_) => (),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ImportURLTableItem {
-    inner: ImportURLItem,
+    pub inner: ImportURLItem,
     row: Vec<String>,
     selected: bool,
 }
@@ -56,6 +65,11 @@ impl ImportURLTableItem {
 
     fn row(&self) -> &Vec<String> {
         &self.row
+    }
+
+    pub fn select(&mut self, selected: bool) {
+        self.selected = selected;
+        self.row[3] = if self.selected { "[x]".to_string() } else { "[ ]".to_string() };
     }
 }
 
@@ -100,6 +114,7 @@ impl TableItem for ImportTableItem {
         }
     }
 }
+
 
 
 // impl URLItem {

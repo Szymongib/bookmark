@@ -1,4 +1,4 @@
-use std::sync::mpsc;
+use std::{sync::mpsc, collections::HashSet};
 
 use bookmark_lib::{import::{ImportItem}, Registry, filters::Filter};
 use termion::event::{Key};
@@ -16,16 +16,20 @@ pub struct ImportsTable {
     columns: Vec<String>,
     // filter: Option<Box<dyn Filter>>,
     // sort_cfg: Option<SortConfig>,
+
+    tables_stack: Vec<StatefulTable<ImportTableItem>>,
+    selected_imports: HashSet<String>,
 }
 
 impl ImportsTable {
     pub fn new(
         sender: mpsc::Sender<Event<Key>>,
         registry: Box<dyn Registry>,
-        imports: Vec<ImportItem>,
+        mut imports: Vec<ImportItem>,
     ) -> Result<ImportsTable, Box<dyn std::error::Error>> {
         let default_columns = vec!["Name".to_string(), "URL".to_string()];
 
+        imports.sort();
         let table_items: Vec<ImportTableItem> = imports.into_iter().map(|imp| imp.into()).collect();
 
         let table = StatefulTable::with_items(table_items);
@@ -37,10 +41,13 @@ impl ImportsTable {
         Ok(ImportsTable {
             signal_sender: sender,
             registry,
-            table,
+            table: table,
             // filter: None,
             // sort_cfg: None,
             columns: default_columns,
+
+            tables_stack: vec![],
+            selected_imports: HashSet::new(),
         })
     }
 
@@ -82,16 +89,38 @@ impl ImportsTable {
         match self.table.state.selected() {
             Some(id) => match &mut self.table.items[id] {
                 ImportTableItem::URL(url) => {
-                    // TODO: select URL
+                    let import_id = url.inner.id.to_string();
+                    if self.selected_imports.contains(&import_id) {
+                        self.selected_imports.remove(&import_id);
+                        self.table.items[id].select(false);
+                    } else {
+                        self.selected_imports.insert(import_id);
+                        self.table.items[id].select(true);
+                    }
                     Ok(())
                 },
                 ImportTableItem::Folder(folder) => {
-                    self.table = StatefulTable::with_items(
-                        folder.inner.children.clone()
+                    // We create new table with items from folder and replace
+                    // it in current view, moving the old one to stack to 
+                    // reclaim it later if user goes back.
+                    let mut new_items = folder.inner.children.clone();
+                    new_items.sort();
+                    let new_table = StatefulTable::with_items(
+                            new_items
                             .into_iter()
-                            .map(|imp| imp.into())
+                            .map(|imp| {
+                                let mut item: ImportTableItem = imp.into();
+                                if self.selected_imports.contains(&item.id()) {
+                                    item.select(true);
+                                }
+                                item
+                            })
                             .collect()
                     );
+
+                    let old_table = std::mem::replace(&mut self.table, new_table);
+
+                    self.tables_stack.push(old_table);
                     Ok(())
                 },
             },
@@ -99,14 +128,11 @@ impl ImportsTable {
         }
     }
 
-    fn refresh_items(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // let urls = match &self.filter {
-        //     Some(f) => self.registry.list_urls(Some(f.as_ref()), self.sort_cfg)?,
-        //     None => self.registry.list_urls(None, self.sort_cfg)?,
-        // };
+    pub fn exit_folder(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(table) = self.tables_stack.pop() {
+            self.table = table;
+        }
 
-        // self.table
-        //     .override_items(URLItem::from_vec(urls, Some(&self.columns)));
         Ok(())
     }
 

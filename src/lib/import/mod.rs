@@ -4,14 +4,33 @@ pub mod v0_0_x;
 
 pub mod brave;
 
+// TODO: Optionally I could sort by date?
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ImportItem {
     URL(ImportURLItem),
     Folder(ImportFolderItem)
     // visible: bool,
     // url: URLRecord,
     // row: Vec<String>,
+}
+
+impl Ord for ImportItem {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Sort Folders before URLs
+        match (self, other) {
+            (Self::URL(a), Self::URL(b)) => a.cmp(b),
+            (Self::Folder(a), Self::Folder(b)) => a.cmp(b),
+            (Self::URL(_), Self::Folder(_)) => std::cmp::Ordering::Greater,
+            (Self::Folder(_), Self::URL(_)) => std::cmp::Ordering::Less,
+        }
+    }
+}
+
+impl PartialOrd for ImportItem {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    } 
 }
 
 impl ImportItem {
@@ -24,11 +43,23 @@ impl ImportItem {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ImportURLItem {
     pub id: String,
     pub url: String,
     pub name: String,
+}
+
+impl Ord for ImportURLItem {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+
+impl PartialOrd for ImportURLItem {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    } 
 }
 
 impl ImportURLItem {
@@ -41,11 +72,23 @@ impl ImportURLItem {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ImportFolderItem {
     pub id: String,
     pub name: String,
     pub children: Vec<ImportItem>,
+}
+
+impl Ord for ImportFolderItem {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+
+impl PartialOrd for ImportFolderItem {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    } 
 }
 
 impl ImportFolderItem {
