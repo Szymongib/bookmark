@@ -13,6 +13,22 @@ const BOOKMARK_BAR_ROOT: &str = "bookmark_bar";
 pub type Bookmarks = HashMap<String, BookmarkEntry>;
 pub type ParsedBookmarks = HashMap<String, Result<BookmarkEntry, BraveImportError>>;
 
+// fn bookmarks_to_imports(bookmarks: Bookmarks) -> Vec<ImportTree> {
+//     let imports = bookmarks.iter().map(|(folder, entry)| {
+//         match entry {
+//             BookmarkEntry::URL(url) => {
+//                 ImportTree::URL(url.url.clone(), url.name.clone(), folder.clone())
+//             }
+//             BookmarkEntry::Folder(folder) => {
+//                 let children = bookmarks_to_imports(folder.children.clone());
+//                 ImportTree::Folder(folder.name.clone(), children)
+//             }
+//         }
+//     }).collect();
+
+//     imports
+// }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BookmarksData {
     pub checksum: String,

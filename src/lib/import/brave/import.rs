@@ -1,6 +1,6 @@
 use std::{path::PathBuf, collections::HashMap, io::Write};
 
-use crate::import::{brave::bookmarks::BookmarkEntry, v0_0_x::URLRecord};
+use crate::import::{brave::bookmarks::BookmarkEntry, v0_0_x::URLRecord, ImportItem, ImportURLItem};
 
 use super::{bookmarks::{BookmarksData, filter_bookmarks, Bookmarks}, BraveImportError};
 
@@ -18,15 +18,31 @@ pub fn import_from_bookmarks(bookmarks_path: &PathBuf) -> Result<Vec<URLRecord>,
     Ok(urls_to_import)
 }
 
+
+pub fn import_items_from_bookmarks(bookmarks_path: &PathBuf) -> Result<Vec<ImportItem>, BraveImportError> {
+    let bookmarks = read_bookmarks(bookmarks_path)?;
+
+    // TODO: the issue with that approach is if some validation during inserting
+    // fails, you loose all the work you have done...
+    let mut urls_to_import = vec![];
+
+    for (folder, entry) in bookmarks {
+        urls_to_import.push(import_items_from_folder(&folder, &vec![entry]));
+    }
+
+    Ok(urls_to_import)
+}
+
+
 fn import_from_folder(folder: &str, entries: &[BookmarkEntry]) -> Vec<URLRecord> {
     let mut urls_to_import = vec![];
     
-    print!("Do you want to import bookmarks from folder '{}'? (y/n): " , folder);
-    std::io::stdout().flush().unwrap();
-    let import_folder = read_confirmation();
-    if !import_folder {
-        return urls_to_import;
-    }
+    // print!("Do you want to import bookmarks from folder '{}'? (y/n): " , folder);
+    // std::io::stdout().flush().unwrap();
+    // let import_folder = read_confirmation();
+    // if !import_folder {
+        // return urls_to_import;
+    // }
 
     for entry in entries {
         urls_to_import.extend(import_from_entry(entry, folder));
@@ -40,18 +56,59 @@ fn import_from_entry(entry: &BookmarkEntry, parent_folder: &str) -> Vec<URLRecor
     
     match entry {
         BookmarkEntry::URL(url) => {
-            print!("Do you want to import bookmark '{}' ({})? (y/n): " , url.name, url.url);
-            std::io::stdout().flush().unwrap();
-            let import_url = read_confirmation();
+            // print!("Do you want to import bookmark '{}' ({})? (y/n): " , url.name, url.url);
+            // std::io::stdout().flush().unwrap();
+            // let import_url = read_confirmation();
 
-            // TODO: import URL
-            if import_url {
-                // TODO: some better import func
+            // // TODO: import URL
+            // if import_url {
+            //     // TODO: some better import func
                 urls_to_import.push(URLRecord { url: url.url.clone(), name: url.name.clone(), group: parent_folder.to_string(), tags: HashMap::new() });
-            }
+            // }
         }
         BookmarkEntry::Folder(folder) => {
             urls_to_import.extend(import_from_folder(&folder.name, &folder.children));
+        }
+    }
+
+    urls_to_import
+}
+
+fn import_items_from_folder(folder: &str, entries: &[BookmarkEntry]) -> ImportItem {
+    let mut urls_to_import = vec![];
+    
+    // print!("Do you want to import bookmarks from folder '{}'? (y/n): " , folder);
+    // std::io::stdout().flush().unwrap();
+    // let import_folder = read_confirmation();
+    // if !import_folder {
+        // return urls_to_import;
+    // }
+
+    for entry in entries {
+        urls_to_import.extend(import_items_from_entry(entry, folder));
+    }
+
+    ImportItem::new_folder(folder.to_string(), folder.to_string(), urls_to_import)
+}
+
+fn import_items_from_entry(entry: &BookmarkEntry, parent_folder: &str) -> Vec<ImportItem> {
+    let mut urls_to_import = vec![];
+    
+    match entry {
+        BookmarkEntry::URL(url) => {
+            // print!("Do you want to import bookmark '{}' ({})? (y/n): " , url.name, url.url);
+            // std::io::stdout().flush().unwrap();
+            // let import_url = read_confirmation();
+
+            // // TODO: import URL
+            // if import_url {
+            //     // TODO: some better import func
+                urls_to_import.push(ImportItem::new_url(url.id.clone(), url.url.clone(), url.name.clone()));
+            // }
+        }
+        BookmarkEntry::Folder(folder) => {
+            // urls_to_import.extend(import_items_from_folder(&folder.name, &folder.children));
+            urls_to_import.push(import_items_from_folder(&folder.name, &folder.children))
         }
     }
 

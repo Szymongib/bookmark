@@ -10,6 +10,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
+#[derive(Debug, Clone)]
 pub struct FileStorage {
     file_path: String,
 }

@@ -2,7 +2,7 @@ extern crate clap;
 use bookmark_lib::import::brave;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-use crate::interactive::interactive_mode::enter_interactive_mode;
+use crate::interactive::interactive_mode::{enter_interactive_mode, enter_interactive_import};
 use crate::interactive::subcommand::add;
 
 use bookmark_lib::registry::{URLRegistry, DEFAULT_GROUP};
@@ -233,7 +233,26 @@ fn main() {
             application.delete_sub_cmd(delete_matches);
         }
         (cmd::IMPORT_SUB_CMD, Some(import_matches)) => {
-            application.import_sub_cmd(import_matches);
+            match import_matches.subcommand() {
+                (cmd::IMPORT_BRAVE_CMD, Some(brave_matches)) => {
+                    let path = brave_matches.value_of("bookmarks-file")
+                        .expect("bookmarks path not provided");
+                    // self.import_from_brave(&PathBuf::from(path));
+                    
+                    let urls = brave::import::import_items_from_bookmarks(&PathBuf::from(path))
+                        .expect("failed to import from brave");
+                    println!("Imported {} urls", urls.len());
+            
+                    enter_interactive_import(application.registry, urls)
+                        .expect("failed to enter interactive import");
+            
+                    return 
+                },
+                ("", None) => {
+                    panic!("I broke it")
+                }
+                _ => println!("Error: subcommand not found"),
+            }
         }
         (cmd::TAG_SUB_CMD, Some(tag_matches)) => {
             application.tag_sub_cmd(tag_matches);
@@ -273,7 +292,7 @@ fn path_with_homedir(path: &str) -> Option<String> {
     }
 }
 
-struct Application<T: Registry> {
+struct Application<T: Registry + 'static> {
     registry: T,
 }
 
@@ -384,19 +403,19 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn import_sub_cmd(&self, matches: &ArgMatches) {
-        match matches.subcommand() {
-            (cmd::IMPORT_BRAVE_CMD, Some(group_matches)) => {
-                let path = group_matches.value_of("bookmarks-file")
-                    .expect("bookmarks path not provided");
-                self.import_from_brave(&PathBuf::from(path));
-                println!("Import from Brave not implemented yet");
-                return 
-            },
-            ("", None) => {
-                // passthrough
-            }
-            _ => println!("Error: subcommand not found"),
-        }
+        // match matches.subcommand() {
+        //     (cmd::IMPORT_BRAVE_CMD, Some(group_matches)) => {
+        //         let path = group_matches.value_of("bookmarks-file")
+        //             .expect("bookmarks path not provided");
+        //         self.import_from_brave(&PathBuf::from(path));
+        //         println!("Import from Brave not implemented yet");
+        //         return 
+        //     },
+        //     ("", None) => {
+        //         // passthrough
+        //     }
+        //     _ => println!("Error: subcommand not found"),
+        // }
 
         let version = matches
             .value_of("version")
@@ -419,14 +438,16 @@ impl<T: Registry> Application<T> {
         }
     }
 
-    fn import_from_brave(&self, path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        // let bookmarks = brave::import::read_bookmarks(path)?;
+    // fn import_from_brave(&self, path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    //     // let bookmarks = brave::import::read_bookmarks(path)?;
 
-        let urls = brave::import::import_from_bookmarks(path)?;
-        println!("Imported {} urls", urls.len());
+    //     let urls = brave::import::import_from_bookmarks(path)?;
+    //     println!("Imported {} urls", urls.len());
 
-        Ok(())
-    }
+    //     enter_interactive_import(self.registry.clone(), vec![])?;
+
+    //     Ok(())
+    // }
 
     pub fn tag_sub_cmd(&self, matches: &ArgMatches) {
         let id = matches

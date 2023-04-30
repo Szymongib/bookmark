@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 
 pub mod import;
-mod bookmarks;
+pub mod bookmarks;
 
 pub const DEFAULT_BOOKMARKS_PATH_MAC: &str = "Library/Application Support/BraveSoftware/Brave-Browser/Default/Bookmarks";
 

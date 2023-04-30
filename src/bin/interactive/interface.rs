@@ -16,6 +16,8 @@ use tui::style::{Color, Modifier, Style};
 use tui::widgets::{Block, Borders, Row, Table};
 use tui::Frame;
 
+use super::table_style::TableStyles;
+
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum InputMode {
     Normal,
@@ -40,17 +42,11 @@ pub struct Interface<B: tui::backend::Backend> {
     input_mode: InputMode,
 
     /// Styles used for displaying user interface
-    styles: Styles,
+    styles: TableStyles,
 
     cols_constraints: Vec<Constraint>,
 
     display_ids: bool,
-}
-
-struct Styles {
-    normal: Style,
-    selected: Style,
-    header: Style,
 }
 
 impl<B: tui::backend::Backend> Interface<B> {
@@ -71,15 +67,7 @@ impl<B: tui::backend::Backend> Interface<B> {
                 InputMode::Suppressed(SuppressedAction::Delete) => delete_mod,
                 InputMode::Command => command_mod
             ],
-            styles: Styles {
-                selected: Style::default()
-                    .fg(Color::Green)
-                    .add_modifier(Modifier::BOLD),
-                normal: Style::default().fg(Color::White),
-                header: Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            },
+            styles: TableStyles::default(),
 
             cols_constraints: default_columns_constraints(),
 
