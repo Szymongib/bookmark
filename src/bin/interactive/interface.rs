@@ -5,7 +5,7 @@ use crate::interactive::modules::command::Command;
 use crate::interactive::modules::delete::Delete;
 use crate::interactive::modules::help::HelpPanel;
 use crate::interactive::modules::search::Search;
-use crate::interactive::modules::Module;
+use crate::interactive::modules::BookmarksModule;
 use crate::interactive::table::TableItem;
 use crate::interactive::url_table_item::default_columns;
 use std::collections::HashMap;
@@ -57,7 +57,7 @@ pub struct Interface<B: tui::backend::Backend> {
     bookmarks_table: BookmarksTable,
 
     /// Interface modules
-    modules: HashMap<InputMode, Box<dyn Module<B>>>,
+    modules: HashMap<InputMode, Box<dyn BookmarksModule<B>>>,
 
     /// Current mode of input
     input_mode: InputMode,
@@ -74,10 +74,10 @@ impl<B: tui::backend::Backend> Interface<B> {
     pub(crate) fn new(
         bookmarks_table: BookmarksTable,
     ) -> Result<Interface<B>, Box<dyn std::error::Error>> {
-        let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
-        let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new(HELP_TEXT));
-        let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
-        let command_mod: Box<dyn Module<B>> = Box::new(Command::new()?);
+        let search_mod: Box<dyn BookmarksModule<B>> = Box::new(Search::new());
+        let help_mod: Box<dyn BookmarksModule<B>> = Box::new(HelpPanel::new(HELP_TEXT));
+        let delete_mod: Box<dyn BookmarksModule<B>> = Box::new(Delete::new());
+        let command_mod: Box<dyn BookmarksModule<B>> = Box::new(Command::new()?);
 
         Ok(Interface {
             bookmarks_table,

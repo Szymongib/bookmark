@@ -1,7 +1,7 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use crate::interactive::interface::InputMode;
-use crate::interactive::modules::{Draw, HandleInput, Module};
+use crate::interactive::modules::{Draw, HandleBookmarksInput, BookmarksModule};
 use std::error::Error;
 use termion::event::Key;
 use tui::backend::Backend;
@@ -14,9 +14,9 @@ pub(crate) struct Search {
     search_phrase: String,
 }
 
-impl<B: Backend> Module<B> for Search {}
+impl<B: Backend> BookmarksModule<B> for Search {}
 
-impl HandleInput for Search {
+impl HandleBookmarksInput for Search {
     fn try_activate(
         &mut self,
         input: Key,
@@ -112,7 +112,7 @@ mod test {
     use crate::interactive::event::Events;
     use crate::interactive::helpers::to_keys;
     use crate::interactive::modules::search::Search;
-    use crate::interactive::modules::HandleInput;
+    use crate::interactive::modules::HandleBookmarksInput;
     use bookmark_lib::registry::URLRegistry;
     use termion::event::Key;
 

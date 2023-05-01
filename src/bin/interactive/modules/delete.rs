@@ -1,6 +1,6 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
-use crate::interactive::modules::{Draw, HandleInput, Module};
+use crate::interactive::modules::{Draw, HandleBookmarksInput, BookmarksModule};
 use crate::interactive::widgets::rect::centered_fixed_rect;
 use bookmark_lib::types::URLRecord;
 use std::error::Error;
@@ -18,9 +18,9 @@ pub(crate) struct Delete {
     record: Option<URLRecord>,
 }
 
-impl<B: Backend> Module<B> for Delete {}
+impl<B: Backend> BookmarksModule<B> for Delete {}
 
-impl HandleInput for Delete {
+impl HandleBookmarksInput for Delete {
     fn try_activate(
         &mut self,
         input: Key,

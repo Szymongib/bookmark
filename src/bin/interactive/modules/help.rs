@@ -1,6 +1,7 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
+use crate::interactive::import::import::ImportsTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
-use crate::interactive::modules::{Draw, HandleInput, Module};
+use crate::interactive::modules::{Draw, HandleBookmarksInput, BookmarksModule};
 use crate::interactive::widgets::rect::centered_fixed_rect;
 use std::error::Error;
 use termion::event::Key;
@@ -11,24 +12,22 @@ use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Clear, Paragraph};
 use tui::Frame;
 
+use super::{HandleImportsInput, ImportsModule};
+
 pub(crate) struct HelpPanel {
     max_width: u16,
     help_text_spans: Vec<Spans<'static>>,
 }
 
-impl<B: Backend> Module<B> for HelpPanel {}
+impl<B: Backend> BookmarksModule<B> for HelpPanel {}
 
-impl HandleInput for HelpPanel {
+impl HandleBookmarksInput for HelpPanel {
     fn try_activate(
         &mut self,
         input: Key,
         _table: &mut BookmarksTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        if input != Key::Char('h') {
-            return Ok(None);
-        }
-
-        Ok(Some(InputMode::Suppressed(SuppressedAction::ShowHelp)))
+        self.try_activate(input)
     }
 
     fn handle_input(
@@ -36,17 +35,27 @@ impl HandleInput for HelpPanel {
         input: Key,
         _table: &mut BookmarksTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        match input {
-            Key::Esc | Key::Char('\n') | Key::Char('h') => {
-                return Ok(Some(InputMode::Normal));
-            }
-            Key::Char('q') => {
-                return Ok(Some(InputMode::Normal));
-            }
-            _ => {}
-        }
+        self.handle_input(input)
+    }
+}
 
-        Ok(None)
+impl<B: Backend> ImportsModule<B> for HelpPanel {}
+
+impl HandleImportsInput for HelpPanel {
+    fn try_activate(
+        &mut self,
+        input: Key,
+        _table: &mut ImportsTable,
+    ) -> Result<Option<InputMode>, Box<dyn Error>> {
+        self.try_activate(input)
+    }
+
+    fn handle_input(
+        &mut self,
+        input: Key,
+        _table: &mut ImportsTable,
+    ) -> Result<Option<InputMode>, Box<dyn Error>> {
+        self.handle_input(input)
     }
 }
 
@@ -65,6 +74,34 @@ impl HelpPanel {
             max_width,
             help_text_spans: help_text.lines().map(|l| Spans::from(l.to_owned())).collect(),
         }
+    }
+
+    fn try_activate(
+        &mut self,
+        input: Key,
+    ) -> Result<Option<InputMode>, Box<dyn Error>> {
+        if input != Key::Char('h') {
+            return Ok(None);
+        }
+
+        Ok(Some(InputMode::Suppressed(SuppressedAction::ShowHelp)))
+    }
+
+    fn handle_input(
+        &mut self,
+        input: Key,
+    ) -> Result<Option<InputMode>, Box<dyn Error>> {
+        match input {
+            Key::Esc | Key::Char('\n') | Key::Char('h') => {
+                return Ok(Some(InputMode::Normal));
+            }
+            Key::Char('q') => {
+                return Ok(Some(InputMode::Normal));
+            }
+            _ => {}
+        }
+
+        Ok(None)
     }
 
     // TODO: consider using consts from cmd - or embedding docs?

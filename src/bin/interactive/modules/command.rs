@@ -1,7 +1,7 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use crate::interactive::interface::InputMode;
-use crate::interactive::modules::{Draw, HandleInput, Module};
+use crate::interactive::modules::{Draw, HandleBookmarksInput, BookmarksModule};
 use regex::Regex;
 use std::error::Error;
 use termion::event::Key;
@@ -21,9 +21,9 @@ pub(crate) struct Command {
     args_regex: Regex,
 }
 
-impl<B: Backend> Module<B> for Command {}
+impl<B: Backend> BookmarksModule<B> for Command {}
 
-impl HandleInput for Command {
+impl HandleBookmarksInput for Command {
     fn try_activate(
         &mut self,
         input: Key,
@@ -201,7 +201,7 @@ mod test {
     use crate::interactive::helpers::to_keys;
     use crate::interactive::interface::InputMode;
     use crate::interactive::modules::command::{Command, DEFAULT_INFO_MESSAGE};
-    use crate::interactive::modules::HandleInput;
+    use crate::interactive::modules::HandleBookmarksInput;
     use bookmark_lib::registry::URLRegistry;
     use bookmark_lib::Registry;
     use termion::event::Key;
