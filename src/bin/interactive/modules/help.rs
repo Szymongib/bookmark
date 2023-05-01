@@ -11,7 +11,10 @@ use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Clear, Paragraph};
 use tui::Frame;
 
-pub(crate) struct HelpPanel {}
+pub(crate) struct HelpPanel {
+    max_width: u16,
+    help_text_spans: Vec<Spans<'static>>,
+}
 
 impl<B: Backend> Module<B> for HelpPanel {}
 
@@ -56,34 +59,17 @@ impl<B: Backend> Draw<B> for HelpPanel {
 }
 
 impl HelpPanel {
-    pub fn new() -> HelpPanel {
-        HelpPanel {}
+    pub fn new(help_text: &'static str) -> HelpPanel {
+        let max_width = help_text.lines().map(|l| l.len()).max().unwrap_or_default() as u16;
+        HelpPanel {
+            max_width,
+            help_text_spans: help_text.lines().map(|l| Spans::from(l.to_owned())).collect(),
+        }
     }
 
     // TODO: consider using consts from cmd - or embedding docs?
     fn show_help_popup<B: Backend>(&self, f: &mut Frame<B>) {
-        let text = vec![
-            "Action               Description",
-            "'ENTER'            | open bookmarked URL",
-            "'/' or 'CTRL + F'  | search for URLs",
-            "'d'                | delete URL",
-            "'i'                | show/hide ids",
-            "'q'                | exit interactive mode",
-            "':'                | go to command mode",
-            "",
-            "",
-            "Command                Alias     Description",
-            "':tag <TAG_NAME>'    |         | add tag <TAG_NAME> to selected bookmark",
-            "':untag <TAG_NAME>'  |         | remove tag <TAG_NAME> from selected bookmark",
-            "':chgroup <GROUP>'   | chg     | change group to <GROUP> for selected bookmark",
-            "':chname <NAME>'     | chn     | change name to <NAME> for selected bookmark",
-            "':churl <URL>'       | chu     | change url to <URL> for selected bookmark",
-            "':sort [SORT_BY]'    |         | sort bookmarks by one of: [name, url, group]",
-            "':q'                 | quit    | exit interactive mode",
-            "",
-        ];
-        let max_width = text.iter().map(|t| t.len()).max().unwrap_or_default() as u16;
-        let spans: Vec<Spans> = text.iter().map(|t| Spans::from(t.to_owned())).collect();
+        // let spans: Vec<Spans> = text.iter().map(|t| Spans::from(t.to_owned())).collect();
 
         let block = Block::default()
             .borders(Borders::ALL)
@@ -93,8 +79,8 @@ impl HelpPanel {
                 Style::default().add_modifier(Modifier::BOLD),
             ));
 
-        let area = centered_fixed_rect(max_width + 4, text.len() as u16 + 2, f.size());
-        let paragraph = Paragraph::new(spans)
+        let area = centered_fixed_rect(self.max_width + 4, self.help_text_spans.len() as u16 + 2, f.size());
+        let paragraph = Paragraph::new(self.help_text_spans.clone())
             .style(Style::default().bg(Color::Black).fg(Color::White))
             .block(block)
             .alignment(Alignment::Left);

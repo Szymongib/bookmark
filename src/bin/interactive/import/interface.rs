@@ -1,9 +1,9 @@
-use std::error::Error;
+use std::{error::Error, collections::HashMap};
 
 use termion::event::Key;
 use tui::{layout::{Layout, Direction, Constraint}, Frame, widgets::{Row, Table, Block, Borders}, style::Color};
 
-use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles};
+use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::InputMode, modules::{Module, help::HelpPanel}};
 
 use super::import::ImportsTable;
 
@@ -13,17 +13,23 @@ pub struct ImportInterface<B: tui::backend::Backend> {
     table: ImportsTable,
     styles: TableStyles,
 
-    _phantom: std::marker::PhantomData<B>,
+    /// Interface modules
+    modules: HashMap<InputMode, Box<dyn Module<B>>>,
 }
 
 
 impl<B: tui::backend::Backend> ImportInterface<B> {
 
     pub fn new(table: ImportsTable) -> ImportInterface<B> {
+
+        let mut modules = HashMap::new();
+
+        // let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
+
         Self {
             table,
             styles: TableStyles::default(),
-            _phantom: std::marker::PhantomData,
+            modules,
         }
     }
 

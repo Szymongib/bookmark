@@ -18,6 +18,27 @@ use tui::Frame;
 
 use super::table_style::TableStyles;
 
+const HELP_TEXT: &str = r#"
+Action               Description
+'ENTER'            | open bookmarked URL
+'/' or 'CTRL + F'  | search for URLs
+'d'                | delete URL
+'i'                | show/hide ids
+'q'                | exit interactive mode
+':'                | go to command mode
+
+
+Command                Alias     Description
+':tag <TAG_NAME>'    |         | add tag <TAG_NAME> to selected bookmark
+':untag <TAG_NAME>'  |         | remove tag <TAG_NAME> from selected bookmark
+':chgroup <GROUP>'   | chg     | change group to <GROUP> for selected bookmark
+':chname <NAME>'     | chn     | change name to <NAME> for selected bookmark
+':churl <URL>'       | chu     | change url to <URL> for selected bookmark
+':sort [SORT_BY]'    |         | sort bookmarks by one of: [name, url, group]
+':q'                 | quit    | exit interactive mode
+
+"#;
+
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum InputMode {
     Normal,
@@ -54,7 +75,7 @@ impl<B: tui::backend::Backend> Interface<B> {
         bookmarks_table: BookmarksTable,
     ) -> Result<Interface<B>, Box<dyn std::error::Error>> {
         let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
-        let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
+        let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new(HELP_TEXT));
         let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
         let command_mod: Box<dyn Module<B>> = Box::new(Command::new()?);
 

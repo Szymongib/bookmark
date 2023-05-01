@@ -18,9 +18,6 @@ use bookmark_lib::import::{ImportItem, ImportURLItem, ImportFolderItem};
 pub enum ImportTableItem {
     URL(ImportURLTableItem),
     Folder(ImportFolderTableItem)
-    // visible: bool,
-    // url: URLRecord,
-    // row: Vec<String>,
 }
 
 impl From<ImportItem> for ImportTableItem {
@@ -116,64 +113,6 @@ impl TableItem for ImportTableItem {
 }
 
 
-
-// impl URLItem {
-//     pub fn new(record: URLRecord, cols: Option<&Columns>) -> URLItem {
-//         URLItem {
-//             url: record.clone(),
-//             visible: true,
-//             row: url_to_row(
-//                 &record,
-//                 cols.unwrap_or(
-//                     &DEFAULT_URL_COLS
-//                         .iter()
-//                         .map(|s| s.to_string())
-//                         .collect::<Columns>(),
-//                 ),
-//             ),
-//         }
-//     }
-
-//     pub fn from_vec(records: Vec<URLRecord>, cols: Option<&Columns>) -> Vec<URLItem> {
-//         records
-//             .iter()
-//             .map(|u| URLItem::new(u.clone(), cols))
-//             .collect()
-//     }
-
-//     pub fn url(&self) -> String {
-//         self.url.url.clone()
-//     }
-// }
-
-// impl TableItem for URLItem {
-//     fn row(&self) -> &Vec<String> {
-//         &self.row
-//     }
-
-//     fn id(&self) -> String {
-//         self.url.id.clone()
-//     }
-// }
-
-// fn url_to_row(record: &URLRecord, cols: &Columns) -> Vec<String> {
-//     let mut vals = vec![];
-
-//     for c in cols {
-//         let col_name = c.trim().to_lowercase();
-
-//         match col_name.as_str() {
-//             "id" => vals.push(record.id.clone()),
-//             "name" => vals.push(record.name.clone()),
-//             "url" => vals.push(record.url.clone()),
-//             "group" => vals.push(record.group.clone()),
-//             "tags" => vals.push(record.tags_as_string()),
-//             _ => {}
-//         }
-//     }
-
-//     vals
-// }
 
 // #[cfg(test)]
 // mod test {
