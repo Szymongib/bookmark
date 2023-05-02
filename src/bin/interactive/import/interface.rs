@@ -10,6 +10,7 @@ use super::import::ImportsTable;
 const HELP_TEXT: &str = r#"
 Action               Description
 'ENTER'            | enter folder, mark/unmark URL to import
+// TODO: Mark whole folder to import
 --'SHIFT + ENTER'     | Open URL in browser
 --'Backspace'         | go back to parent folder -- TODO: different shortcut?
 --'CTRL + ENTER'   | Modify URL and mark it to import

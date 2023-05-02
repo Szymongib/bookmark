@@ -1,6 +1,6 @@
-use std::{path::PathBuf, collections::HashMap, io::Write};
+use std::{path::PathBuf, collections::{HashMap, BTreeMap}, io::Write};
 
-use crate::import::{brave::bookmarks::BookmarkEntry, v0_0_x::URLRecord, ImportItem, ImportURLItem};
+use crate::{import::{brave::bookmarks::BookmarkEntry, ImportItem, ImportURLItem}, types::URLRecord};
 
 use super::{bookmarks::{BookmarksData, filter_bookmarks, Bookmarks}, BraveImportError};
 
@@ -11,8 +11,8 @@ pub fn import_from_bookmarks(bookmarks_path: &PathBuf) -> Result<Vec<URLRecord>,
     // fails, you loose all the work you have done...
     let mut urls_to_import = vec![];
 
-    for (folder, entry) in bookmarks {
-        urls_to_import.extend(import_from_folder(&folder, &vec![entry]));
+    for entry in bookmarks {
+        urls_to_import.extend(import_from_entry(&entry, ""));
     }
 
     Ok(urls_to_import)
@@ -26,8 +26,8 @@ pub fn import_items_from_bookmarks(bookmarks_path: &PathBuf) -> Result<Vec<Impor
     // fails, you loose all the work you have done...
     let mut urls_to_import = vec![];
 
-    for (folder, entry) in bookmarks {
-        urls_to_import.push(import_items_from_folder(&folder, &vec![entry]));
+    for entry in bookmarks {
+        urls_to_import.extend(import_items_from_entry(&entry, ("", "")));
     }
 
     Ok(urls_to_import)
@@ -63,7 +63,7 @@ fn import_from_entry(entry: &BookmarkEntry, parent_folder: &str) -> Vec<URLRecor
             // // TODO: import URL
             // if import_url {
             //     // TODO: some better import func
-                urls_to_import.push(URLRecord { url: url.url.clone(), name: url.name.clone(), group: parent_folder.to_string(), tags: HashMap::new() });
+                urls_to_import.push(URLRecord { id: url.guid.clone(),  url: url.url.clone(), name: url.name.clone(), group: parent_folder.to_string(), tags: BTreeMap::new() });
             // }
         }
         BookmarkEntry::Folder(folder) => {
@@ -74,7 +74,7 @@ fn import_from_entry(entry: &BookmarkEntry, parent_folder: &str) -> Vec<URLRecor
     urls_to_import
 }
 
-fn import_items_from_folder(folder: &str, entries: &[BookmarkEntry]) -> ImportItem {
+fn import_items_from_folder((folder_name, folder_id): (&str, &str), entries: &[BookmarkEntry]) -> ImportItem {
     let mut urls_to_import = vec![];
     
     // print!("Do you want to import bookmarks from folder '{}'? (y/n): " , folder);
@@ -85,13 +85,16 @@ fn import_items_from_folder(folder: &str, entries: &[BookmarkEntry]) -> ImportIt
     // }
 
     for entry in entries {
-        urls_to_import.extend(import_items_from_entry(entry, folder));
+        urls_to_import.extend(import_items_from_entry(entry, (folder_name, folder_id)));
     }
 
-    ImportItem::new_folder(folder.to_string(), folder.to_string(), urls_to_import)
+    ImportItem::new_folder(folder_id.to_string(), folder_name.to_string(), urls_to_import)
 }
 
-fn import_items_from_entry(entry: &BookmarkEntry, parent_folder: &str) -> Vec<ImportItem> {
+fn import_items_from_entry(
+    entry: &BookmarkEntry, 
+    (parent_folder_name, parent_folder_id): (&str, &str)
+) -> Vec<ImportItem> {
     let mut urls_to_import = vec![];
     
     match entry {
@@ -108,7 +111,7 @@ fn import_items_from_entry(entry: &BookmarkEntry, parent_folder: &str) -> Vec<Im
         }
         BookmarkEntry::Folder(folder) => {
             // urls_to_import.extend(import_items_from_folder(&folder.name, &folder.children));
-            urls_to_import.push(import_items_from_folder(&folder.name, &folder.children))
+            urls_to_import.push(import_items_from_folder((&folder.name, &folder.id), &folder.children))
         }
     }
 

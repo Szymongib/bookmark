@@ -10,8 +10,10 @@ const BOOKMARK_TYPE_FOLDER: &str = "folder";
 
 const BOOKMARK_BAR_ROOT: &str = "bookmark_bar";
 
-pub type Bookmarks = HashMap<String, BookmarkEntry>;
-pub type ParsedBookmarks = HashMap<String, Result<BookmarkEntry, BraveImportError>>;
+/// Since roots are not really a folder (they lack all metadata) we flatten
+/// all of them to a single Vec.
+pub type Bookmarks = Vec<BookmarkEntry>;
+pub type ParsedBookmarks = Vec<Result<BookmarkEntry, BraveImportError>>;
 
 // fn bookmarks_to_imports(bookmarks: Bookmarks) -> Vec<ImportTree> {
 //     let imports = bookmarks.iter().map(|(folder, entry)| {
@@ -38,20 +40,20 @@ pub struct BookmarksData {
 impl BookmarksData {
     pub fn bookmarks(self) -> ParsedBookmarks {
         self.roots.into_iter().map(|(k, v)| {
-            (k, BookmarkEntry::try_from(v))
+            BookmarkEntry::try_from(v)
         }).collect()
     }
 }
 
 pub fn filter_bookmarks(parsed: ParsedBookmarks) -> (Bookmarks, Vec<BraveImportError>) {
     // Most bookmarks will be valid, therefore we assume such capacity.
-    let mut valid_bookmarks = HashMap::with_capacity(parsed.len());
+    let mut valid_bookmarks = Vec::with_capacity(parsed.len());
     let mut bookmark_errs = vec![];
 
-    for (k, entry) in parsed {
+    for entry in parsed {
         match entry {
             Ok(entry) => {
-                valid_bookmarks.insert(k, entry);
+                valid_bookmarks.push(entry);
             }
             Err(err) => {
                 bookmark_errs.push(err)
@@ -258,7 +260,19 @@ mod tests {
 
         let parsed = data.bookmarks();
 
-        let bookmark_bar = parsed.get(BOOKMARK_BAR_ROOT).unwrap();
+        let bookmark_bar = parsed.iter().find(|entry| {
+            match entry {
+                Ok(entry) => {
+                    match entry {
+                        BookmarkEntry::URL(_) => false,
+                        BookmarkEntry::Folder(f) => {
+                            f.name == "Bookmarks Bar"
+                        }
+                    }
+                },
+                Err(_) => false,
+            }
+        }).unwrap();
 
         let bookmark_bar_folder = expect_folder(bookmark_bar.as_ref().unwrap());
         assert_eq!("Bookmarks Bar", bookmark_bar_folder.name);
