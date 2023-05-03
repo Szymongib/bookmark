@@ -10,8 +10,7 @@ use super::import::ImportsTable;
 const HELP_TEXT: &str = r#"
 Action               Description
 'ENTER'            | enter folder, mark/unmark URL to import
-// TODO: Mark whole folder to import
---'SHIFT + ENTER'     | Open URL in browser
+'SPACEBAR'         | mark/unmark URL or whole folder to import
 --'Backspace'         | go back to parent folder -- TODO: different shortcut?
 --'CTRL + ENTER'   | Modify URL and mark it to import
 
@@ -126,11 +125,14 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
                         self.imports_table.previous();
                     }
                     Key::Char('\n') => {
-                        self.imports_table.open()?;
+                        self.imports_table.open_or_select()?;
                     }
                     // TODO: how? How would vim do it?
                     Key::Backspace => {
                         self.imports_table.exit_folder()?;
+                    }
+                    Key::Char(' ') => {
+                        self.imports_table.toggle_selected()?;
                     }
                     // Key::Char('i') => {
                     //     self.toggle_ids_display()?;

@@ -5,7 +5,7 @@ use termion::event::{Key};
 
 use crate::interactive::{table::{StatefulTable, TableItem}, event::Event};
 
-use super::{import_table_item::ImportTableItem};
+use super::{import_table_item::{ImportTableItem, ImportFolderTableItem}};
 
 
 
@@ -47,6 +47,8 @@ impl ImportsTable {
             columns: default_columns,
 
             tables_stack: vec![],
+
+            // TODO: Separate HashSet for Folders and URLs? Or HashSet of enums?
             selected_imports: HashSet::new(),
         })
     }
@@ -71,34 +73,16 @@ impl ImportsTable {
         vec!["Type", "Name", "URL", "Selected"]
     }
 
-    // pub fn get_selected(&self) -> Result<Option<URLRecord>, Box<dyn std::error::Error>> {
-    //     let selected_id = self.get_selected_id();
-    //     if selected_id.is_none() {
-    //         return Ok(None);
-    //     }
-
-    //     let url_record = self.registry.get_url(&selected_id.unwrap())?;
-
-    //     Ok(url_record)
-    // }
-
-    pub fn open(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // For URL select it
-        // For folder open it
-
+    pub fn open_or_select(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         match self.table.state.selected() {
+            // For URL default action will be to mark it as selected or unselect
+            // For Folder we will open it.
             Some(id) => match &mut self.table.items[id] {
-                ImportTableItem::URL(url) => {
-                    let import_id = url.inner.id.to_string();
-                    if self.selected_imports.contains(&import_id) {
-                        self.selected_imports.remove(&import_id);
-                        self.table.items[id].select(false);
-                    } else {
-                        self.selected_imports.insert(import_id);
-                        self.table.items[id].select(true);
-                    }
+                ImportTableItem::URL(_) => {
+                    self.select_item(id);
                     Ok(())
                 },
+
                 ImportTableItem::Folder(folder) => {
                     // We create new table with items from folder and replace
                     // it in current view, moving the old one to stack to 
@@ -117,9 +101,7 @@ impl ImportsTable {
                             })
                             .collect()
                     );
-
                     let old_table = std::mem::replace(&mut self.table, new_table);
-
                     self.tables_stack.push(old_table);
                     Ok(())
                 },
@@ -128,11 +110,40 @@ impl ImportsTable {
         }
     }
 
+    /// selects item to import regardless it it is folder or URL
+    pub fn toggle_selected(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        match self.table.state.selected() {
+            None => Ok(()),
+            Some(id) => {
+                self.select_item(id);
+                Ok(())
+            }
+        }
+    }
+
+    fn select_item(&mut self, id: usize) {
+        // TODO: I am not fully happy with this logic in regards to folders,
+        // since ideally you could select the top folder and all its children
+        // would be marked selected, then you could unselect just some of them.
+        // It should be possible to implement it this way, tho it will require
+        // some though how to make it resonably, and in a way it still feels
+        // instant to user.
+
+        let item = &mut self.table.items[id];
+        let import_id = item.id();
+        if self.selected_imports.contains(&import_id) {
+            self.selected_imports.remove(&import_id);
+            self.table.items[id].select(false);
+        } else {
+            self.selected_imports.insert(import_id);
+            self.table.items[id].select(true);
+        }
+    }
+
     pub fn exit_folder(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(table) = self.tables_stack.pop() {
             self.table = table;
         }
-
         Ok(())
     }
 
@@ -143,25 +154,3 @@ impl ImportsTable {
             .map(|index| self.table.items[index].id())
     }
 }
-
-// impl BookmarksTable {
-//     pub fn new(
-//         sender: mpsc::Sender<Event<Key>>,
-//         registry: Box<dyn Registry>,
-//     ) -> Result<BookmarksTable, Box<dyn std::error::Error>> {
-//         let default_columns = default_columns();
-
-//         let items: Vec<URLItem> =
-//             URLItem::from_vec(registry.list_urls(None, None)?, Some(&default_columns));
-//         let table = StatefulTable::with_items(items);
-
-//         Ok(BookmarksTable {
-//             signal_sender: sender,
-//             registry,
-//             table,
-//             filter: None,
-//             sort_cfg: None,
-//             columns: default_columns,
-//         })
-//     }
-// }

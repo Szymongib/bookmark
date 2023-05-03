@@ -30,10 +30,17 @@ impl From<ImportItem> for ImportTableItem {
 }
 
 impl ImportTableItem {
+    pub fn id(&self) -> String {
+        match self {
+            Self::URL(url) => url.id(),
+            Self::Folder(folder) => folder.id(),
+        }
+    }
+
     pub fn select(&mut self, selected: bool) {
         match self {
             Self::URL(url) => url.select(selected),
-            Self::Folder(_) => (),
+            Self::Folder(folder) => folder.select(selected),
         }
     }
 }
@@ -75,6 +82,7 @@ pub struct ImportFolderTableItem {
     pub inner: ImportFolderItem,
 
     row: Vec<String>,
+    selected: bool,
 }
 
 impl From<ImportFolderItem> for ImportFolderTableItem{
@@ -82,6 +90,7 @@ impl From<ImportFolderItem> for ImportFolderTableItem{
         Self {
             inner: item.clone(),
             row: vec!["Folder".to_string(), item.name, "-".to_string(), "[ ]".to_string()],
+            selected: false,
         }
     }
 }
@@ -94,6 +103,11 @@ impl ImportFolderTableItem {
     fn row(&self) -> &Vec<String> {
         &self.row
     }
+
+    pub fn select(&mut self, selected: bool) {
+        self.selected = selected;
+        self.row[3] = if self.selected { "[x]".to_string() } else { "[ ]".to_string() };
+    }
 }
 
 impl TableItem for ImportTableItem {
@@ -105,10 +119,7 @@ impl TableItem for ImportTableItem {
     }
 
     fn id(&self) -> String {
-        match self {
-            ImportTableItem::URL(url) => url.id(),
-            ImportTableItem::Folder(folder) => folder.id(),
-        }
+        self.id()
     }
 }
 
