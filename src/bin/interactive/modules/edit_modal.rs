@@ -45,9 +45,7 @@ impl HandleImportsInput for EditModal {
 
 impl<B: Backend> Draw<B> for EditModal {
     fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
-        eprintln!("EditModal::draw");
         if mode == InputMode::Suppressed(SuppressedAction::Edit) {
-            eprintln!("Drawing edit modal");
             self.show_edit_modal(f);
         }
     }

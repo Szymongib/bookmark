@@ -1,5 +1,6 @@
 use std::{error::Error, collections::HashMap};
 
+use bookmark_lib::Registry;
 use termion::event::Key;
 use tui::{layout::{Layout, Direction, Constraint}, Frame, widgets::{Row, Table, Block, Borders}, style::Color};
 
@@ -14,6 +15,7 @@ Action               Description
 'BACKSPACE'        | go back to parent folder
 'o'                | Open URL in the browser
 'e'                | Modify URL and mark it to import
+'CTRL + S'         | Save imports to bookmarks
 
 --'/' or 'CTRL + F'  | search for URLs
 --'d'                | delete URL
@@ -49,6 +51,8 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
 
         let help_mod: Box<dyn ImportsModule<B>> = Box::new(HelpPanel::new(HELP_TEXT));
         let edit_mod: Box<dyn ImportsModule<B>> = Box::new(EditModal::new());
+
+        // TODO: I need search module here so bad!
 
         Self {
             imports_table: table,
@@ -139,6 +143,13 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
                     }
                     Key::Char('o') => {
                         self.imports_table.open_url()?;
+                    }
+                    Key::Ctrl('s') => {
+                        // TODO: display confirmation before saving
+
+                        self.imports_table.import_selected()?;
+
+                        // TODO: Display confirmation that n URL have been imported
                     }
                     // Key::Char('e') => {
                     //     self.imports_table.edit_entry()?;

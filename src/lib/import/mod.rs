@@ -34,8 +34,8 @@ impl PartialOrd for ImportItem {
 }
 
 impl ImportItem {
-    pub fn new_url(id: String, url: String, name: String) -> Self {
-        Self::URL(ImportURLItem::new(id, url, name))
+    pub fn new_url(id: String, url: String, name: String, parent_folder: String) -> Self {
+        Self::URL(ImportURLItem::new(id, url, name, parent_folder))
     }
 
     pub fn new_folder(id: String, name: String, children: Vec<ImportItem>) -> Self {
@@ -48,6 +48,7 @@ pub struct ImportURLItem {
     pub id: String,
     pub url: String,
     pub name: String,
+    pub parent_folder: String,
 }
 
 impl Ord for ImportURLItem {
@@ -63,12 +64,25 @@ impl PartialOrd for ImportURLItem {
 }
 
 impl ImportURLItem {
-    pub fn new(id: String, url: String, name: String) -> Self {
+    pub fn new(id: String, url: String, name: String, parent_folder: String) -> Self {
         Self {
             id,
             url,
             name,
+            parent_folder,
         }
+    }
+}
+
+impl From<ImportURLItem> for URLRecord {
+    fn from(value: ImportURLItem) -> Self {
+        // TODO: Do not generate UUID but take gid instead
+        URLRecord::new(
+            &value.url,
+            &value.name,
+            &value.parent_folder, // TODO: take from parent folder
+            Vec::<String>::new(),
+        ).set_id(&value.id)
     }
 }
 

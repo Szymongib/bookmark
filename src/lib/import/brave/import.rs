@@ -106,7 +106,12 @@ fn import_items_from_entry(
             // // TODO: import URL
             // if import_url {
             //     // TODO: some better import func
-                urls_to_import.push(ImportItem::new_url(url.id.clone(), url.url.clone(), url.name.clone()));
+                urls_to_import.push(ImportItem::new_url(
+                    url.id.clone(),
+                    url.url.clone(),
+                    url.name.clone(),
+                    parent_folder_name.to_string(),
+                ));
             // }
         }
         BookmarkEntry::Folder(folder) => {

@@ -56,6 +56,13 @@ impl URLRecord {
         }
     }
 
+    pub fn set_id(self, id: &str) -> Self {
+        URLRecord {
+            id: id.to_string(),
+            ..self
+        }
+    }
+
     pub fn tags_as_string(&self) -> String {
         let tags: Vec<String> = self
             .tags

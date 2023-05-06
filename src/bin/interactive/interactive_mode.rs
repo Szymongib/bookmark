@@ -38,6 +38,9 @@ pub fn enter_interactive_import<T: Registry + 'static>(registry: T, imports: Vec
 
     let events = Events::new();
 
+    // TODO: also load all bookmarks from registry and make inactive those that are already there
+    // either by GID or by URL
+
     let imports_table = ImportsTable::new(events.tx.clone(), Box::new(registry), imports)?;
 
     let mut user_interface = ImportInterface::new(imports_table);

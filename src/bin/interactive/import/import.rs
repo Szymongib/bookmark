@@ -1,6 +1,6 @@
 use std::{sync::mpsc, collections::HashSet};
 
-use bookmark_lib::{import::{ImportItem}, Registry, filters::Filter};
+use bookmark_lib::{import::{ImportItem}, Registry, filters::Filter, types::URLRecord};
 use termion::event::{Key};
 
 use crate::interactive::{table::{StatefulTable, TableItem}, event::Event};
@@ -161,6 +161,35 @@ impl ImportsTable {
             },
             None => Ok(()),
         }
+    }
+
+    pub fn import_selected(&self) -> Result<(), Box<dyn std::error::Error>> {
+        
+        // TODO: imported items should be marked as inactive in table or removed
+        // since it does not make sense to improt them again.
+
+        let mut import_items: Vec<URLRecord> = vec![];
+        for item in &self.table.items {
+            match item {
+                ImportTableItem::URL(url) => {
+                    if self.selected_imports.contains(&url.inner.id) {
+                        import_items.push(url.inner.clone().into());
+                    }
+                },
+                ImportTableItem::Folder(folder) => {
+                    if self.selected_imports.contains(&folder.inner.id) {
+                        // TODO: recursively import all in folder
+                    }
+                },
+            }
+        }
+
+        // TODO: some batch add could be nice here
+        for item in import_items {
+            self.registry.add(item)?;
+        }
+
+        Ok(())
     }
 
     fn get_selected_id(&self) -> Option<String> {
