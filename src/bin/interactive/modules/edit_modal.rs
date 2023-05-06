@@ -1,18 +1,16 @@
-use crate::interactive::bookmarks_table::BookmarksTable;
-
 use crate::interactive::helpers::pad_layout;
 use crate::interactive::import::import::ImportsTable;
 use crate::interactive::import::import_table_item::{ImportURLTableItem, ImportTableItem};
 use crate::interactive::interface::{InputMode, SuppressedAction};
-use crate::interactive::modules::{Draw, HandleBookmarksInput, BookmarksModule};
+use crate::interactive::modules::{Draw};
 use crate::interactive::widgets::rect::centered_fixed_rect;
 use std::error::Error;
-use bookmark_lib::import::{ImportItem, ImportURLItem};
+use bookmark_lib::import::{ImportURLItem};
 use termion::event::Key;
 use tui::backend::Backend;
 use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Modifier, Style};
-use tui::text::{Span, Spans, Text};
+use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Clear, Paragraph};
 use tui::Frame;
 
@@ -57,16 +55,6 @@ impl<B: Backend> Draw<B> for EditModal {
 
 impl EditModal {
     pub fn new() -> EditModal {
-        let help_text = r#"
-        Action               Description
-'ENTER'            | enter folder, mark/unmark URL to import
-'SPACEBAR'         | mark/unmark URL or whole folder to import
-'BACKSPACE'        | go back to parent folder
-'o'                | Open URL in the browser
-'e'                | Modify URL and mark it to import
-
-        "#;
-        let max_width = help_text.lines().map(|l| l.len()).max().unwrap_or_default() as u16;
         EditModal {
             editing_import: None,
             edits: vec!["".to_string(); 2],
@@ -105,13 +93,6 @@ impl EditModal {
             ImportTableItem::URL(url) => Some(url),
             ImportTableItem::Folder(_) => None,
         }
-
-        // let import = match import.inner() {
-        //     ImportItem::URL(b) => b,
-        //     ImportItem::Folder(f) => {
-        //         return None;
-        //     },
-        // };
     }
 
     fn handle_input(
@@ -175,7 +156,7 @@ impl EditModal {
 
         let inner_layout = pad_layout(area, [1,1,1,1]);
     
-        // Split it into 2 even chunks
+        // Split it into 2 even chunks + padd in between
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
@@ -200,33 +181,6 @@ impl EditModal {
             chunks[2], 
             f,
         )
-
-        // let org_fields: Vec<Spans> = vec![
-        //     Spans::from(format!("Name:      {}", import.name)),
-        //     Spans::from(format!("New Name:  {}", &self.edits[0])),
-        //     Spans:: from(format!("URL:      {}", import.url)),
-        //     Spans:: from(format!("New URL:  {}", &self.edits[1])),
-        // ];
-
-
-        // let paragraph_block = Block::default()
-        //     .borders(Borders::LEFT | Borders::RIGHT)
-        //     .style(Style::default().bg(Color::Black).fg(Color::LightBlue));
-        
-
-        // let paragraph = Paragraph::new(org_fields)
-        //     .style(Style::default().bg(Color::Black).fg(Color::White))
-        //     // .bo
-        //     .block(paragraph_block)
-        //     .alignment(Alignment::Left);
-
-        // let area2 = centered_fixed_rect(100 + 4, 10 as u16 + 2, f.size());
-
-
-        // f.render_widget(Clear, chunks[0]);
-        // f.render_widget(Clear, chunks[1]);
-        // f.render_widget(paragraph.clone(), chunks[1]);
-        // f.render_widget(paragraph, chunks[2]);
     }
 
     fn render_input_fields<B: Backend>(
@@ -253,8 +207,6 @@ impl EditModal {
             .borders(Borders::ALL)
             .style(Style::default().bg(Color::Black).fg(Color::LightBlue));
 
-
-        // TODO: highlight active edit
         let name_paragraph = Paragraph::new(Spans::from(input_header))
             .style(Style::default().bg(Color::Black).fg(Color::White))
             .alignment(Alignment::Left);
