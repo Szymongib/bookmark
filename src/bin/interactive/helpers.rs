@@ -1,6 +1,6 @@
 use crate::interactive::event::Event;
 use termion::event::Key;
-use tui::layout::{Constraint, Direction, Layout};
+use tui::layout::{Constraint, Direction, Layout, Rect};
 
 // TODO: consider moving to some lib
 macro_rules! hashmap {
@@ -41,4 +41,20 @@ pub fn to_key_events(text: &str) -> Vec<Event<Key>> {
 
 pub fn to_string(vec: Vec<&str>) -> Vec<String> {
     vec.iter().map(|s| s.to_string()).collect()
+}
+
+pub fn pad_layout(area: Rect, padding: [u16; 4]) -> Rect {
+    let [top, right, bottom, left] = padding;
+
+    let top = if top > area.height { area.height } else { top };
+    let right = if right > area.width { area.width } else { right };
+    let bottom = if bottom > area.height { area.height } else { bottom };
+    let left = if left > area.width { area.width } else { left };
+
+    let top = area.y + top;
+    let right = area.x + area.width - right;
+    let bottom = area.y + area.height - bottom;
+    let left = area.x + left;
+
+    Rect::new(left, top, right - left, bottom - top)
 }

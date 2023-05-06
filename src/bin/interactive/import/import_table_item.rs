@@ -43,6 +43,20 @@ impl ImportTableItem {
             Self::Folder(folder) => folder.select(selected),
         }
     }
+
+    pub fn inner(&self) -> ImportItem {
+        match self {
+            Self::URL(url) => ImportItem::URL(url.inner.clone()),
+            Self::Folder(folder) => ImportItem::Folder(folder.inner.clone()),
+        }
+    }
+    
+    // pub fn inner_mut(&mut self) -> &mut ImportItem {
+    //     match self {
+    //         Self::URL(url) => ImportItem::URL(url.inner.clone()),
+    //         Self::Folder(folder) => ImportItem::Folder(folder.inner.clone()),
+    //     }
+    // }
 }
 
 #[derive(Clone, Debug)]
@@ -74,6 +88,11 @@ impl ImportURLTableItem {
     pub fn select(&mut self, selected: bool) {
         self.selected = selected;
         self.row[3] = if self.selected { "[x]".to_string() } else { "[ ]".to_string() };
+    }
+
+    pub fn refresh(&mut self) {
+        self.row[1] = self.inner.name.clone();
+        self.row[2] = self.inner.url.clone();
     }
 }
 

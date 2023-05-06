@@ -10,6 +10,7 @@ pub mod command;
 pub mod delete;
 pub mod help;
 pub mod search;
+pub mod edit_modal;
 
 pub trait BookmarksModule<B: Backend>: HandleBookmarksInput + Draw<B> {}
 

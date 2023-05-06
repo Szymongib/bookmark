@@ -39,7 +39,7 @@ Command                Alias     Description
 
 "#;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub enum InputMode {
     Normal,
     Search,
@@ -47,10 +47,11 @@ pub enum InputMode {
     Suppressed(SuppressedAction),
 }
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub enum SuppressedAction {
     ShowHelp,
     Delete,
+    Edit,
 }
 
 pub struct Interface<B: tui::backend::Backend> {

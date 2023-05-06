@@ -147,6 +147,22 @@ impl ImportsTable {
         Ok(())
     }
 
+    pub fn open_url(&self) -> Result<(), Box<dyn std::error::Error>> {
+        match self.table.state.selected() {
+            Some(id) => match &self.table.items[id] {
+                ImportTableItem::URL(url) => {
+                    open::that(url.inner.url.as_str())
+                        .map_err(|err| -> Box<dyn std::error::Error> {
+                            From::from(format!("failed to open URL in the browser: {}",err.to_string()))
+                        })?;
+                    Ok(())
+                },
+                ImportTableItem::Folder(_) => Ok(()),
+            },
+            None => Ok(()),
+        }
+    }
+
     fn get_selected_id(&self) -> Option<String> {
         self.table
             .state

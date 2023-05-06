@@ -104,10 +104,7 @@ impl HelpPanel {
         Ok(None)
     }
 
-    // TODO: consider using consts from cmd - or embedding docs?
     fn show_help_popup<B: Backend>(&self, f: &mut Frame<B>) {
-        // let spans: Vec<Spans> = text.iter().map(|t| Spans::from(t.to_owned())).collect();
-
         let block = Block::default()
             .borders(Borders::ALL)
             .style(Style::default().bg(Color::Black).fg(Color::LightBlue))

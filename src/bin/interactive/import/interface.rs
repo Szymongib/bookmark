@@ -3,7 +3,7 @@ use std::{error::Error, collections::HashMap};
 use termion::event::Key;
 use tui::{layout::{Layout, Direction, Constraint}, Frame, widgets::{Row, Table, Block, Borders}, style::Color};
 
-use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::{InputMode, SuppressedAction}, modules::{ImportsModule, help::HelpPanel}};
+use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::{InputMode, SuppressedAction}, modules::{ImportsModule, help::HelpPanel, edit_modal::EditModal}};
 
 use super::import::ImportsTable;
 
@@ -11,15 +11,15 @@ const HELP_TEXT: &str = r#"
 Action               Description
 'ENTER'            | enter folder, mark/unmark URL to import
 'SPACEBAR'         | mark/unmark URL or whole folder to import
---'Backspace'         | go back to parent folder -- TODO: different shortcut?
---'CTRL + ENTER'   | Modify URL and mark it to import
+'BACKSPACE'        | go back to parent folder
+'o'                | Open URL in the browser
+'e'                | Modify URL and mark it to import
 
 --'/' or 'CTRL + F'  | search for URLs
 --'d'                | delete URL
 --'i'                | show/hide ids
 'q'                | exit interactive import
 --':'                | go to command mode
-
 
 Command                Alias     Description
 ':tag <TAG_NAME>'    |         | add tag <TAG_NAME> to selected bookmark
@@ -48,13 +48,15 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
     pub fn new(table: ImportsTable) -> ImportInterface<B> {
 
         let help_mod: Box<dyn ImportsModule<B>> = Box::new(HelpPanel::new(HELP_TEXT));
+        let edit_mod: Box<dyn ImportsModule<B>> = Box::new(EditModal::new());
 
         Self {
             imports_table: table,
             styles: TableStyles::default(),
             input_mode: InputMode::Normal,
             modules: hashmap![
-                InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod
+                InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
+                InputMode::Suppressed(SuppressedAction::Edit) => edit_mod
             ],
         }
     }
@@ -110,6 +112,7 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
 
     pub(crate) fn handle_input(&mut self, event: Event<Key>) -> Result<bool, Box<dyn Error>> {
         if let Event::Input(input) = event {
+            eprintln!("Input mode: {:?}", self.input_mode);
             match &self.input_mode {
                 InputMode::Normal => match input {
                     Key::Char('q') => {
@@ -134,6 +137,12 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
                     Key::Char(' ') => {
                         self.imports_table.toggle_selected()?;
                     }
+                    Key::Char('o') => {
+                        self.imports_table.open_url()?;
+                    }
+                    // Key::Char('e') => {
+                    //     self.imports_table.edit_entry()?;
+                    // }
                     // Key::Char('i') => {
                     //     self.toggle_ids_display()?;
                     // }
