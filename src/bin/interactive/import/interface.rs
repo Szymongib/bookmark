@@ -2,9 +2,9 @@ use std::{error::Error, collections::HashMap};
 
 use bookmark_lib::Registry;
 use termion::event::Key;
-use tui::{layout::{Layout, Direction, Constraint}, Frame, widgets::{Row, Table, Block, Borders}, style::Color};
+use tui::{layout::{Layout, Direction, Constraint, Alignment}, Frame, widgets::{Row, Table, Block, Borders, Paragraph, Clear}, style::{Color, Style, Modifier}, backend::Backend, text::{Spans, Span}};
 
-use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::{InputMode, SuppressedAction}, modules::{ImportsModule, help::HelpPanel, edit_modal::EditModal}};
+use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::{InputMode, SuppressedAction}, modules::{ImportsModule, help::HelpPanel, edit_modal::EditModal}, widgets::rect::centered_fixed_rect};
 
 use super::import::ImportsTable;
 
@@ -108,6 +108,10 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
     
         f.render_stateful_widget(t, chunks[0], &mut table.state);
     
+        if self.input_mode == InputMode::Confirmation {
+            self.confirmation_popup(f);
+        }
+
         // draw modules
         for module in self.modules.values() {
             module.draw(self.input_mode.clone(), f)
@@ -146,17 +150,8 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
                     }
                     Key::Ctrl('s') => {
                         // TODO: display confirmation before saving
-
-                        self.imports_table.import_selected()?;
-
-                        // TODO: Display confirmation that n URL have been imported
+                        self.input_mode = InputMode::Confirmation;
                     }
-                    // Key::Char('e') => {
-                    //     self.imports_table.edit_entry()?;
-                    // }
-                    // Key::Char('i') => {
-                    //     self.toggle_ids_display()?;
-                    // }
                     // Activate first module that can handle the key - if none just skip
                     _ => {
                         for m in self.modules.values_mut() {
@@ -166,6 +161,18 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
                             }
                         }
                     }
+                }
+                InputMode::Confirmation => match input {
+                    Key::Char('\n') => {
+                        self.imports_table.import_selected()?;
+                        // TODO: Display confirmation that n URL have been imported                        
+
+                        self.input_mode = InputMode::Normal;
+                    }
+                    Key::Esc => {
+                        self.input_mode = InputMode::Normal;
+                    }
+                    _ => {}
                 }
                 _ => {
                     if let Some(module) = self.modules.get_mut(&self.input_mode) {
@@ -185,5 +192,37 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
         }
 
         Ok(false)
+    }
+
+    // TODO: maybe this should be implemented as a module? I do not know
+    // it feels cluncky. It would need to use some callbacks or closures.
+    fn confirmation_popup(&self, f: &mut Frame<B>) {
+        let area = centered_fixed_rect(60, 6, f.size());
+
+        // TODO: maybe display number of selected URLs
+        let text = vec![
+            Spans::from(""),
+            Spans::from(format!(
+                "Are you sure to save selected URLs to your bookmarks?"
+            )),
+            Spans::from(""),
+            Spans::from("Yes (Enter)   ---   No (ESC)"), // TODO: consider y and n as confirmation
+        ];
+
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::Black).fg(Color::LightBlue))
+            .title(Span::styled(
+                "Confirm import".to_string(),
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+
+        let paragraph = Paragraph::new(text)
+            .style(Style::default().bg(Color::Black).fg(Color::White))
+            .block(block)
+            .alignment(Alignment::Center);
+
+        f.render_widget(Clear, area);
+        f.render_widget(paragraph, area);
     }
 }
