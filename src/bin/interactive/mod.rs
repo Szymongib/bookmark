@@ -24,3 +24,5 @@ pub mod subcommand;
 pub mod import;
 
 mod table_style;
+
+pub mod app_event;

@@ -4,7 +4,7 @@ use bookmark_lib::Registry;
 use termion::event::Key;
 use tui::{layout::{Layout, Direction, Constraint, Alignment}, Frame, widgets::{Row, Table, Block, Borders, Paragraph, Clear}, style::{Color, Style, Modifier}, backend::Backend, text::{Spans, Span}};
 
-use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::{InputMode, SuppressedAction}, modules::{ImportsModule, help::HelpPanel, edit_modal::EditModal, info_popup::InfoPopup}, widgets::rect::centered_fixed_rect};
+use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::{InputMode, SuppressedAction}, modules::{ImportsModule, help::HelpPanel, edit_modal::EditModal, info_popup::InfoPopup}, widgets::rect::centered_fixed_rect, app_event::AppEvent};
 
 use super::import::ImportsTable;
 
@@ -127,6 +127,9 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
     }
 
     pub(crate) fn handle_input(&mut self, event: Event<Key>) -> Result<bool, Box<dyn Error>> {
+        // TODO: refactor this mess
+        let mut app_event = None;
+
         if let Event::Input(input) = event {
             eprintln!("Input mode: {:?}", self.input_mode);
             match &self.input_mode {
@@ -160,22 +163,27 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
                         // TODO: display confirmation before saving
                         self.input_mode = InputMode::Confirmation;
                     }
+                    Key::Char('e') => {
+                        app_event = Some(AppEvent::ShowEditPopup);
+                    }
+                    Key::Char('h') => {
+                        app_event = Some(AppEvent::ShowHelpPopup);
+                    }
                     // Activate first module that can handle the key - if none just skip
                     _ => {
-                        for m in self.modules.values_mut() {
-                            if let Some(mode) = m.try_activate(input, &mut self.imports_table)? {
-                                self.input_mode = mode;
-                                return Ok(false);
-                            }
-                        }
+                        // for m in self.modules.values_mut() {
+                        //     if let Some(mode) = m.try_activate(input, &mut self.imports_table)? {
+                        //         self.input_mode = mode;
+                        //         return Ok(false);
+                        //     }
+                        // }
                     }
                 }
                 InputMode::Confirmation => match input {
                     Key::Char('\n') => {
-                        self.imports_table.import_selected()?;
-                        // TODO: Display confirmation that n URL have been imported                        
-
-                        self.input_mode = InputMode::Normal;
+                        let imported = self.imports_table.import_selected()?;
+                        // TODO: show number etc?
+                        app_event = Some(AppEvent::ShowInfoPopup(format!("Imported {} URLs", imported)));
                     }
                     Key::Esc => {
                         self.input_mode = InputMode::Normal;
@@ -196,6 +204,17 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
         if let Event::Signal(s) = event {
             match s {
                 Signal::Quit => return Ok(true),
+            }
+        }
+
+        // TODO: I like step towards app events, but I need to think it through
+        // better...
+        if let Some(app_event) = app_event {
+            for m in self.modules.values_mut() {
+                if let Some(mode) = m.try_activate(&app_event, &mut self.imports_table)? {
+                    self.input_mode = mode;
+                    return Ok(false);
+                }
             }
         }
 

@@ -16,6 +16,7 @@ use tui::style::{Color, Modifier, Style};
 use tui::widgets::{Block, Borders, Row, Table};
 use tui::Frame;
 
+use super::app_event::AppEvent;
 use super::table_style::TableStyles;
 
 const HELP_TEXT: &str = r#"
@@ -100,6 +101,9 @@ impl<B: tui::backend::Backend> Interface<B> {
     }
 
     pub(crate) fn handle_input(&mut self, event: Event<Key>) -> Result<bool, Box<dyn Error>> {
+        // TODO: refactor this
+        let mut app_event = None;
+
         if let Event::Input(input) = event {
             match &self.input_mode {
                 InputMode::Normal => match input {
@@ -121,14 +125,23 @@ impl<B: tui::backend::Backend> Interface<B> {
                     Key::Char('i') => {
                         self.toggle_ids_display()?;
                     }
+                    Key::Char(':') => {
+                        // TODO: maybe something like that?
+                        // app_event = Some(Event::ActivateMode(InputMode::Command));
+                        app_event = Some(AppEvent::CommandMode);
+                    }
+                    Key::Char('d') => {
+                        app_event = Some(AppEvent::ConfirmDelete);
+                    }
+                    Key::Char('h') => {
+                        app_event = Some(AppEvent::ShowHelpPopup);
+                    }
+                    Key::Char('/') | Key::Ctrl('f') => {
+                        app_event = Some(AppEvent::SearchMode);
+                    }
                     // Activate first module that can handle the key - if none just skip
                     _ => {
-                        for m in self.modules.values_mut() {
-                            if let Some(mode) = m.try_activate(input, &mut self.bookmarks_table)? {
-                                self.input_mode = mode;
-                                return Ok(false);
-                            }
-                        }
+                        
                     }
                 },
                 _ => {
@@ -145,6 +158,15 @@ impl<B: tui::backend::Backend> Interface<B> {
         if let Event::Signal(s) = event {
             match s {
                 Signal::Quit => return Ok(true),
+            }
+        }
+
+        if let Some(app_event) = app_event {
+            for m in self.modules.values_mut() {
+                if let Some(mode) = m.try_activate(&app_event, &mut self.bookmarks_table)? {
+                    self.input_mode = mode;
+                    return Ok(false);
+                }
             }
         }
 

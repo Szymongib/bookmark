@@ -1,3 +1,4 @@
+use crate::interactive::app_event::AppEvent;
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use crate::interactive::interface::InputMode;
@@ -19,10 +20,10 @@ impl<B: Backend> BookmarksModule<B> for Search {}
 impl HandleBookmarksInput for Search {
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         table: &mut BookmarksTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        if input != Key::Char('/') && input != Key::Ctrl('f') {
+        if app_event != &AppEvent::SearchMode {
             return Ok(None);
         }
 

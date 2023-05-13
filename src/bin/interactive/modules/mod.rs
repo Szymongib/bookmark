@@ -4,6 +4,7 @@ use termion::event::Key;
 use tui::backend::Backend;
 use tui::Frame;
 
+use super::app_event::AppEvent;
 use super::import::import::ImportsTable;
 
 pub mod command;
@@ -19,7 +20,7 @@ pub trait HandleBookmarksInput {
     /// Activates Module
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         table: &mut BookmarksTable,
     ) -> Result<Option<InputMode>, Box<dyn std::error::Error>>;
     /// Handles input key when Module already active
@@ -40,7 +41,7 @@ pub trait HandleImportsInput {
     /// Activates Module
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         table: &mut ImportsTable,
     ) -> Result<Option<InputMode>, Box<dyn std::error::Error>>;
     /// Handles input key when Module already active

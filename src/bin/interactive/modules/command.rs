@@ -1,3 +1,4 @@
+use crate::interactive::app_event::AppEvent;
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use crate::interactive::interface::InputMode;
@@ -26,10 +27,10 @@ impl<B: Backend> BookmarksModule<B> for Command {}
 impl HandleBookmarksInput for Command {
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         _table: &mut BookmarksTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        if input != Key::Char(':') {
+        if app_event != &AppEvent::CommandMode {
             return Ok(None);
         }
 

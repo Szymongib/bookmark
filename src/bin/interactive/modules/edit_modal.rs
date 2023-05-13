@@ -1,3 +1,4 @@
+use crate::interactive::app_event::{AppEvent, self};
 use crate::interactive::helpers::pad_layout;
 use crate::interactive::import::import::ImportsTable;
 use crate::interactive::import::import_table_item::{ImportURLTableItem, ImportTableItem};
@@ -28,10 +29,10 @@ impl<B: Backend> ImportsModule<B> for EditModal {}
 impl HandleImportsInput for EditModal {
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         table: &mut ImportsTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        self.try_activate(input, table)
+        self.try_activate(app_event, table)
     }
 
     fn handle_input(
@@ -62,10 +63,10 @@ impl EditModal {
 
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         table: &mut ImportsTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        if input != Key::Char('e') {
+        if app_event != &AppEvent::ShowEditPopup {
             return Ok(None);
         }
 

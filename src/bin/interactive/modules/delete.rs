@@ -1,3 +1,4 @@
+use crate::interactive::app_event::{self, AppEvent};
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
 use crate::interactive::modules::{Draw, HandleBookmarksInput, BookmarksModule};
@@ -23,10 +24,10 @@ impl<B: Backend> BookmarksModule<B> for Delete {}
 impl HandleBookmarksInput for Delete {
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         table: &mut BookmarksTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        if input != Key::Char('d') {
+        if app_event != &AppEvent::ConfirmDelete {
             return Ok(None);
         }
 

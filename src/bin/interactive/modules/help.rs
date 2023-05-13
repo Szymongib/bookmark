@@ -1,3 +1,4 @@
+use crate::interactive::app_event::{self, AppEvent};
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::import::import::ImportsTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
@@ -24,10 +25,10 @@ impl<B: Backend> BookmarksModule<B> for HelpPanel {}
 impl HandleBookmarksInput for HelpPanel {
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         _table: &mut BookmarksTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        self.try_activate(input)
+        self.try_activate(app_event)
     }
 
     fn handle_input(
@@ -44,10 +45,10 @@ impl<B: Backend> ImportsModule<B> for HelpPanel {}
 impl HandleImportsInput for HelpPanel {
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
         _table: &mut ImportsTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        self.try_activate(input)
+        self.try_activate(app_event)
     }
 
     fn handle_input(
@@ -78,9 +79,9 @@ impl HelpPanel {
 
     fn try_activate(
         &mut self,
-        input: Key,
+        app_event: &AppEvent,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        if input != Key::Char('h') {
+        if app_event != &AppEvent::ShowHelpPopup {
             return Ok(None);
         }
 

@@ -163,7 +163,7 @@ impl ImportsTable {
         }
     }
 
-    pub fn import_selected(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn import_selected(&self) -> Result<usize, Box<dyn std::error::Error>> {
         
         // TODO: imported items should be marked as inactive in table or removed
         // since it does not make sense to improt them again.
@@ -184,12 +184,16 @@ impl ImportsTable {
             }
         }
 
+        // TODO: set to only successfull imports - if add fails count it as failure and
+        // show all info
+        let imported = import_items.len();
+
         // TODO: some batch add could be nice here
         for item in import_items {
             self.registry.add(item)?;
         }
 
-        Ok(())
+        Ok(imported)
     }
 
     fn get_selected_id(&self) -> Option<String> {

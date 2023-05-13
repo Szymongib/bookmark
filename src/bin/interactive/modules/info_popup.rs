@@ -1,3 +1,4 @@
+use crate::interactive::app_event::AppEvent;
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::import::import::ImportsTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
@@ -14,6 +15,9 @@ use tui::Frame;
 
 use super::{HandleImportsInput, ImportsModule};
 
+const MIN_WIDTH: u16 = 30;
+const MIN_HEIGHT: u16 = 4;
+
 pub(crate) struct InfoPopup {
     message: Option<String>,
 }
@@ -23,12 +27,10 @@ impl<B: Backend> BookmarksModule<B> for InfoPopup {}
 impl HandleBookmarksInput for InfoPopup {
     fn try_activate(
         &mut self,
-        _input: Key,
+        app_event: &AppEvent,
         _table: &mut BookmarksTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        // Cannot be activated by input for now.
-        // To be activated, requires explicit change of InputMode.
-        Ok(None)
+        self.try_activate(app_event)
     }
 
     fn handle_input(
@@ -45,20 +47,18 @@ impl<B: Backend> ImportsModule<B> for InfoPopup {}
 impl HandleImportsInput for InfoPopup {
     fn try_activate(
         &mut self,
-        _input: Key,
+        app_event: &AppEvent,
         _table: &mut ImportsTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        // Cannot be activated by input for now.
-        // To be activated, requires explicit change of InputMode.
-        Ok(None)
+        self.try_activate(app_event)
     }
 
     fn handle_input(
         &mut self,
         input: Key,
-        table: &mut ImportsTable,
+        _table: &mut ImportsTable,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
-        self.handle_input(input, table.)
+        self.handle_input(input)
     }
 }
 
@@ -77,10 +77,23 @@ impl InfoPopup {
         }
     }
 
+    fn try_activate(
+        &mut self,
+        app_event: &AppEvent,
+    ) -> Result<Option<InputMode>, Box<dyn Error>> {
+        match app_event {
+            AppEvent::ShowInfoPopup(msg) => {
+                self.message = Some(msg.clone());
+                return Ok(Some(InputMode::InfoPopup));
+            }
+            _ => {}
+        }
+        Ok(None)
+    }
+
     fn handle_input(
         &mut self,
         input: Key,
-        msg: Option<String>,
     ) -> Result<Option<InputMode>, Box<dyn Error>> {
         match input {
             Key::Esc | Key::Char('\n') | Key::Char('q') => {
@@ -88,7 +101,6 @@ impl InfoPopup {
             }
             _ => {}
         }
-        self.message = msg;
 
         Ok(None)
     }
@@ -105,15 +117,15 @@ impl InfoPopup {
         let message = self.message.as_ref()
             .map(|l| l.as_str()).unwrap_or_default();
         let lines = message.lines();
-        let height = lines.clone().count() as u16;
-        let width = lines.map(|l| l.len()).max().unwrap_or(0) as u16;
+        let height = (lines.clone().count() as u16).max(MIN_HEIGHT);
+        let width = (lines.map(|l| l.len()).max().unwrap_or(0) as u16).max(MIN_WIDTH);
         let spans = Spans::from(message);
 
         let area = centered_fixed_rect(width + 4, height + 2, f.size());
         let paragraph = Paragraph::new(spans)
             .style(Style::default().bg(Color::Black).fg(Color::White))
             .block(block)
-            .alignment(Alignment::Left);
+            .alignment(Alignment::Center);
 
         f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
