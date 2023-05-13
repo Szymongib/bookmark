@@ -46,6 +46,7 @@ pub enum InputMode {
     Command,
     Suppressed(SuppressedAction),
     Confirmation, // TODO: might be further enum since different things can be confirmed
+    InfoPopup,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]

@@ -4,7 +4,7 @@ use bookmark_lib::Registry;
 use termion::event::Key;
 use tui::{layout::{Layout, Direction, Constraint, Alignment}, Frame, widgets::{Row, Table, Block, Borders, Paragraph, Clear}, style::{Color, Style, Modifier}, backend::Backend, text::{Spans, Span}};
 
-use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::{InputMode, SuppressedAction}, modules::{ImportsModule, help::HelpPanel, edit_modal::EditModal}, widgets::rect::centered_fixed_rect};
+use crate::interactive::{table::TableItem, event::{Event, Signal}, table_style::TableStyles, interface::{InputMode, SuppressedAction}, modules::{ImportsModule, help::HelpPanel, edit_modal::EditModal, info_popup::InfoPopup}, widgets::rect::centered_fixed_rect};
 
 use super::import::ImportsTable;
 
@@ -42,6 +42,9 @@ pub struct ImportInterface<B: tui::backend::Backend> {
 
     /// Interface modules
     modules: HashMap<InputMode, Box<dyn ImportsModule<B>>>,
+    
+    // TODO: this is crap. I should implement some eventing system...
+    info_message: Option<String>,
 }
 
 
@@ -52,6 +55,9 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
         let help_mod: Box<dyn ImportsModule<B>> = Box::new(HelpPanel::new(HELP_TEXT));
         let edit_mod: Box<dyn ImportsModule<B>> = Box::new(EditModal::new());
 
+        // TODO: I need to rething those modules...
+        let info_popup: Box<dyn ImportsModule<B>> = Box::new(InfoPopup::new());
+        
         // TODO: I need search module here so bad!
 
         Self {
@@ -60,8 +66,10 @@ impl<B: tui::backend::Backend> ImportInterface<B> {
             input_mode: InputMode::Normal,
             modules: hashmap![
                 InputMode::Suppressed(SuppressedAction::ShowHelp) => help_mod,
-                InputMode::Suppressed(SuppressedAction::Edit) => edit_mod
+                InputMode::Suppressed(SuppressedAction::Edit) => edit_mod,
+                InputMode::InfoPopup => info_popup
             ],
+            info_message: None,
         }
     }
 
