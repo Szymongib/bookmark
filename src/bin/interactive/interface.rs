@@ -156,39 +156,30 @@ impl Interface {
             )
             .split(f.size());
 
-        // let columns: Vec<Row> = self.bookmarks_table.columns().clone()
-        //     .iter()
-        //     .map(|c| {
-        //         Row::new(cells)
-        //     });
-        let columns = Row::new(
+        let header = Row::new(
             self.bookmarks_table
                 .columns()
                 .clone()
                 .into_iter()
                 .map(|s| Text::raw(s)),
-        );
+        )
+        .style(self.styles.header);
         let table = self.bookmarks_table.table();
 
         let rows = table
             .items
             .iter()
-            // .map(|i| Row::StyledData(i.row().iter(), normal_style));
-            .map(|i| {
-                // Row::StyledData(i.row().iter(), normal_style)
-                Row::new(i.row().iter().map(|s| Text::raw(s))).style(normal_style)
-            });
+            .map(|i| Row::new(i.row().iter().map(|s| Text::raw(s))).style(normal_style));
         let t = Table::new(rows, &self.cols_constraints)
-            // .header_style(self.styles.header)
-            .header(columns)
+            .header(header)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
                     .title("URLs - Press 'h' to show help"),
             )
             .highlight_style(self.styles.selected)
-            .highlight_symbol("> ");
-        // .widths(&self.cols_constraints);
+            .highlight_symbol("> ")
+            .highlight_spacing(ratatui::widgets::HighlightSpacing::Always);
 
         f.render_stateful_widget(t, chunks[0], &mut table.state);
 

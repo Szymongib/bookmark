@@ -1,7 +1,7 @@
 use crate::interactive::table::TableItem;
 use bookmark_lib::types::URLRecord;
 
-pub const DEFAULT_URL_COLS: [&str; 4] = ["  Name", "URL", "Group", "Tags"];
+pub const DEFAULT_URL_COLS: [&str; 4] = ["Name", "URL", "Group", "Tags"];
 
 pub type Columns = Vec<String>;
 
