@@ -8,13 +8,14 @@ use crate::interactive::modules::search::Search;
 use crate::interactive::modules::Module;
 use crate::interactive::table::TableItem;
 use crate::interactive::url_table_item::default_columns;
+use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::Text;
+use ratatui::widgets::{Block, Borders, Row, Table};
+use ratatui::Frame;
 use std::collections::HashMap;
 use std::error::Error;
 use termion::event::Key;
-use tui::layout::{Constraint, Direction, Layout};
-use tui::style::{Color, Modifier, Style};
-use tui::widgets::{Block, Borders, Row, Table};
-use tui::Frame;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum InputMode {
@@ -30,11 +31,11 @@ pub enum SuppressedAction {
     Delete,
 }
 
-pub struct Interface<B: tui::backend::Backend> {
+pub struct Interface {
     bookmarks_table: BookmarksTable,
 
     /// Interface modules
-    modules: HashMap<InputMode, Box<dyn Module<B>>>,
+    modules: HashMap<InputMode, Box<dyn Module>>,
 
     /// Current mode of input
     input_mode: InputMode,
@@ -53,14 +54,14 @@ struct Styles {
     header: Style,
 }
 
-impl<B: tui::backend::Backend> Interface<B> {
+impl Interface {
     pub(crate) fn new(
         bookmarks_table: BookmarksTable,
-    ) -> Result<Interface<B>, Box<dyn std::error::Error>> {
-        let search_mod: Box<dyn Module<B>> = Box::new(Search::new());
-        let help_mod: Box<dyn Module<B>> = Box::new(HelpPanel::new());
-        let delete_mod: Box<dyn Module<B>> = Box::new(Delete::new());
-        let command_mod: Box<dyn Module<B>> = Box::new(Command::new()?);
+    ) -> Result<Interface, Box<dyn std::error::Error>> {
+        let search_mod: Box<dyn Module> = Box::new(Search::new());
+        let help_mod: Box<dyn Module> = Box::new(HelpPanel::new());
+        let delete_mod: Box<dyn Module> = Box::new(Delete::new());
+        let command_mod: Box<dyn Module> = Box::new(Command::new()?);
 
         Ok(Interface {
             bookmarks_table,
@@ -139,7 +140,7 @@ impl<B: tui::backend::Backend> Interface<B> {
         Ok(false)
     }
 
-    pub(crate) fn draw(&mut self, f: &mut Frame<B>) {
+    pub(crate) fn draw(&mut self, f: &mut Frame) {
         let size = f.size();
         let normal_style = self.styles.normal;
 
@@ -155,23 +156,39 @@ impl<B: tui::backend::Backend> Interface<B> {
             )
             .split(f.size());
 
-        let columns = self.bookmarks_table.columns().clone();
+        // let columns: Vec<Row> = self.bookmarks_table.columns().clone()
+        //     .iter()
+        //     .map(|c| {
+        //         Row::new(cells)
+        //     });
+        let columns = Row::new(
+            self.bookmarks_table
+                .columns()
+                .clone()
+                .into_iter()
+                .map(|s| Text::raw(s)),
+        );
         let table = self.bookmarks_table.table();
 
         let rows = table
             .items
             .iter()
-            .map(|i| Row::StyledData(i.row().iter(), normal_style));
-        let t = Table::new(columns.iter(), rows)
-            .header_style(self.styles.header)
+            // .map(|i| Row::StyledData(i.row().iter(), normal_style));
+            .map(|i| {
+                // Row::StyledData(i.row().iter(), normal_style)
+                Row::new(i.row().iter().map(|s| Text::raw(s))).style(normal_style)
+            });
+        let t = Table::new(rows, &self.cols_constraints)
+            // .header_style(self.styles.header)
+            .header(columns)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
                     .title("URLs - Press 'h' to show help"),
             )
             .highlight_style(self.styles.selected)
-            .highlight_symbol("> ")
-            .widths(&self.cols_constraints);
+            .highlight_symbol("> ");
+        // .widths(&self.cols_constraints);
 
         f.render_stateful_widget(t, chunks[0], &mut table.state);
 
@@ -222,7 +239,6 @@ fn columns_with_id_constraints() -> Vec<Constraint> {
 mod test {
     use crate::interactive::bookmarks_table::BookmarksTable;
     use crate::interactive::event::{Event, Events, Signal};
-    use crate::interactive::fake::MockBackend;
     use crate::interactive::helpers::to_key_events;
     use crate::interactive::interface::{InputMode, Interface, SuppressedAction};
     use crate::interactive::table::TableItem;
@@ -288,7 +304,7 @@ mod test {
             let events = Events::new();
             let bookmarks_table = BookmarksTable::new(events.tx.clone(), Box::new(registry)).expect("Failed to initialize Bookmarks table");
 
-            let interface = Interface::<MockBackend>::new(bookmarks_table).expect("Failed to initialize interface");
+            let interface = Interface::new(bookmarks_table).expect("Failed to initialize interface");
 
             (interface, cleaner)
         };

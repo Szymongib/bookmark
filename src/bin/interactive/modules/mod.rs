@@ -1,15 +1,14 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::interface::InputMode;
+use ratatui::Frame;
 use termion::event::Key;
-use tui::backend::Backend;
-use tui::Frame;
 
 pub mod command;
 pub mod delete;
 pub mod help;
 pub mod search;
 
-pub trait Module<B: Backend>: HandleInput + Draw<B> {}
+pub trait Module: HandleInput + Draw {}
 
 pub trait HandleInput {
     /// Activates Module
@@ -26,6 +25,6 @@ pub trait HandleInput {
     ) -> Result<Option<InputMode>, Box<dyn std::error::Error>>;
 }
 
-pub trait Draw<B: Backend> {
-    fn draw(&self, mode: InputMode, f: &mut Frame<B>);
+pub trait Draw {
+    fn draw(&self, mode: InputMode, f: &mut Frame);
 }

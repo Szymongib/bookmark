@@ -1,5 +1,5 @@
 use crate::interactive::helpers::{horizontal_layout, vertical_layout};
-use tui::layout::Rect;
+use ratatui::layout::Rect;
 
 /// helper function to create a centered rect with a specified size
 pub(crate) fn centered_fixed_rect(size_x: u16, size_y: u16, r: Rect) -> Rect {
@@ -17,7 +17,7 @@ pub(crate) fn centered_fixed_rect(size_x: u16, size_y: u16, r: Rect) -> Rect {
 #[cfg(test)]
 mod test {
     use crate::interactive::widgets::rect::centered_fixed_rect;
-    use tui::layout::Rect;
+    use ratatui::layout::Rect;
 
     #[test]
     fn test_create_centered_fixed_rect() {

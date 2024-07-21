@@ -1,6 +1,6 @@
 use crate::interactive::event::Event;
+use ratatui::layout::{Constraint, Direction, Layout};
 use termion::event::Key;
-use tui::layout::{Constraint, Direction, Layout};
 
 // TODO: consider moving to some lib
 macro_rules! hashmap {

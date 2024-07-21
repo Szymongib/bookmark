@@ -3,14 +3,14 @@ use crate::interactive::interface::{InputMode, SuppressedAction};
 use crate::interactive::modules::{Draw, HandleInput, Module};
 use crate::interactive::widgets::rect::centered_fixed_rect;
 use bookmark_lib::types::URLRecord;
+use ratatui::backend::Backend;
+use ratatui::layout::Alignment;
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Span, Text};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::Frame;
 use std::error::Error;
 use termion::event::Key;
-use tui::backend::Backend;
-use tui::layout::Alignment;
-use tui::style::{Color, Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Clear, Paragraph};
-use tui::Frame;
 
 // TODO: consider some generic mechanism for actions that require confirmation
 
@@ -18,7 +18,7 @@ pub(crate) struct Delete {
     record: Option<URLRecord>,
 }
 
-impl<B: Backend> Module<B> for Delete {}
+impl Module for Delete {}
 
 impl HandleInput for Delete {
     fn try_activate(
@@ -58,8 +58,8 @@ impl HandleInput for Delete {
     }
 }
 
-impl<B: Backend> Draw<B> for Delete {
-    fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
+impl Draw for Delete {
+    fn draw(&self, mode: InputMode, f: &mut Frame) {
         if let InputMode::Suppressed(SuppressedAction::Delete) = mode {
             self.confirm_delete_popup(f)
         }
@@ -71,7 +71,7 @@ impl Delete {
         Delete { record: None }
     }
 
-    fn confirm_delete_popup<B: Backend>(&self, f: &mut Frame<B>) {
+    fn confirm_delete_popup(&self, f: &mut Frame) {
         let area = centered_fixed_rect(50, 10, f.size());
 
         let record = self
@@ -79,15 +79,13 @@ impl Delete {
             .clone()
             .expect("Error displaying delete confirmation");
 
-        let text = vec![
-            Spans::from(""),
-            Spans::from(format!(
-                "Delete '{}' from '{}' group?",
-                record.name, record.group
-            )),
-            Spans::from(""),
-            Spans::from("Yes (Enter)   ---   No (ESC)"), // TODO: consider y and n as confirmation
-        ];
+        let mut text = Text::raw("");
+        text.push_line(format!(
+            "Delete '{}' from '{}' group?",
+            record.name, record.group
+        ));
+        text.push_line("");
+        text.push_line("Yes (Enter)   ---   No (ESC)"); // TODO: consider y and n as confirmation
 
         // TODO: remove duplicated code
         let block = Block::default()
