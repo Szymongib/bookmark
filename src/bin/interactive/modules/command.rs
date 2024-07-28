@@ -173,24 +173,14 @@ impl Command {
             .style(Style::default())
             .block(Block::default().borders(Borders::BOTTOM));
 
-        let (info_block, input_block) = self.centered_command_input(f.size());
+        let r = f.size();
+        let info_block = Rect::new(1, r.height - 7, r.width - 2, 2);
+        let input_block = Rect::new(1, r.height - 5, r.width - 2, 2);
 
         f.render_widget(Clear, info_block);
         f.render_widget(info_widget, info_block); // TODO: render stateful widget?
         f.render_widget(Clear, input_block);
         f.render_widget(input_widget, input_block); // TODO: render stateful widget?
-    }
-
-    fn centered_command_input(&self, r: Rect) -> (Rect, Rect) {
-        let horizontal_layout = horizontal_layout(vec![1, r.width - 2, r.width - 1]);
-
-        let split_info = vertical_layout(vec![r.height - 7, 2, r.height - 5]).split(r);
-        let info = horizontal_layout.split(split_info[1])[1];
-
-        let split_input = vertical_layout(vec![r.height - 5, 2, r.height - 3]).split(r);
-        let input = horizontal_layout.split(split_input[1])[1];
-
-        (info, input)
     }
 }
 

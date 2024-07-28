@@ -194,7 +194,7 @@ impl Interface {
 
         let (cols, constraints) = if self.display_ids {
             (
-                to_string(vec!["  Id", "Name", "URL", "Group", "Tags"]),
+                to_string(vec!["Id", "Name", "URL", "Group", "Tags"]),
                 columns_with_id_constraints(),
             )
         } else {

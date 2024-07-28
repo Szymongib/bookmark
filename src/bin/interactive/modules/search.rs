@@ -93,17 +93,11 @@ impl Search {
                     .borders(Borders::ALL)
                     .title("Press '/' or 'CTRL + f' to search for URLs"),
             );
+        let r = f.size();
+        let search_block = Rect::new(0, r.height - 3, r.width, 3);
 
-        let block = self.centered_search_input(f.size());
-
-        f.render_widget(Clear, block);
-        f.render_widget(input_widget, block); // TODO: render stateful widget?
-    }
-
-    fn centered_search_input(&self, r: Rect) -> Rect {
-        let search_input = vertical_layout(vec![r.height - 3, 3, r.height]).split(r);
-
-        horizontal_layout(vec![0, r.width, r.height]).split(search_input[1])[1]
+        f.render_widget(Clear, search_block);
+        f.render_widget(input_widget, search_block); // TODO: render stateful widget?
     }
 }
 
