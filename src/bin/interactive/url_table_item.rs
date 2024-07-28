@@ -93,7 +93,7 @@ mod test {
     #[test]
     fn test_url_item() {
         let record = URLRecord::new("url1", "name1", "group1", vec!["tag1", "tag1.2"]);
-        let cols = to_string(vec!["  ID", "Name", "  Tags   "]);
+        let cols = to_string(vec!["ID", "Name", "  Tags   "]);
 
         let items = vec![
             TestCase {
@@ -140,7 +140,7 @@ mod test {
         let def_cols = default_columns();
 
         let expected_cols = vec![
-            "  Name".to_string(),
+            "Name".to_string(),
             "URL".to_string(),
             "Group".to_string(),
             "Tags".to_string(),
