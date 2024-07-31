@@ -2,18 +2,17 @@ use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::interface::{InputMode, SuppressedAction};
 use crate::interactive::modules::{Draw, HandleInput, Module};
 use crate::interactive::widgets::rect::centered_fixed_rect;
+use ratatui::layout::Alignment;
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::Frame;
 use std::error::Error;
 use termion::event::Key;
-use tui::backend::Backend;
-use tui::layout::Alignment;
-use tui::style::{Color, Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Clear, Paragraph};
-use tui::Frame;
 
 pub(crate) struct HelpPanel {}
 
-impl<B: Backend> Module<B> for HelpPanel {}
+impl Module for HelpPanel {}
 
 impl HandleInput for HelpPanel {
     fn try_activate(
@@ -47,8 +46,8 @@ impl HandleInput for HelpPanel {
     }
 }
 
-impl<B: Backend> Draw<B> for HelpPanel {
-    fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
+impl Draw for HelpPanel {
+    fn draw(&self, mode: InputMode, f: &mut Frame) {
         if mode == InputMode::Suppressed(SuppressedAction::ShowHelp) {
             self.show_help_popup(f);
         }
@@ -61,7 +60,7 @@ impl HelpPanel {
     }
 
     // TODO: consider using consts from cmd - or embedding docs?
-    fn show_help_popup<B: Backend>(&self, f: &mut Frame<B>) {
+    fn show_help_popup(&self, f: &mut Frame) {
         let text = vec![
             "Action               Description",
             "'ENTER'            | open bookmarked URL",
@@ -83,7 +82,7 @@ impl HelpPanel {
             "",
         ];
         let max_width = text.iter().map(|t| t.len()).max().unwrap_or_default() as u16;
-        let spans: Vec<Spans> = text.iter().map(|t| Spans::from(t.to_owned())).collect();
+        let lines: Vec<Line> = text.iter().map(|t| Line::from(t.to_owned())).collect();
 
         let block = Block::default()
             .borders(Borders::ALL)
@@ -94,7 +93,7 @@ impl HelpPanel {
             ));
 
         let area = centered_fixed_rect(max_width + 4, text.len() as u16 + 2, f.size());
-        let paragraph = Paragraph::new(spans)
+        let paragraph = Paragraph::new(lines)
             .style(Style::default().bg(Color::Black).fg(Color::White))
             .block(block)
             .alignment(Alignment::Left);

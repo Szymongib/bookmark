@@ -1,6 +1,6 @@
+use ratatui::{backend::TermionBackend, Terminal};
 use std::{error::Error, io};
 use termion::{input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
-use tui::{backend::TermionBackend, Terminal};
 
 use super::event::Events;
 

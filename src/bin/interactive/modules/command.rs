@@ -2,14 +2,14 @@ use crate::interactive::bookmarks_table::BookmarksTable;
 use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use crate::interactive::interface::InputMode;
 use crate::interactive::modules::{Draw, HandleInput, Module};
+use ratatui::layout::Rect;
+use ratatui::style::Style;
+use ratatui::text::Text;
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::Frame;
 use regex::Regex;
 use std::error::Error;
 use termion::event::Key;
-use tui::backend::Backend;
-use tui::layout::Rect;
-use tui::style::Style;
-use tui::widgets::{Block, Borders, Clear, Paragraph};
-use tui::Frame;
 
 const DEFAULT_INFO_MESSAGE: &str =
     "Press 'Enter' to execute command on selected Bookmark. Press 'Esc' to discard.";
@@ -21,7 +21,7 @@ pub(crate) struct Command {
     args_regex: Regex,
 }
 
-impl<B: Backend> Module<B> for Command {}
+impl Module for Command {}
 
 impl HandleInput for Command {
     fn try_activate(
@@ -91,12 +91,12 @@ impl HandleInput for Command {
     }
 }
 
-impl<B: Backend> Draw<B> for Command {
-    fn draw(&self, mode: InputMode, f: &mut Frame<B>) {
+impl Draw for Command {
+    fn draw(&self, mode: InputMode, f: &mut Frame) {
         match mode {
             InputMode::Command => {
                 self.render_command_input(f);
-                // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
+                // Make the cursor visible and ask ratatui-rs to put it at the specified coordinates after rendering
                 f.set_cursor(
                     // Put cursor past the end of the input text
                     self.command_display.len() as u16 + 1, // TODO: consider using crate UnicodeWidth
@@ -164,33 +164,23 @@ impl Command {
             .collect())
     }
 
-    pub fn render_command_input<B: tui::backend::Backend>(&self, f: &mut Frame<B>) {
-        let info_widget = Paragraph::new(self.info_display.as_ref())
+    pub fn render_command_input(&self, f: &mut Frame) {
+        let info_widget = Paragraph::new(Text::raw(&self.info_display))
             .style(Style::default())
             .block(Block::default().borders(Borders::TOP));
 
-        let input_widget = Paragraph::new(self.command_display.as_ref())
+        let input_widget = Paragraph::new(Text::raw(&self.command_display))
             .style(Style::default())
             .block(Block::default().borders(Borders::BOTTOM));
 
-        let (info_block, input_block) = self.centered_command_input(f.size());
+        let r = f.size();
+        let info_block = Rect::new(1, r.height - 7, r.width - 2, 2);
+        let input_block = Rect::new(1, r.height - 5, r.width - 2, 2);
 
         f.render_widget(Clear, info_block);
         f.render_widget(info_widget, info_block); // TODO: render stateful widget?
         f.render_widget(Clear, input_block);
         f.render_widget(input_widget, input_block); // TODO: render stateful widget?
-    }
-
-    fn centered_command_input(&self, r: Rect) -> (Rect, Rect) {
-        let horizontal_layout = horizontal_layout(vec![1, r.width - 2, r.width - 1]);
-
-        let split_info = vertical_layout(vec![r.height - 7, 2, r.height - 5]).split(r);
-        let info = horizontal_layout.split(split_info[1])[1];
-
-        let split_input = vertical_layout(vec![r.height - 5, 2, r.height - 3]).split(r);
-        let input = horizontal_layout.split(split_input[1])[1];
-
-        (info, input)
     }
 }
 

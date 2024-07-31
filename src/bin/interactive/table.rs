@@ -1,4 +1,4 @@
-use tui::widgets::TableState;
+use ratatui::widgets::TableState;
 
 pub trait TableItem {
     fn row(&self) -> &Vec<String>;
