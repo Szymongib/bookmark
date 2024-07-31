@@ -11,8 +11,11 @@ jobs:
         os: [macos-latest, ubuntu-latest]
         include:
           - os: macos-latest
+            TARGET: aarch64-apple-darwin
+            ARTIFACT_NAME: bookmark-darwin-aarch64
+          - os: macos-13
             TARGET: x86_64-apple-darwin
-            ARTIFACT_NAME: bookmark-darwin-amd64
+            ARTIFACT_NAME: bookmark-darwin-x86_64
           - os: ubuntu-latest
             TARGET: x86_64-unknown-linux-gnu
             ARTIFACT_NAME: bookmark-linux-amd64
