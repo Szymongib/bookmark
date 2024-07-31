@@ -13,6 +13,8 @@ jobs:
         include:
           - os: macos-latest
             TOOLCHAIN: stable-aarch64-apple-darwin
+          - os: macos-13
+            TOOLCHAIN: stable-x86_64-apple-darwin
           - os: ubuntu-latest
             TOOLCHAIN: stable-x86_64-unknown-linux-gnu
     steps:
