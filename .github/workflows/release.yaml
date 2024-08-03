@@ -27,10 +27,21 @@ jobs:
         run: cargo build --verbose --release --target ${{matrix.TARGET}}
       - name: Rename Artifacts
         run: mv ./target/${{matrix.TARGET}}/release/bookmark ${{matrix.ARTIFACT_NAME}}
+
+      - name: Check if Prerelease
+        run: |
+          TAG_NAME=$(echo $GITHUB_REF | sed 's|refs/tags/||')
+          echo "Tag Name: $TAG_NAME"
+          if [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+          else
+            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+          fi
       - name: Upload Release Asset
         id: upload-release-asset
         uses: softprops/action-gh-release@v2
         with:
+          prerelease: ${{ env.IS_PRERELEASE }}
           files: |
             bookmark-darwin-aarch64
             bookmark-darwin-x86_64
