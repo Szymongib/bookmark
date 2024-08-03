@@ -1,6 +1,6 @@
 [package]
 name = "bookmark"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Szymongib <szymongib@gmail.com>"]
 edition = "2018"
 
