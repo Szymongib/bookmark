@@ -1,15 +1,15 @@
 name: Create Release Artifacts
 on:
-  release:
-    types:
-      - created
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch: {}
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest, macos-13, ubuntu-latest]
         include:
           - os: macos-latest
             TARGET: aarch64-apple-darwin
@@ -26,18 +26,12 @@ jobs:
       - name: Build Artifacts
         run: cargo build --verbose --release --target ${{matrix.TARGET}}
       - name: Rename Artifacts
-        run: mv ./target/${{matrix.TARGET}}/release/bookmark bookmark-${{matrix.TARGET}}
-      - name: Get Upload URL
-        run: |
-          UPLOAD_URL=$(jq --raw-output '.release.upload_url' "$GITHUB_EVENT_PATH")
-          echo "UPLOAD_URL=$UPLOAD_URL" >> $GITHUB_ENV
+        run: mv ./target/${{matrix.TARGET}}/release/bookmark ${{matrix.ARTIFACT_NAME}}
       - name: Upload Release Asset
         id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: $UPLOAD_URL
-          asset_path: bookmark-${{matrix.TARGET}}
-          asset_name: ${{matrix.ARTIFACT_NAME}}
-          asset_content_type: application/octet-stream
+          files: |
+            bookmark-darwin-aarch64
+            bookmark-darwin-x86_64
+            bookmark-linux-amd64
