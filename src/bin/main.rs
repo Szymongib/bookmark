@@ -1,5 +1,5 @@
 extern crate clap;
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 
 use crate::interactive::interactive_mode::enter_interactive_mode;
 use crate::interactive::subcommand::add;
@@ -27,7 +27,7 @@ fn main() {
         .expect("Failed to get default v0_0_x path");
 
     let matches = App::new("Bookmark")
-        .version("0.0.1")
+        .version(crate_version!())
         .author("Szymon Gibała <szumongib@gmail.com>")
         .about("Group, tag and quickly access your URLs from terminal")
         .arg(Arg::with_name("file")
