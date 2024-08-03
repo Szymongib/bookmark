@@ -3,6 +3,7 @@ on:
   release:
     types:
       - created
+  workflow_dispatch: {}
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -29,14 +30,14 @@ jobs:
       - name: Get Upload URL
         run: |
           UPLOAD_URL=$(jq --raw-output '.release.upload_url' "$GITHUB_EVENT_PATH")
-          echo ::set-env name=UPLOAD_URL::$UPLOAD_URL
+          echo "UPLOAD_URL=$UPLOAD_URL" >> $GITHUB_ENV
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ env.UPLOAD_URL }}
+          upload_url: $UPLOAD_URL
           asset_path: bookmark-${{matrix.TARGET}}
           asset_name: ${{matrix.ARTIFACT_NAME}}
           asset_content_type: application/octet-stream
