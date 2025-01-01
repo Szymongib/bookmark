@@ -1,5 +1,5 @@
 extern crate clap;
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{Arg, ArgAction, ArgMatches, Command};
 
 use crate::interactive::interactive_mode::enter_interactive_mode;
 use crate::interactive::subcommand::add;
@@ -23,174 +23,175 @@ const URLS_DEFAULT_FILE_PATH: &str = ".bookmark/urls_v0.1.json";
 const VERSION_V0_0_X: &str = " v0.0.x";
 
 fn main() {
-    let urls_v0_0_x_default_full_path = &path_with_homedir(URLS_V0_0_X_DEFAULT_FILE_PATH)
+    let urls_v0_0_x_default_full_path = path_with_homedir(URLS_V0_0_X_DEFAULT_FILE_PATH)
         .expect("Failed to get default v0_0_x path");
 
-    let matches = App::new("Bookmark")
-        .version(crate_version!())
+    let cmd = Command::new("Bookmark")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("Szymon Gibała <szumongib@gmail.com>")
         .about("Group, tag and quickly access your URLs from terminal")
-        .arg(Arg::with_name("file")
-            .short("f")
+        .arg(Arg::new("file")
+            .short('f')
             .long("file")
             .value_name("FILE")
             .required(false)
             .help("Path to file storing the URLs")
-            .takes_value(true)
+            .action(ArgAction::Set)
         )
-        .subcommand(SubCommand::with_name(cmd::GROUP_SUB_CMD)
+        .subcommand(Command::new(cmd::GROUP_SUB_CMD)
             .about("Manage URL groups")
-            .subcommand(SubCommand::with_name(cmd::GROUP_LIST_CMD)
+            .subcommand(Command::new(cmd::GROUP_LIST_CMD)
                 .about("List groups")
             )
         )
-        .subcommand(SubCommand::with_name(cmd::ADD_SUB_CMD)
+        .subcommand(Command::new(cmd::ADD_SUB_CMD)
             .about("Add bookmark URL")
-            .arg(Arg::with_name("name")
+            .arg(Arg::new("name")
                 .help("Bookmark name")
                 .index(1)
                 )
-            .arg(Arg::with_name("url")
+            .arg(Arg::new("url")
                 .help("URL address")
                 .index(2)
             )
-            .arg(Arg::with_name("tag")
+            .arg(Arg::new("tag")
                 .help("URL tags. Accepts multiple values: url add [NAME] [URL] -t tag1 -t tag2")
                 .required(false)
-                .short("t")
+                .short('t')
                 .long("tag")
-                .takes_value(true)
-                .multiple(true)
+                .action(ArgAction::Append)
                 .number_of_values(1)
                 // TODO: add validator to exclude forbidden chars (like ,)
             )
-            .arg(Arg::with_name("group")
+            .arg(Arg::new("group")
                 .help("Group to which URL should be assigned")
                 .required(false)
-                .takes_value(true)
-                .short("g")
+                .action(ArgAction::Set)
+                .short('g')
                 .long("group"))
         )
-        .subcommand(SubCommand::with_name(cmd::LIST_SUB_CMD)
+        .subcommand(Command::new(cmd::LIST_SUB_CMD)
             .alias("ls")
             .about("List bookmarks ")
-            .arg(Arg::with_name("group") // If not specified use default or global
+            .arg(Arg::new("group") // If not specified use default or global
                 .help("Group from which URLs should be listed")
                 .required(false)
-                .takes_value(true)
-                .short("g")
+                .action(ArgAction::Set)
+                .short('g')
                 .long("group"))
-            .arg(Arg::with_name("tag")
+            .arg(Arg::new("tag")
                 .help("URL tags. Accepts multiple values: url add [NAME] [URL] -t tag1 -t tag2")
                 .required(false)
-                .short("t")
+                .short('t')
                 .long("tag")
-                .takes_value(true)
-                .multiple(true)
+                .action(ArgAction::Append)
                 .number_of_values(1))
-            .arg(Arg::with_name("sort")
+            .arg(Arg::new("sort")
                 .help("Specifies to sort bookmarks by one of the columns: [name, url, group]")
                 .required(false)
                 .long("sort")
-                .takes_value(true)
+                .action(ArgAction::Set)
                 .number_of_values(1))
         )
-        .subcommand(SubCommand::with_name(cmd::DELETE_SUB_CMD)
+        .subcommand(Command::new(cmd::DELETE_SUB_CMD)
             .about("Delete bookmark")
-            .arg(Arg::with_name("id")
+            .arg(Arg::new("id")
                 .help("Bookmark id to delete")
                 .required(true)
                 .index(1)
             )
         )
-        .subcommand(SubCommand::with_name(cmd::TAG_SUB_CMD)
+        .subcommand(Command::new(cmd::TAG_SUB_CMD)
             .about("Add tag to bookmark")
-            .usage("bookmark tag [ID] [TAG]")
-            .arg(Arg::with_name("id")
+            // .usage("bookmark tag [ID] [TAG]")
+            // .override_usage(usage)
+            .arg(Arg::new("id")
                 .help("Bookmark id to tag")
                 .required(true)
                 .index(1))
-            .arg(Arg::with_name("tag")
+            .arg(Arg::new("tag")
                 .help("Tag to add")
                 .required(true)
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(cmd::UNTAG_SUB_CMD)
+        .subcommand(Command::new(cmd::UNTAG_SUB_CMD)
             .about("Remove tag from bookmark")
-            .usage("bookmark untag [ID] [TAG]")
-            .arg(Arg::with_name("id")
+            // .usage("bookmark untag [ID] [TAG]")
+            .arg(Arg::new("id")
                 .help("Bookmark id to untag")
                 .required(true)
                 .index(1))
-            .arg(Arg::with_name("tag")
+            .arg(Arg::new("tag")
                 .help("Tag to remove")
                 .required(true)
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(cmd::CHANGE_GROUP_SUB_CMD)
+        .subcommand(Command::new(cmd::CHANGE_GROUP_SUB_CMD)
             .about("Change group of the bookmark")
-            .usage("bookmark chg [ID] [GROUP]")
+            // .usage("bookmark chg [ID] [GROUP]")
             .alias(cmd::CHANGE_GROUP_SUB_CMD_ALIAS)
-            .arg(Arg::with_name("id")
+            .arg(Arg::new("id")
                 .help("Bookmark id to change the group")
                 .required(true)
                 .index(1))
-            .arg(Arg::with_name("group")
+            .arg(Arg::new("group")
                 .help("New group")
                 .required(true)
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(cmd::CHANGE_NAME_SUB_CMD)
+        .subcommand(Command::new(cmd::CHANGE_NAME_SUB_CMD)
             .about("Change name of the bookmark")
-            .usage("bookmark chn [ID] [NAME]")
+            // .usage("bookmark chn [ID] [NAME]")
             .alias(cmd::CHANGE_NAME_SUB_CMD_ALIAS)
-            .arg(Arg::with_name("id")
+            .arg(Arg::new("id")
                 .help("Bookmark id to change the name")
                 .required(true)
                 .index(1))
-            .arg(Arg::with_name("name")
+            .arg(Arg::new("name")
                 .help("New name")
                 .required(true)
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(cmd::CHANGE_URL_SUB_CMD)
+        .subcommand(Command::new(cmd::CHANGE_URL_SUB_CMD)
             .about("Change URL of the bookmark")
-            .usage("bookmark chu [ID] [URL]")
+            // .usage("bookmark chu [ID] [URL]")
             .alias(cmd::CHANGE_URL_SUB_CMD_ALIAS)
-            .arg(Arg::with_name("id")
+            .arg(Arg::new("id")
                 .help("Bookmark id to change the URL")
                 .required(true)
                 .index(1))
-            .arg(Arg::with_name("url")
+            .arg(Arg::new("url")
                 .help("New URL")
                 .required(true)
                 .index(2)
             )
         )
-        .subcommand(SubCommand::with_name(cmd::IMPORT_SUB_CMD)
+        // TODO: I think I can drop it at this point
+        .subcommand(Command::new(cmd::IMPORT_SUB_CMD)
             .about("Imports bookmarks from the previous versions")
-            .arg(Arg::with_name("version")
-                .help(format!("Version from which URLs should be imported. One of: {}", VERSION_V0_0_X).as_str())
+            .arg(Arg::new("version")
+                .help(format!("Version from which URLs should be imported. One of: {}", VERSION_V0_0_X))
                 .required(false)
-                .takes_value(true)
-                .short("v")
+                .action(ArgAction::Set)
+                .short('v')
                 .long("version")
                 .default_value(VERSION_V0_0_X))
-            .arg(Arg::with_name("old-file")
+            .arg(Arg::new("old-file")
                 .help("Path to the file storing URLs from previous version")
                 .required(false)
-                .takes_value(true)
+                .action(ArgAction::Set)
                 .long("old-file")
                 .default_value(urls_v0_0_x_default_full_path)
             )
-        )
-        .get_matches();
+        );
 
-    let file_path = match matches.value_of("file") {
+    let matches = cmd.get_matches();
+
+    let file_path = match matches.get_one::<String>("file") {
         Some(t) => t.to_string(),
         None => match get_default_registry_file_path() {
             Some(path) => path,
@@ -201,37 +202,37 @@ fn main() {
     let application = Application::new_file_based_registry(file_path);
 
     match matches.subcommand() {
-        (cmd::GROUP_SUB_CMD, Some(group_matches)) => {
+        Some((cmd::GROUP_SUB_CMD, group_matches)) => {
             application.group_sub_cmd(group_matches);
         }
-        (cmd::ADD_SUB_CMD, Some(add_matches)) => {
+        Some((cmd::ADD_SUB_CMD, add_matches)) => {
             application.add_sub_cmd(add_matches);
         }
-        (cmd::LIST_SUB_CMD, Some(list_matches)) => {
+        Some((cmd::LIST_SUB_CMD, list_matches)) => {
             application.list_sub_cmd(list_matches);
         }
-        (cmd::DELETE_SUB_CMD, Some(delete_matches)) => {
+        Some((cmd::DELETE_SUB_CMD, delete_matches)) => {
             application.delete_sub_cmd(delete_matches);
         }
-        (cmd::IMPORT_SUB_CMD, Some(import_matches)) => {
+        Some((cmd::IMPORT_SUB_CMD, import_matches)) => {
             application.import_sub_cmd(import_matches);
         }
-        (cmd::TAG_SUB_CMD, Some(tag_matches)) => {
+        Some((cmd::TAG_SUB_CMD, tag_matches)) => {
             application.tag_sub_cmd(tag_matches);
         }
-        (cmd::UNTAG_SUB_CMD, Some(untag_matches)) => {
+        Some((cmd::UNTAG_SUB_CMD, untag_matches)) => {
             application.untag_sub_cmd(untag_matches);
         }
-        (cmd::CHANGE_GROUP_SUB_CMD, Some(chg_matches)) => {
+        Some((cmd::CHANGE_GROUP_SUB_CMD, chg_matches)) => {
             application.change_group_sub_cmd(chg_matches);
         }
-        (cmd::CHANGE_NAME_SUB_CMD, Some(chn_matches)) => {
+        Some((cmd::CHANGE_NAME_SUB_CMD, chn_matches)) => {
             application.change_name_sub_cmd(chn_matches);
         }
-        (cmd::CHANGE_URL_SUB_CMD, Some(chu_matches)) => {
+        Some((cmd::CHANGE_URL_SUB_CMD, chu_matches)) => {
             application.change_url_sub_cmd(chu_matches);
         }
-        ("", None) => {
+        None => {
             if let Err(err) = enter_interactive_mode(application.registry) {
                 println!(
                     "Error: failed to enter interactive mode: {}",
@@ -283,13 +284,25 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn add_sub_cmd(&self, matches: &ArgMatches) {
-        let url_name = matches.value_of("name");
-        let url = matches.value_of("url");
-        let group: &str = matches.value_of("group").unwrap_or(DEFAULT_GROUP);
+        let url_name = matches.get_one::<String>("name");
+        let url = matches.get_one::<String>("url");
+        let group = matches
+            .get_one::<String>("group")
+            .map(|g| g.to_string())
+            .unwrap_or(DEFAULT_GROUP.to_string());
 
-        let tags = get_multiple_values(matches, "tag").unwrap_or_default();
+        let tags: Vec<String> = get_multiple_values(matches, "tag")
+            .unwrap_or_default()
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
 
-        let mut add_data = add::AddData::construct(url_name, url, group, &tags);
+        let mut add_data = add::AddData::new(
+            url_name.unwrap_or(&"".to_string()).as_str(),
+            url.unwrap_or(&"".to_string()).as_str(),
+            &group,
+            &tags,
+        );
 
         if url_name.is_none() || url.is_none() {
             add_data = add::interactive_add(add_data).expect("err");
@@ -316,7 +329,7 @@ impl<T: Registry> Application<T> {
         let noop_filter: Box<dyn Filter> = Box::new(NoopFilter::default());
 
         let group_filter: Box<dyn Filter> = matches
-            .value_of("group")
+            .get_one::<String>("group")
             .map(|g| {
                 let f: Box<dyn Filter> = Box::new(GroupFilter::new(g));
                 f
@@ -330,7 +343,7 @@ impl<T: Registry> Application<T> {
             })
             .unwrap_or(group_filter);
 
-        let sort_cfg = matches.value_of("sort").map(|val| {
+        let sort_cfg = matches.get_one::<String>("sort").map(|val| {
             let sort_by = SortBy::from_str(val).expect("Invalid sort column");
             SortConfig::new_by(sort_by)
         });
@@ -350,7 +363,9 @@ impl<T: Registry> Application<T> {
     }
 
     pub fn delete_sub_cmd(&self, matches: &ArgMatches) {
-        let id = matches.value_of("id").expect("Error: id not provided");
+        let id = matches
+            .get_one::<String>("id")
+            .expect("Error: id not provided");
 
         match self.registry.delete(id) {
             Ok(deleted) => {
@@ -366,13 +381,13 @@ impl<T: Registry> Application<T> {
 
     pub fn import_sub_cmd(&self, matches: &ArgMatches) {
         let version = matches
-            .value_of("version")
+            .get_one::<String>("version")
             .expect("Version from which to import not provided");
         let old_file = matches
-            .value_of("old-file")
+            .get_one::<String>("old-file")
             .expect("Old version file path not provided");
 
-        match version {
+        match version.as_str() {
             VERSION_V0_0_X => match self.registry.import_from_v_0_0_x(old_file) {
                 Ok(_imported) => println!("Successfully imported bookmarks!"),
                 Err(why) => println!(
@@ -388,9 +403,11 @@ impl<T: Registry> Application<T> {
 
     pub fn tag_sub_cmd(&self, matches: &ArgMatches) {
         let id = matches
-            .value_of("id")
+            .get_one::<String>("id")
             .expect("Error: bookmark id not provided");
-        let tag = matches.value_of("tag").expect("Error: tag not provided");
+        let tag = matches
+            .get_one::<String>("tag")
+            .expect("Error: tag not provided");
 
         match self.registry.tag(id, tag) {
             Ok(record) => match record {
@@ -403,9 +420,11 @@ impl<T: Registry> Application<T> {
 
     pub fn untag_sub_cmd(&self, matches: &ArgMatches) {
         let id = matches
-            .value_of("id")
+            .get_one::<String>("id")
             .expect("Error: bookmark id not provided");
-        let tag = matches.value_of("tag").expect("Error: tag not provided");
+        let tag = matches
+            .get_one::<String>("tag")
+            .expect("Error: tag not provided");
 
         match self.registry.untag(id, tag) {
             Ok(record) => match record {
@@ -418,10 +437,10 @@ impl<T: Registry> Application<T> {
 
     pub fn change_group_sub_cmd(&self, matches: &ArgMatches) {
         let id = matches
-            .value_of("id")
+            .get_one::<String>("id")
             .expect("Error: bookmark id not provided");
         let group = matches
-            .value_of("group")
+            .get_one::<String>("group")
             .expect("Error: group not provided");
 
         match self.registry.change_group(id, group) {
@@ -438,9 +457,11 @@ impl<T: Registry> Application<T> {
 
     pub fn change_name_sub_cmd(&self, matches: &ArgMatches) {
         let id = matches
-            .value_of("id")
+            .get_one::<String>("id")
             .expect("Error: bookmark id not provided");
-        let name = matches.value_of("name").expect("Error: name not provided");
+        let name = matches
+            .get_one::<String>("name")
+            .expect("Error: name not provided");
 
         match self.registry.change_name(id, name) {
             Ok(record) => match record {
@@ -456,9 +477,11 @@ impl<T: Registry> Application<T> {
 
     pub fn change_url_sub_cmd(&self, matches: &ArgMatches) {
         let id = matches
-            .value_of("id")
+            .get_one::<String>("id")
             .expect("Error: bookmark id not provided");
-        let url = matches.value_of("url").expect("Error: url not provided");
+        let url = matches
+            .get_one::<String>("url")
+            .expect("Error: url not provided");
 
         match self.registry.change_url(id, url) {
             Ok(record) => match record {
@@ -471,12 +494,11 @@ impl<T: Registry> Application<T> {
 }
 
 fn get_multiple_values<'a>(matches: &'a ArgMatches, name: &str) -> Option<Vec<&'a str>> {
-    let values = matches.args.get(name);
+    let values = matches.get_many::<String>(name);
     values.map(|vals| {
-        vals.vals
-            .iter()
-            .map(|s| s.to_str())
-            .filter_map(|s| s)
+        vals.into_iter()
+            .map(|s| s.as_str())
+            // .filter_map(|s| s)
             .collect()
     })
 }
