@@ -19,7 +19,7 @@ Bookmark allows you to save your favourite URLs without leaving the terminal and
 
 Download for Linux:
 ```bash
-wget https://github.com/Szymongib/bookmark/releases/download/v0.1.0/bookmark-linux-amd64
+wget https://github.com/Szymongib/bookmark/releases/download/v0.2.3/bookmark-linux-amd64
 
 chmod +x bookmark-linux-amd64
 sudo mv bookmark-linux-amd64 /usr/local/bin/bookmark
@@ -27,10 +27,10 @@ sudo mv bookmark-linux-amd64 /usr/local/bin/bookmark
 
 Download for Mac OS:
 ```bash
-wget https://github.com/Szymongib/bookmark/releases/download/v0.1.0/bookmark-darwin-amd64
+wget https://github.com/Szymongib/bookmark/releases/download/v0.2.3/bookmark-darwin-x86_64
 
-chmod +x bookmark-darwin-amd64
-sudo mv bookmark-darwin-amd64 /usr/local/bin/bookmark
+chmod +x bookmark-darwin-x86_64
+sudo mv bookmark-darwin-x86_64 /usr/local/bin/bookmark
 ```
 
 
