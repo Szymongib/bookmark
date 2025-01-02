@@ -21,17 +21,6 @@ impl AddData {
                 .collect(),
         }
     }
-
-    pub fn construct(name: Option<&str>, url: Option<&str>, group: &str, tags: &[&str]) -> AddData {
-        let tags: Vec<String> = tags.iter().map(|t| t.to_string()).collect();
-
-        AddData::new(
-            name.unwrap_or_default(),
-            url.unwrap_or_default(),
-            group,
-            &tags,
-        )
-    }
 }
 
 pub fn interactive_add(add_data: AddData) -> Result<AddData, Box<dyn std::error::Error>> {
