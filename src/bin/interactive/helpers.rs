@@ -1,6 +1,4 @@
-use crate::interactive::event::Event;
 use ratatui::layout::{Constraint, Direction, Layout};
-use termion::event::Key;
 
 // TODO: consider moving to some lib
 macro_rules! hashmap {
@@ -29,14 +27,6 @@ pub fn horizontal_layout(widths: Vec<u16>) -> Layout {
 
 fn to_constraints(vals: Vec<u16>) -> Vec<Constraint> {
     vals.iter().map(|h| Constraint::Length(*h)).collect()
-}
-
-pub fn to_keys(text: &str) -> Vec<Key> {
-    text.chars().map(Key::Char).collect()
-}
-
-pub fn to_key_events(text: &str) -> Vec<Event<Key>> {
-    text.chars().map(|c| Event::Input(Key::Char(c))).collect()
 }
 
 pub fn to_string(vec: Vec<&str>) -> Vec<String> {

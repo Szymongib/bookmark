@@ -227,10 +227,9 @@ fn columns_with_id_constraints() -> Vec<Constraint> {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use crate::interactive::bookmarks_table::BookmarksTable;
     use crate::interactive::event::{Event, Events, Signal};
-    use crate::interactive::helpers::to_key_events;
     use crate::interactive::interface::{InputMode, Interface, SuppressedAction};
     use crate::interactive::table::TableItem;
     use bookmark_lib::registry::URLRegistry;
@@ -241,6 +240,14 @@ mod test {
     use std::fs;
     use std::path::{Path, PathBuf};
     use termion::event::Key;
+
+    pub fn to_keys(text: &str) -> Vec<Key> {
+        text.chars().map(Key::Char).collect()
+    }
+
+    pub fn to_key_events(text: &str) -> Vec<Event<Key>> {
+        text.chars().map(|c| Event::Input(Key::Char(c))).collect()
+    }
 
     fn fix_url_records() -> Vec<URLRecord> {
         vec![
@@ -298,7 +305,7 @@ mod test {
             let interface = Interface::new(bookmarks_table).expect("Failed to initialize interface");
 
             (interface, cleaner)
-        };
+        }
     );
     () => (
         init!(vec![])

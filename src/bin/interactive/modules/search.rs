@@ -1,8 +1,6 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
-use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use crate::interactive::interface::InputMode;
 use crate::interactive::modules::{Draw, HandleInput, Module};
-use ratatui::backend::Backend;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::text::Text;
@@ -105,7 +103,7 @@ impl Search {
 mod test {
     use crate::interactive::bookmarks_table::BookmarksTable;
     use crate::interactive::event::Events;
-    use crate::interactive::helpers::to_keys;
+    use crate::interactive::interface::test::to_keys;
     use crate::interactive::modules::search::Search;
     use crate::interactive::modules::HandleInput;
     use bookmark_lib::registry::URLRegistry;

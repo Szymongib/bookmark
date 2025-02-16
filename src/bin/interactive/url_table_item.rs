@@ -14,7 +14,6 @@ pub fn default_columns() -> Columns {
 
 #[derive(Clone, Debug)]
 pub struct URLItem {
-    visible: bool,
     url: URLRecord,
     row: Vec<String>,
 }
@@ -23,7 +22,6 @@ impl URLItem {
     pub fn new(record: URLRecord, cols: Option<&Columns>) -> URLItem {
         URLItem {
             url: record.clone(),
-            visible: true,
             row: url_to_row(
                 &record,
                 cols.unwrap_or(
