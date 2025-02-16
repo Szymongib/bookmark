@@ -103,18 +103,11 @@ impl Search {
 mod test {
     use crate::interactive::bookmarks_table::BookmarksTable;
     use crate::interactive::event::Events;
+    use crate::interactive::interface::test::to_keys;
     use crate::interactive::modules::search::Search;
     use crate::interactive::modules::HandleInput;
     use bookmark_lib::registry::URLRegistry;
     use termion::event::Key;
-
-    fn to_keys(text: &str) -> Vec<Key> {
-        text.chars().map(Key::Char).collect()
-    }
-
-    fn to_key_events(text: &str) -> Vec<Event<Key>> {
-        text.chars().map(|c| Event::Input(Key::Char(c))).collect()
-    }
 
     #[test]
     fn test_handle_input_search_phrase() {

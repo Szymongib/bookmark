@@ -274,7 +274,7 @@ mod test {
             .clone()
             .filter(|t| {
                 if let Some(group) = &t.group {
-                    return *group == group_to_filter.clone();
+                    return *group == group_to_filter;
                 }
                 false
             })
@@ -370,8 +370,8 @@ mod test {
     fn assert_urls_match(test_urls: &Vec<&TestUrl>, actual: &Vec<URLRecord>) {
         for tu in test_urls {
             let exists = actual.iter().any(|rec| {
-                rec.name == tu.name.clone()
-                    && rec.url == tu.url.clone()
+                rec.name == tu.name
+                    && rec.url == tu.url
                     && group_match(&tu.group, &rec.group)
                     && tags_match(&tu.tags, &rec.tags)
             });
