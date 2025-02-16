@@ -1,5 +1,4 @@
 use crate::interactive::bookmarks_table::BookmarksTable;
-use crate::interactive::helpers::{horizontal_layout, vertical_layout};
 use crate::interactive::interface::InputMode;
 use crate::interactive::modules::{Draw, HandleInput, Module};
 use ratatui::layout::Rect;

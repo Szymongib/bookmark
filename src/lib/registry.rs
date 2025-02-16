@@ -229,8 +229,8 @@ mod test {
         for tu in &all_urls {
             let result = registry
                 .create(
-                    tu.name.clone(),
-                    tu.url.clone(),
+                    tu.name,
+                    tu.url,
                     tu.group.clone(),
                     tu.tags.iter().map(|s| s.to_string()).collect(),
                 )
@@ -262,7 +262,7 @@ mod test {
 
         println!("List URLs from specific group...");
         let group_to_filter = "test";
-        let group_filter: Box<dyn Filter> = Box::new(GroupFilter::new(group_to_filter.clone()));
+        let group_filter: Box<dyn Filter> = Box::new(GroupFilter::new(group_to_filter));
 
         let urls = registry
             .list_urls(Some(group_filter.as_ref()), None)

@@ -3,7 +3,6 @@ use crate::interactive::interface::{InputMode, SuppressedAction};
 use crate::interactive::modules::{Draw, HandleInput, Module};
 use crate::interactive::widgets::rect::centered_fixed_rect;
 use bookmark_lib::types::URLRecord;
-use ratatui::backend::Backend;
 use ratatui::layout::Alignment;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Span, Text};
